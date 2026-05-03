@@ -16,10 +16,12 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services.config import get_config
-from services.db import get_engine, Context, Stats
+from services.db import get_engine, Context, Stats, init_db
 from services.crypto import decrypt
 
 st.set_page_config(page_title="AI Clipboard", layout="wide")
+
+init_db()
 
 config = get_config()
 API_BASE = "http://localhost:8000"
