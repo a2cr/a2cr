@@ -9,7 +9,9 @@ def test_env(tmp_path, monkeypatch):
     monkeypatch.setenv("API_KEY", "test-api-key-1234567890abcdef")
     monkeypatch.setenv("FERNET_KEY", Fernet.generate_key().decode())
 
-    # Reset module-level engine singleton between tests
+    import services.config as config_module
+    config_module.reset_config()
+
     import services.db as db_module
     db_module._engine = None
 
@@ -18,4 +20,5 @@ def test_env(tmp_path, monkeypatch):
 
     yield
 
+    config_module.reset_config()
     db_module._engine = None
