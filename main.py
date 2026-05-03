@@ -24,7 +24,38 @@ async def lifespan(app: FastAPI):
     task.cancel()
 
 
-app = FastAPI(title="AI Clipboard", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="AI Clipboard",
+    version="0.1.0",
+    lifespan=lifespan,
+    openapi_tags=[{"name": "contexts"}],
+    swagger_ui_parameters={"persistAuthorization": True},
+)
+
+from fastapi.openapi.utils import get_openapi
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+    schema["components"]["securitySchemes"] = {
+        "ApiKeyHeader": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key",
+        }
+    }
+    for path in schema.get("paths", {}).values():
+        for operation in path.values():
+            operation["security"] = [{"ApiKeyHeader": []}]
+    app.openapi_schema = schema
+    return schema
+
+app.openapi = custom_openapi
 
 
 @app.exception_handler(AppError)
