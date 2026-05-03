@@ -1,0 +1,236 @@
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+from uuid import uuid4
+
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session
+
+from services.config import get_config
+from services.crypto import encrypt, decrypt
+from services.db import get_engine, Context, Stats
+from services.exceptions import SlotLimitExceeded, ContentTooLarge, SlotNotFound
+from services.tokens import count_tokens, original_tokens_from_length_optional
+
+_MAX_SLOTS = 3
+_MAX_BYTES = 10_240
+_TTL_MINUTES = 30
+
+
+@dataclass
+class SaveResult:
+    slot_name: str
+    expires_at: datetime
+    compressed_tokens: int
+    saved_tokens: Optional[int]
+    original_tokens: Optional[int]
+
+
+@dataclass
+class LoadResult:
+    slot_name: str
+    content: dict
+    expires_at: datetime
+    compressed_tokens: int
+    model_source: Optional[str]
+    load_count: int
+
+
+@dataclass
+class ListResult:
+    slot_name: str
+    expires_at: datetime
+    updated_at: datetime
+    size_bytes: int
+    compressed_tokens: int
+    model_source: Optional[str]
+
+
+@dataclass
+class HandoffResult:
+    slot_name: str
+    handoff_text: str
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def save_context(
+    slot_name: str,
+    content_dict: dict,
+    original_length: Optional[int],
+    model_source: Optional[str],
+) -> SaveResult:
+    content_json = json.dumps(content_dict, ensure_ascii=False)
+    content_bytes = content_json.encode("utf-8")
+    if len(content_bytes) > _MAX_BYTES:
+        raise ContentTooLarge()
+
+    encrypted = encrypt(content_json)
+    compressed_tokens = count_tokens(content_json)
+    original_tokens = original_tokens_from_length_optional(original_length)
+    saved_tokens = (original_tokens - compressed_tokens) if original_tokens is not None else None
+
+    now = _now_utc()
+    expires_at = now + timedelta(minutes=_TTL_MINUTES)
+
+    with Session(get_engine()) as session:
+        existing = session.execute(
+            select(Context).where(Context.slot_name == slot_name)
+        ).scalar_one_or_none()
+
+        if existing is None:
+            count = session.scalar(
+                select(func.count()).select_from(Context).where(Context.expires_at > now)
+            )
+            if count >= _MAX_SLOTS:
+                raise SlotLimitExceeded()
+            ctx = Context(
+                id=str(uuid4()),
+                slot_name=slot_name,
+                content=encrypted,
+                created_at=now,
+                updated_at=now,
+                expires_at=expires_at,
+                size_bytes=len(content_bytes),
+                original_tokens=original_tokens,
+                compressed_tokens=compressed_tokens,
+                load_count=0,
+                model_source=model_source,
+            )
+            session.add(ctx)
+        else:
+            existing.content = encrypted
+            existing.updated_at = now
+            existing.expires_at = expires_at
+            existing.size_bytes = len(content_bytes)
+            existing.original_tokens = original_tokens
+            existing.compressed_tokens = compressed_tokens
+            existing.model_source = model_source
+
+        stats = session.get(Stats, 1)
+        stats.total_saves += 1
+        if saved_tokens is not None and saved_tokens > 0:
+            stats.total_tokens_saved += saved_tokens
+
+        session.commit()
+
+    return SaveResult(
+        slot_name=slot_name,
+        expires_at=expires_at,
+        compressed_tokens=compressed_tokens,
+        saved_tokens=saved_tokens,
+        original_tokens=original_tokens,
+    )
+
+
+def load_context(slot_name: str) -> LoadResult:
+    now = _now_utc()
+    with Session(get_engine()) as session:
+        ctx = session.execute(
+            select(Context).where(Context.slot_name == slot_name)
+        ).scalar_one_or_none()
+
+        if ctx is None or ctx.expires_at < now:
+            if ctx is not None:
+                session.delete(ctx)
+                session.commit()
+            raise SlotNotFound()
+
+        ctx.load_count += 1
+        stats = session.get(Stats, 1)
+        stats.total_loads += 1
+        session.commit()
+
+        content_dict = json.loads(decrypt(ctx.content))
+        return LoadResult(
+            slot_name=ctx.slot_name,
+            content=content_dict,
+            expires_at=ctx.expires_at,
+            compressed_tokens=ctx.compressed_tokens,
+            model_source=ctx.model_source,
+            load_count=ctx.load_count,
+        )
+
+
+def delete_context(slot_name: str) -> None:
+    with Session(get_engine()) as session:
+        ctx = session.execute(
+            select(Context).where(Context.slot_name == slot_name)
+        ).scalar_one_or_none()
+        if ctx is None:
+            raise SlotNotFound()
+        session.delete(ctx)
+        session.commit()
+
+
+def list_contexts() -> list[ListResult]:
+    now = _now_utc()
+    with Session(get_engine()) as session:
+        rows = session.execute(
+            select(Context).where(Context.expires_at > now)
+        ).scalars().all()
+        return [
+            ListResult(
+                slot_name=r.slot_name,
+                expires_at=r.expires_at,
+                updated_at=r.updated_at,
+                size_bytes=r.size_bytes,
+                compressed_tokens=r.compressed_tokens,
+                model_source=r.model_source,
+            )
+            for r in rows
+        ]
+
+
+def cleanup_expired() -> int:
+    now = _now_utc()
+    with Session(get_engine()) as session:
+        expired = session.execute(
+            select(Context).where(Context.expires_at <= now)
+        ).scalars().all()
+        count = len(expired)
+        for ctx in expired:
+            session.delete(ctx)
+        session.commit()
+    return count
+
+
+def get_handoff(slot_name: str) -> HandoffResult:
+    result = load_context(slot_name)  # raises SlotNotFound if missing/expired
+    text = _build_handoff_text(result.content)
+    return HandoffResult(slot_name=slot_name, handoff_text=text)
+
+
+def _build_handoff_text(content: dict) -> str:
+    sections = []
+
+    sections.append(f"# GOAL\n{content['goal']}")
+    sections.append(f"# CURRENT_STATE\n{content['current_state']}")
+    sections.append(f"# NEXT_ACTION\n{content['next_action']}")
+
+    for key, section in [
+        ("decisions", "DECISIONS"),
+        ("constraints", "CONSTRAINTS"),
+        ("problems", "PROBLEMS"),
+        ("failed_attempts", "FAILED_ATTEMPTS"),
+        ("references", "REFERENCES"),
+    ]:
+        items = content.get(key) or []
+        if items:
+            sections.append(f"# {section}\n" + "\n".join(f"- {item}" for item in items))
+
+    for key, section in [
+        ("environment", "ENVIRONMENT"),
+        ("background", "BACKGROUND"),
+        ("summary", "SUMMARY"),
+    ]:
+        value = content.get(key)
+        if value:
+            sections.append(f"# {section}\n{value}")
+
+    return "\n\n".join(sections)
