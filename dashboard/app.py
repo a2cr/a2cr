@@ -117,8 +117,7 @@ for slot in slots:
             st.markdown("**goal:** " + content.get("goal", ""))
             st.markdown("**current_state:** " + content.get("current_state", ""))
             st.markdown("**next_action:** " + content.get("next_action", ""))
-            with st.expander("すべてのフィールドを見る"):
-                st.json(content)
+            st.json(content)
 
         # Delete button
         if st.button(f"削除", key=f"del-{slot['slot_name']}"):
