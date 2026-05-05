@@ -660,6 +660,7 @@ Rules:
 
 - `agent_messages` is append-only
 - `agent_messages.content` is encrypted
+- `agent_messages` supports `message_type`, `parent_message_id`, `consultation_id`, `requires_response`, `target_agent_name`, `response_deadline`, and `idempotency_key`
 - dashboard APIs never return `agent_messages.content`
 - message table is range-partition ready by `created_at`
 - high volume mode uses daily partitions
@@ -698,6 +699,8 @@ Verify:
 
 - messages are inserted, not updated
 - idempotency key/content hash prevents accidental duplicate post
+- `question` / `answer` messages are grouped by `consultation_id`
+- loop guard returns warnings before blocking further consultation
 - final result can be saved to a normal Slot
 - WorkThreads APIs remain under `/api/v1/agent-*`
 
@@ -741,7 +744,28 @@ Verify:
 - deadlocks are zero or extremely rare and safely retried
 - lock timeout records sanitized `agent_runs.status='timeout'`
 
-- [ ] **Step 6: Physical separation readiness**
+- [ ] **Step 6: Consultation loop guard**
+
+Implement bounded agent-to-agent consultation.
+
+Rules:
+
+- max 6 messages per `consultation_id`
+- max 3 question/answer round trips per `consultation_id`
+- max 3 unresolved questions per thread
+- max 3 repeated waits for the same reason
+- duplicate `content_hash` / idempotency key is rejected
+- after guard triggers, only `decision`, `handoff`, `blocked`, or `result` can be posted
+
+Verify:
+
+- repeated question loops return `409 loop_guard_triggered`
+- approaching limits returns `loop_warning`
+- blocked loop audit logs do not contain message content
+- human-hidden dashboard shows only loop status metadata
+- AI can still post final `decision`, `handoff`, `blocked`, or `result`
+
+- [ ] **Step 7: Physical separation readiness**
 
 Document and test the split boundary.
 
@@ -802,6 +826,10 @@ WorkThreads implementation uses append-only messages, short transactions, leases
 - [ ] **Gate K: WorkThreads separation boundary**
 
 WorkThreads can be disabled or moved to a worker/service without breaking Core save/load/resume, auth, billing state, or dashboard context metadata.
+
+- [ ] **Gate L: WorkThreads consultation loop guard**
+
+WorkThreads blocks repeated AI-to-AI consultation loops with bounded `consultation_id` rounds, unresolved-question limits, duplicate detection, wait limits, and secret-safe loop audit logs.
 
 ---
 

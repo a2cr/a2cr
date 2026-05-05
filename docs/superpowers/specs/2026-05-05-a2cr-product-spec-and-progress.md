@@ -172,6 +172,38 @@ WorkThreadsは、停止中または寝ているAIエージェントを勝手に�
 - task claimは `FOR UPDATE SKIP LOCKED` とlease timeoutで競合を抑える。
 - 将来、負荷が増えたらPostgres `LISTEN/NOTIFY`、Redis、別worker、別Railway serviceへ分離する。
 
+### 5.8 相談とループ防止
+
+WorkThreadsは、AIエージェント同士が作業について相談できる。ただし、自由な雑談や終わらない議論を目的にしない。相談は必ず作業成果へ収束させる。
+
+message種別は次を基本にする。
+
+| 種別 | 用途 |
+|---|---|
+| `note` | 作業メモ |
+| `question` | 他Agentへの作業相談 |
+| `answer` | 相談への回答 |
+| `decision` | 決定事項 |
+| `review` | レビュー結果 |
+| `failure` | 失敗・原因 |
+| `handoff` | 引き継ぎ |
+| `result` | 最終結果 |
+| `blocked` | 人間判断または外部条件待ち |
+
+相談messageは `consultation_id` と `parent_message_id` で束ねる。`question` は目的、回答してほしい論点、任意の `target_agent_name`、返信期限を持つ。`answer` は推奨アクションまたは判断材料を含め、次のmessageは原則 `decision`、`handoff`、`result`、または1回だけの追加質問へ収束させる。
+
+初期のループ防止ルール:
+
+- 1つの `consultation_id` で最大6message、または質問/回答3往復まで。
+- 未解決の `question` はthreadあたり最大3件まで。
+- 同じAgentが同じ相談で連続して `question` を2回以上投げない。
+- `content_hash` と `idempotency_key` で重複投稿を拒否する。
+- `wait_workthread_updates` は最大60秒、同じ待機理由で最大3回まで。
+- 上限に近い時は `loop_warning` を返す。
+- 上限を超えた場合は、新しい `question` / `answer` を拒否し、`decision`、`handoff`、`blocked`、`result` のいずれかを要求する。
+
+ループガードが発火しても、A2CRはAIを勝手に停止・起動しない。MCP/APIレスポンスで `loop_guard_triggered` を返し、AIクライアントに「結論へ畳む」「人間へ確認する」「WorkBatonへ最終状態を保存する」のいずれかを促す。
+
 ## 6. Web SaaS構成
 
 | 領域 | 採用サービス | 用途 |
@@ -394,7 +426,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | Web SaaS実装 | 未着手 | FastAPIのPostgres/Auth/RLS移行、React dashboardは未実装 |
 | HTTP MCP `/mcp` | 未着手 | ローカルstdio/HTTP wrapperはあるが、Web SaaS用HTTP MCPは未実装 |
 | AIクライアント誘導 | 一部完了 | MCP tool descriptions / schemaを必須誘導面にし、任意の `SKILL.md` templateを追加 |
-| WorkThreads仕様 | 一部完了 | 目的、更新確認、負荷方針を本書に確定仕様として追加 |
+| WorkThreads仕様 | 一部完了 | 目的、更新確認、負荷方針、相談ループ防止方針を本書に確定仕様として追加 |
 | WorkThreads実装 | 未着手 | DB、API、MCP tools、long polling、load testが未実装 |
 | Stripe課金 | 未着手 | Core安定後に着手 |
 | 本番デプロイ | 未着手 | Railway/Supabase/Cloudflare接続が未完了 |

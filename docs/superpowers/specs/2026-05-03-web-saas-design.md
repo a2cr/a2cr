@@ -415,8 +415,16 @@ user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 thread_id       UUID NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE
 role            TEXT NOT NULL CHECK (role IN ('request', 'agent', 'critic', 'summarizer', 'system'))
 agent_name      TEXT
+message_type    TEXT NOT NULL DEFAULT 'note'
+                  CHECK (message_type IN ('note', 'question', 'answer', 'decision', 'review', 'failure', 'handoff', 'result', 'blocked'))
+parent_message_id UUID
+consultation_id UUID
+requires_response BOOLEAN NOT NULL DEFAULT false
+target_agent_name TEXT
+response_deadline TIMESTAMPTZ
 content         TEXT NOT NULL  -- encrypted
 content_hash    TEXT NOT NULL  -- duplicate/idempotency detection
+idempotency_key TEXT
 token_estimate  INTEGER NOT NULL DEFAULT 0
 created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 PRIMARY KEY (created_at, id)
@@ -425,6 +433,23 @@ PRIMARY KEY (created_at, id)
 `agent_messages` は `created_at` でrange partitionする。初期は月次partitionでもよいが、Pro利用が増えて書き込みが多い場合は日次partitionへ移行する。日次partitionは例として `agent_messages_2026_05_04` のように作成し、日次ジョブで翌日分を事前作成する。
 
 メッセージ本文はINSERT専用で、編集や追記UPDATEを行わない。修正・反論・補足は新しいmessageとして追加する。
+
+`message_type='question'` はAI同士の作業相談に使う。相談は `consultation_id` で束ね、返信は `parent_message_id` で元の質問に紐づける。`requires_response=true` のmessageは必ず `response_deadline` を持つ。期限切れまたは返信不能の場合、AIは追加質問を重ねず `blocked` または `handoff` を投稿する。
+
+#### WorkThreads相談ループ防止
+
+WorkThreadsはAIエージェント同士の作業相談を許可するが、無制限の会話ループを許可しない。サーバー側はmessage metadataを使って次を検出する。
+
+- 同一 `consultation_id` のmessage数が6件を超える。
+- 同一 `consultation_id` の質問/回答が3往復を超える。
+- thread内の未解決 `question` が3件を超える。
+- 同一Agentが同じ相談で連続して `question` を投稿している。
+- 同じ `content_hash` または `idempotency_key` のmessageが再投稿されている。
+- 同じ `wait_workthread_updates` 理由で3回以上待機している。
+
+制限に近い場合はMCP/APIレスポンスに `loop_warning` を含める。制限を超えた場合は `409 loop_guard_triggered` を返し、新しい `question` / `answer` の投稿を拒否する。拒否時はAIクライアントに、`decision`、`handoff`、`blocked`、`result` のいずれかで現在状態を畳むよう促す。
+
+ループガードはAIを起動・停止する機能ではない。A2CRは外部AIクライアントからのtool callに対して、これ以上の相談往復を続けるべきでないことを構造化レスポンスで伝える。
 
 #### agent_tasks
 
@@ -712,6 +737,8 @@ FastAPIは認証後に `user_profiles.plan` を読み、保存・読込・一覧
 | WorkThreads | なし | あり（post-MVP拡張） |
 | WorkThreads message | なし | 5,000件/日を初期上限 |
 | WorkThreads同時leased task | なし | 10件/ユーザーを初期上限 |
+| WorkThreads未解決question | なし | 3件/thread |
+| WorkThreads相談往復 | なし | 3往復/consultation |
 
 同名slotへの上書き、または同じ `slot_number` への上書きはactive slot数を増やさない。新規slot保存時のみ、期限切れでないslot数を数えて上限を判定する。`save_context` は基本的に `user_profiles.default_retention_seconds` を使い、`expires_at = saved_at + default_retention_seconds` とする。MCP/APIで保存時に `retention_seconds` を明示指定できる場合も、サーバー側でプラン別の許可値を必ず検証し、超過または未許可値は `422 retention_not_allowed` で拒否する。
 
@@ -955,6 +982,7 @@ FastAPIでユーザーID・APIキーprefix・IPハッシュ単位のレート制
 - レスポンス件数には必ず上限を付ける。`access-logs` は `limit` の最大値を100に固定し、それ以上は返さない
 - WorkThreads message取得もlimit上限を固定する。初期上限は100件/リクエストとし、古いmessageはcursor paginationで読む
 - WorkThreadsのtask leaseは期限付きにし、timeoutしたleaseは再claimできるようにする
+- WorkThreadsの相談は `consultation_id` 単位で最大3往復に制限し、超過時は `loop_guard_triggered` を返す
 - 超過時は `429` と `retry_after` を返し、クライアントが再試行間隔を守れるようにする
 
 ### HTTPヘッダーとCORS
@@ -971,6 +999,7 @@ FastAPIでユーザーID・APIキーprefix・IPハッシュ単位のレート制
 成功・失敗の両方を `access_logs` に記録する。認証失敗で `user_id` が不明な場合は、`user_id` なしのセキュリティイベントとして別途アプリログへ記録し、contentやキーは含めない。保持期間切れでslotを自動削除する場合も、削除前に `context.expire` として `access_logs` に記録する。これによりユーザーは、消えた理由が明示削除なのか時間経過なのかをダッシュボードで確認できる。
 
 WorkThreadsでは `agent.thread.create`、`agent.message.post`、`agent.thread.read`、`agent.task.claim`、`agent.task.complete`、`agent.task.timeout` を監査対象にする。ログに保存するのは `thread_id`、`task_id`、`agent_name`、`result`、`client_type`、件数、token概算だけとし、message本文、プロンプト、AI応答全文は保存しない。
+相談ループ防止では `agent.loop.warning` と `agent.loop.blocked` を監査対象にする。ログには `thread_id`、`consultation_id`、`message_count`、`unresolved_question_count`、`result` だけを保存し、相談本文は保存しない。
 
 保持期間:
 - Freeは24時間保持
@@ -994,6 +1023,27 @@ WorkThreadsで最も避けるべき実装は、AI処理中にDB transactionを�
 - deadlockやlock timeoutは `agent_runs.status='timeout'` として記録し、本文は保存しない
 - 同一taskの二重完了は `lease_owner` と `lease_until` 条件で防ぐ
 
+### WorkThreadsの相談ループ防止
+
+AIエージェント同士の相談は、taskを前進させるための短い往復に限定する。MCP tool descriptionsには次を明記する。
+
+- 同じ質問を言い換えて繰り返さない。
+- 回答を受けたら、原則として `decision`、`handoff`、`result` のいずれかに畳む。
+- 判断不能な場合は `blocked` を投稿し、人間の入力待ちにする。
+- `wait_workthread_updates` を同じ理由で3回繰り返したら待機をやめる。
+- 相談が3往復に達したら、追加質問ではなく現在の選択肢と推奨判断を要約する。
+
+サーバー側の初期上限:
+
+| 対象 | 上限 |
+|---|---:|
+| `consultation_id` あたりmessage数 | 6 |
+| `consultation_id` あたり質問/回答往復 | 3 |
+| thread内の未解決 `question` | 3 |
+| 同じ待機理由の `wait_workthread_updates` | 3 |
+
+上限に近い場合は `loop_warning`、超過時は `409 loop_guard_triggered` を返す。`loop_guard_triggered` 後も `decision`、`handoff`、`blocked`、`result` は投稿できる。これにより、AI同士の相談を許可しつつ、結論に進まない無限往復を防ぐ。
+
 ### WorkThreadsの負荷試験
 
 公開前に少なくとも以下を測る。
@@ -1003,6 +1053,7 @@ WorkThreadsで最も避けるべき実装は、AI処理中にDB transactionを�
 - claim/completeのp95/p99 latency
 - lock wait時間
 - deadlock count
+- loop_guard warning/block count
 - DB connection pool使用率
 - partition pruningが効いているか
 
@@ -1090,6 +1141,7 @@ Design implications:
 
 - API names, docs, tests, and dashboard labels should emphasize persistent cross-agent work thread, handoff, task state, and shared agent workspace.
 - Avoid positioning WorkThreads as generic AI social/chat, autonomous debate, or public agent collaboration.
+- Agent-to-agent consultation must be bounded by `consultation_id`, unresolved-question limits, duplicate detection, wait limits, and a loop guard that forces `decision`, `handoff`, `blocked`, or `result` when discussion stops progressing.
 - A2CR still does not run LLM inference in the initial WorkThreads version. External AI clients call MCP/API tools to append, read, claim, and complete work.
 - Dashboard APIs must keep returning metadata only. Decrypted thread messages are for authenticated AI/MCP routes, not human dashboard payloads.
 
