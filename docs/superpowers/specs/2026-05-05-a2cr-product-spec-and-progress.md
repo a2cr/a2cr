@@ -432,7 +432,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | ローカルStreamlit dashboard | 完了 | A2CR名へ更新済み。ただし製品主対象ではない |
 | Supabase schema/RLS案 | 一部完了 | migration、静的テスト、ローカルPostgres実DB検証済み。remote Supabase projectへの適用は未実施 |
 | Web SaaS詳細設計 | 一部完了 | Railway + Supabase + Cloudflare + Stripe構成で確定寄り |
-| Web SaaS実装 | 未着手 | FastAPIのPostgres/Auth/RLS移行、React dashboardは未実装 |
+| Web SaaS実装 | 一部着手 | FastAPI security foundationを追加済み。Context APIのPostgres/Auth/RLS接続とReact dashboardは未実装 |
 | HTTP MCP `/mcp` | 未着手 | ローカルstdio/HTTP wrapperはあるが、Web SaaS用HTTP MCPは未実装 |
 | AIクライアント誘導 | 一部完了 | MCP tool descriptions / schemaを必須誘導面にし、任意の `SKILL.md` templateを追加 |
 | WorkThreads仕様 | 一部完了 | 目的、更新確認、負荷方針、相談ループ防止方針を本書に確定仕様として追加 |
@@ -445,7 +445,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 ## 11. 次に固める項目
 
 1. WorkThreads MVPにtask/leaseまで含めるか、まずはmessage + unread + long pollingだけで始めるか。
-2. 次の実装単位としてFastAPI auth/DB transaction基盤を作る。実DB検証済みのRLSをAPI/JWT/APIキー経路へ接続する。
+2. 次の実装単位としてContext API and plan limitsを作る。実DB検証済みのRLSとTask 2のauth基盤をWorkBaton APIへ接続する。
 3. ダッシュボード上でWorkThreadsをどこまで見せるか。本文非表示は確定、metadataの粒度を決める。
 
 現時点の推奨は、WorkThreads MVPを `message + unread + check_updates + wait_updates` までに絞り、task/leaseは第2段階に回すこと。これなら「作業中のAI同士が気づく」価値を最小実装で検証できる。

@@ -190,14 +190,14 @@ Status 2026-05-05:
 - Create: `services/logs.py`
 - Create: `tests/test_auth.py`
 
-- [ ] **Step 1: Configuration**
+- [x] **Step 1: Configuration**
 
 Required env:
 
 - `DATABASE_URL`
 - `FERNET_KEY`
 - `API_KEY_HASH_SECRET`
-- `SUPABASE_JWT_SECRET` or JWKS settings
+- `SUPABASE_JWT_SECRET` for the initial HS256 path. Add JWKS settings later only if the Supabase project uses asymmetric JWT signing.
 - `A2CR_SERVICE_URL`
 - `APP_ENV`
 
@@ -208,7 +208,7 @@ Verify:
 - Missing required env fails fast
 - Service role env present in runtime fails fast
 
-- [ ] **Step 2: Supabase JWT auth**
+- [x] **Step 2: Supabase JWT auth**
 
 Dashboard APIs accept Supabase JWT and extract user id after signature/audience/expiry verification.
 
@@ -218,7 +218,7 @@ Verify:
 - wrong audience rejected
 - unsigned or malformed JWT rejected
 
-- [ ] **Step 3: API key auth**
+- [x] **Step 3: API key auth**
 
 API/MCP use `Authorization: Bearer sk-...` and verify with HMAC-SHA256 + DB function.
 
@@ -228,7 +228,7 @@ Verify:
 - bad key returns 401 with generic error
 - `Authorization` header is never logged
 
-- [ ] **Step 4: Transaction user context**
+- [x] **Step 4: Transaction user context**
 
 Every authenticated request opens a DB transaction and sets `SET LOCAL app.user_id`.
 
@@ -237,7 +237,7 @@ Verify:
 - user id cannot leak across pooled connections
 - request without authenticated user cannot access user rows
 
-- [ ] **Step 5: Sanitized logging helper**
+- [x] **Step 5: Sanitized logging helper**
 
 Access logs can store action, result, slot_name, plan, client_type, approximate size, request id, hashed IP prefix, and coarse user agent. They must not store content, API keys, Authorization headers, full request bodies, raw IP, or full UA.
 
@@ -246,6 +246,16 @@ Verify:
 - log rows contain no content fragments
 - log rows contain no `sk-`
 - log rows contain no `Bearer`
+
+Status 2026-05-05:
+
+- `services/config.py` にWeb SaaS runtime configを追加し、`DATABASE_URL`、`API_KEY_HASH_SECRET`、`SUPABASE_JWT_SECRET`、`A2CR_SERVICE_URL`、`APP_ENV` を必須化した。
+- 通常runtimeに `SUPABASE_SERVICE_ROLE_KEY` がある場合は起動前のconfig取得で拒否する。
+- `services/auth.py` にSupabase JWT検証、A2CR API key HMAC hash、`app.resolve_api_key` 呼び出しを追加した。
+- `services/db.py` にPostgres engine、`SET LOCAL app.user_id`、transaction helperを追加した。
+- `services/logs.py` に本文、secret、Authorization、生IP、full UAを保存しないaccess log helperを追加した。
+- `tests/test_auth.py` でJWT expiry/audience/signature/unsigned alg、API key hash、RLS user context、safe loggingを検証済み。
+- 現時点では基盤部品の実装であり、dashboard/API/MCP routesへの接続はTask 3/4/5で行う。
 
 ---
 
@@ -863,17 +873,17 @@ MCP can start before the final dashboard because the product's core value is AI-
 
 ## First Concrete Next Step
 
-Task 1のDB基盤はローカルPostgres実DB検証まで完了した。次はTask 2のFastAPI security foundationへ進む。
+Task 1のDB基盤とTask 2のFastAPI security foundationは完了した。次はTask 3のContext API and plan limitsへ進む。
 
 Minimum next milestone:
 
-- `DATABASE_URL` ベースのPostgres connectionを追加する
-- authenticated requestごとにtransactionを開き、`SET LOCAL app.user_id` を設定する
-- Supabase JWT authとA2CR API key authの入口を分ける
-- runtimeに `SUPABASE_SERVICE_ROLE_KEY` がある場合は起動を拒否する
-- access log helperを作り、本文・secret・Authorization・生IP・full UAを保存しない
+- Web SaaS版 `POST /api/v1/context` をA2CR API key authとRLS transactionへ接続する
+- Free/Pro retention、slot数、body size、detail levelの制限をDB/APIで強制する
+- save/list/load/resume/deleteでaccess logとstatsを更新する
+- dashboard向けmetadata APIには本文を返さない境界を保つ
+- 既存ローカルMVP APIを壊さず、Web SaaS APIのテストを別に追加する
 
-このmilestoneが通ると、実DBで検証済みのRLS境界をHTTP API/MCP経路へ接続できる。
+このmilestoneが通ると、WorkBatonのWeb SaaS CoreがAPI key経由で実用可能になる。
 
 ## WorkThreads Clarification Addendum
 

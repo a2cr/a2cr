@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import datetime
-from typing import Optional
+from typing import Generator, Optional
+from uuid import UUID
 
-from sqlalchemy import create_engine, Integer, String, DateTime, Text
+from sqlalchemy import create_engine, Integer, String, DateTime, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
-from services.config import get_config
+from services.config import get_config, get_web_config
 
 _engine = None
+_web_engine = None
 
 
 def get_engine():
@@ -19,6 +22,35 @@ def get_engine():
             connect_args={"check_same_thread": False},
         )
     return _engine
+
+
+def get_web_engine():
+    global _web_engine
+    if _web_engine is None:
+        _web_engine = create_engine(get_web_config().database_url, pool_pre_ping=True)
+    return _web_engine
+
+
+def set_rls_user_context(session: Session, user_id: UUID | str) -> None:
+    session.execute(text("SET LOCAL app.user_id = :user_id"), {"user_id": str(user_id)})
+
+
+@contextmanager
+def web_transaction(user_id: UUID | str) -> Generator[Session, None, None]:
+    session = Session(get_web_engine())
+    try:
+        with session.begin():
+            set_rls_user_context(session, user_id)
+            yield session
+    finally:
+        session.close()
+
+
+def reset_web_engine() -> None:
+    global _web_engine
+    if _web_engine is not None:
+        _web_engine.dispose()
+    _web_engine = None
 
 
 class Base(DeclarativeBase):

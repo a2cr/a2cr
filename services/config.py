@@ -49,7 +49,22 @@ class Config:
     db_path: str
 
 
+@dataclass(frozen=True)
+class WebConfig:
+    database_url: str
+    fernet_key: str
+    api_key_hash_secret: str
+    supabase_jwt_secret: str | None
+    supabase_jwks_url: str | None
+    supabase_jwt_audience: str
+    supabase_jwt_issuer: str | None
+    a2cr_service_url: str
+    app_env: str
+    audit_hash_secret: str
+
+
 _config: Config | None = None
+_web_config: WebConfig | None = None
 
 
 def get_config() -> Config:
@@ -71,7 +86,43 @@ def get_config() -> Config:
     return _config
 
 
+def _required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"{name} is required")
+    return value
+
+
+def get_web_config() -> WebConfig:
+    """Return Web SaaS runtime config without generating local secrets."""
+    global _web_config
+    if _web_config is not None:
+        return _web_config
+
+    if os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+        raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY must not be present in normal runtime")
+
+    jwt_secret = _required_env("SUPABASE_JWT_SECRET")
+    jwks_url = os.environ.get("SUPABASE_JWKS_URL")
+
+    api_key_hash_secret = _required_env("API_KEY_HASH_SECRET")
+    _web_config = WebConfig(
+        database_url=_required_env("DATABASE_URL"),
+        fernet_key=_required_env("FERNET_KEY"),
+        api_key_hash_secret=api_key_hash_secret,
+        supabase_jwt_secret=jwt_secret,
+        supabase_jwks_url=jwks_url,
+        supabase_jwt_audience=os.environ.get("SUPABASE_JWT_AUDIENCE", "authenticated"),
+        supabase_jwt_issuer=os.environ.get("SUPABASE_JWT_ISSUER"),
+        a2cr_service_url=_required_env("A2CR_SERVICE_URL"),
+        app_env=_required_env("APP_ENV"),
+        audit_hash_secret=os.environ.get("AUDIT_HASH_SECRET", api_key_hash_secret),
+    )
+    return _web_config
+
+
 def reset_config() -> None:
     """For testing only."""
-    global _config
+    global _config, _web_config
     _config = None
+    _web_config = None

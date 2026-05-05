@@ -14,6 +14,7 @@ def test_env(tmp_path, monkeypatch):
 
     import services.db as db_module
     db_module._engine = None
+    db_module.reset_web_engine()
 
     from services.db import init_db
     init_db()
@@ -22,3 +23,4 @@ def test_env(tmp_path, monkeypatch):
 
     config_module.reset_config()
     db_module._engine = None
+    db_module.reset_web_engine()

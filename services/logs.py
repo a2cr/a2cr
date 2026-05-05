@@ -1,0 +1,77 @@
+from __future__ import annotations
+
+import hashlib
+import hmac
+from typing import Any
+from uuid import UUID
+
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from services.config import get_web_config
+
+
+def hash_log_value(value: str | None, secret: str | None = None) -> str | None:
+    if not value:
+        return None
+    secret = secret or get_web_config().audit_hash_secret
+    return hmac.new(secret.encode("utf-8"), value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def build_access_log_row(
+    *,
+    user_id: UUID | str,
+    action: str,
+    client_type: str,
+    result: str,
+    slot_name: str | None = None,
+    error_code: str | None = None,
+    size_bytes: int | None = None,
+    request_id: str | None = None,
+    ip: str | None = None,
+    user_agent: str | None = None,
+    hash_secret: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "user_id": str(user_id),
+        "action": action,
+        "slot_name": slot_name,
+        "client_type": client_type,
+        "result": result,
+        "error_code": error_code,
+        "size_bytes": max(size_bytes, 0) if size_bytes is not None else None,
+        "request_id": request_id,
+        "ip_hash": hash_log_value(ip, hash_secret),
+        "user_agent_hash": hash_log_value(user_agent, hash_secret),
+    }
+
+
+def write_access_log(session: Session, row: dict[str, Any]) -> None:
+    allowed = {
+        "user_id",
+        "action",
+        "slot_name",
+        "client_type",
+        "result",
+        "error_code",
+        "size_bytes",
+        "request_id",
+        "ip_hash",
+        "user_agent_hash",
+    }
+    safe_row = {key: row.get(key) for key in allowed}
+    session.execute(
+        text(
+            """
+            INSERT INTO public.access_logs (
+              user_id, action, slot_name, client_type, result,
+              error_code, size_bytes, request_id, ip_hash, user_agent_hash
+            )
+            VALUES (
+              :user_id, :action, :slot_name, :client_type, :result,
+              :error_code, :size_bytes, :request_id, :ip_hash, :user_agent_hash
+            )
+            """
+        ),
+        safe_row,
+    )

@@ -1,6 +1,7 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.0
 sqlalchemy==2.0.40
+psycopg[binary]==3.3.4
 cryptography==44.0.2
 tiktoken==0.9.0
 pydantic==2.11.4
