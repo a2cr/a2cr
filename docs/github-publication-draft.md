@@ -131,6 +131,8 @@ The initial WorkThreads design favors:
 
 A2CR is designed so human-facing dashboards do not display saved context bodies. Dashboards should show metadata only: slot names, timestamps, sizes, counts, status, and logs.
 
+Saved context bodies should not be viewable by service administrators through normal admin dashboards, support tooling, or direct database inspection. This should be presented as an operational visibility control, not as a zero-knowledge guarantee.
+
 Important principles:
 
 - do not log API keys or Authorization headers

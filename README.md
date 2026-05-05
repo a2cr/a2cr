@@ -75,6 +75,8 @@ Example only. Do not commit real API keys.
 
 A2CR is designed so human-facing dashboards do not display saved context bodies. Dashboards should show metadata only, such as slot names, timestamps, sizes, counts, status, and logs.
 
+Saved context bodies should not be viewable by service administrators through normal admin dashboards, support tooling, or direct database inspection. Content is stored encrypted, and decrypted bodies are only returned through authenticated MCP/API paths that are acting for the user.
+
 Important principles:
 
 - do not log API keys or Authorization headers
@@ -157,6 +159,8 @@ Dashboard: http://localhost:8501
 ### セキュリティ方針
 
 A2CRはAI作業文脈という機密性の高い本文を扱うため、人間向けダッシュボードには保存本文を表示しない設計です。ダッシュボードに表示するのは、slot名、時刻、サイズ、件数、status、ログなどのメタデータに限定します。
+
+保存本文は、通常の管理画面、サポート用ツール、DB直接参照だけではサービス管理者でも見られない設計にします。本文は暗号化して保存し、復号済み本文はユーザーのために動作する認証済みMCP/API経路だけで返します。
 
 重要な方針:
 

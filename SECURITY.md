@@ -22,6 +22,8 @@ Sensitive areas include:
 
 The current local prototype uses application-layer encryption for saved context bodies and API-key based local access.
 
+Saved context bodies should not be viewable by service administrators through normal admin dashboards, support tooling, or direct database inspection. This is an operational visibility control, not a zero-knowledge guarantee.
+
 The project does not currently claim:
 
 - production readiness
@@ -38,6 +40,8 @@ Before making this repository public, confirm that no secrets, local API keys, `
 ## 日本語圏向けセキュリティ方針
 
 A2CRはまだ初期プロトタイプであり、本番運用できる状態ではありません。
+
+保存本文は、通常の管理画面、サポート用ツール、DB直接参照だけではサービス管理者でも見られない設計にします。これは運用上の閲覧制限であり、ゼロ知識暗号化の保証ではありません。
 
 ### 脆弱性の報告
 
