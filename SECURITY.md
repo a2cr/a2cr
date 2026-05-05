@@ -37,7 +37,7 @@ Before making this repository public, confirm that no secrets, local API keys, `
 
 ---
 
-## 日本語圏向けセキュリティ方針
+## セキュリティ方針
 
 A2CRはまだ初期プロトタイプであり、本番運用できる状態ではありません。
 

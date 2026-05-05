@@ -66,7 +66,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-## Japanese Notes / 日本語圏向け補足
+## 補足
 
 このファイルは、AIエージェントがこのリポジトリで作業する時の行動指針です。基本方針は「曖昧なまま大きく実装しない」「必要最小限の変更にする」「検証できる単位で進める」です。
 
