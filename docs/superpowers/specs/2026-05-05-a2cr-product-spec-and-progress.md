@@ -249,8 +249,8 @@ MVPではA2CRサーバー側でOpenAI/Anthropic等のLLM APIを呼ばない。AI
 | Supabase CLI | migration適用、ローカル/remote DB管理 | 採用予定 | 導入状況は未確認 |
 | PostgreSQL / SQL | Web SaaS DB、RLS、least-privileged role | 採用予定 | `supabase/migrations/001_base_schema.sql` は作成済み |
 | SQLite | ローカルMVP DB | 使用中 | 製品版の主DBではなく参照実装用 |
-| FastMCP | MCP tool server wrapper | 使用中 | ローカルMCP wrapperで利用中。Web SaaSのHTTP MCPは別途実装確認が必要 |
-| pytest | 自動テスト | 使用中 | 2026-05-05時点で `58 passed` |
+| FastMCP | MCP tool server wrapper | 使用中 | ローカルMCP wrapperとWeb SaaS HTTP MCP `/mcp` で利用中 |
+| pytest | 自動テスト | 使用中 | 2026-05-05時点で `103 passed` |
 | ripgrep (`rg`) | 高速検索 | 使用中 | `winget`で `ripgrep 15.1.0` を導入済み |
 | winget | Windows package install | 使用中 | `rg`導入に使用済み |
 | Docker | Railway build、将来の本番image | 採用予定 | 導入状況は未確認 |
@@ -432,8 +432,8 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | ローカルStreamlit dashboard | 完了 | A2CR名へ更新済み。ただし製品主対象ではない |
 | Supabase schema/RLS案 | 一部完了 | migration、静的テスト、ローカルPostgres実DB検証済み。remote Supabase projectへの適用は未実施 |
 | Web SaaS詳細設計 | 一部完了 | Railway + Supabase + Cloudflare + Stripe構成で確定寄り |
-| Web SaaS実装 | 一部着手 | FastAPI security foundation、WorkBaton Web Context API、Dashboard APIを追加済み。HTTP MCPとReact dashboardは未実装 |
-| HTTP MCP `/mcp` | 未着手 | ローカルstdio/HTTP wrapperはあるが、Web SaaS用HTTP MCPは未実装 |
+| Web SaaS実装 | 一部着手 | FastAPI security foundation、WorkBaton Web Context API、Dashboard API、HTTP MCP `/mcp` を追加済み。React dashboardは未実装 |
+| HTTP MCP `/mcp` | 完了 | FastMCP Streamable HTTPで実装。`save_context`、`resume_context`、`load_context`、`list_contexts`、`get_account_limits` をTask 3のWeb Context serviceへ接続済み |
 | AIクライアント誘導 | 一部完了 | MCP tool descriptions / schemaを必須誘導面にし、任意の `SKILL.md` templateを追加 |
 | WorkThreads仕様 | 一部完了 | 目的、更新確認、負荷方針、相談ループ防止方針を本書に確定仕様として追加 |
 | WorkThreads実装 | 未着手 | DB、API、MCP tools、long polling、load testが未実装 |
@@ -445,7 +445,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 ## 11. 次に固める項目
 
 1. WorkThreads MVPにtask/leaseまで含めるか、まずはmessage + unread + long pollingだけで始めるか。
-2. 次の実装単位としてHTTP MCP `/mcp` を作る。Task 3のWeb Context APIをAIエージェントのMCP toolから使えるようにする。
+2. 次の実装単位としてReact/Vite dashboardを作る。Dashboard APIは本文非表示のまま、slot metadata、stats、access logs、API key管理を表示する。
 3. ダッシュボード上でWorkThreadsをどこまで見せるか。本文非表示は確定、metadataの粒度を決める。
 
 現時点の推奨は、WorkThreads MVPを `message + unread + check_updates + wait_updates` までに絞り、task/leaseは第2段階に回すこと。これなら「作業中のAI同士が気づく」価値を最小実装で検証できる。

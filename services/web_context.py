@@ -169,19 +169,29 @@ def _next_slot_number(session: Session, *, user_id: UUID | str, active_slots: in
     raise PlanLimitExceeded("slot_limit_exceeded", "Active slot limit exceeded")
 
 
-def _get_context_row(session: Session, *, user_id: UUID | str, slot_name: str):
+def _get_context_row(
+    session: Session,
+    *,
+    user_id: UUID | str,
+    slot_name: str | None = None,
+    slot_number: int | None = None,
+):
+    if (slot_name is None) == (slot_number is None):
+        raise AppError("invalid_slot_selector", "Provide exactly one of slot_name or slot_number", 422)
+
+    selector_sql = "slot_name = :slot_name" if slot_name is not None else "slot_number = :slot_number"
     return session.execute(
         text(
-            """
+            f"""
             SELECT id, slot_name, slot_number, content, expires_at, compressed_tokens,
                    detail_level, model_source, load_count
             FROM public.contexts
             WHERE user_id = :user_id
-              AND slot_name = :slot_name
+              AND {selector_sql}
               AND expires_at > now()
             """
         ),
-        {"user_id": str(user_id), "slot_name": slot_name},
+        {"user_id": str(user_id), "slot_name": slot_name, "slot_number": slot_number},
     ).mappings().first()
 
 
@@ -349,7 +359,16 @@ def list_contexts(*, user_id: UUID | str) -> list[WebContextMetadata]:
     return [_row_to_metadata(row) for row in rows]
 
 
-def load_context(*, user_id: UUID | str, slot_name: str, meta: RequestMeta | None = None) -> WebLoadResult:
+def load_context(
+    *,
+    user_id: UUID | str,
+    slot_name: str | None = None,
+    slot_number: int | None = None,
+    meta: RequestMeta | None = None,
+) -> WebLoadResult:
+    if (slot_name is None) == (slot_number is None):
+        raise AppError("invalid_slot_selector", "Provide exactly one of slot_name or slot_number", 422)
+
     meta = meta or RequestMeta()
     config = get_web_config()
     with web_transaction(user_id) as session:
@@ -362,7 +381,7 @@ def load_context(*, user_id: UUID | str, slot_name: str, meta: RequestMeta | Non
             limit=limits.loads_per_hour,
             code="load_rate_limit_exceeded",
         )
-        row = _get_context_row(session, user_id=user_id, slot_name=slot_name)
+        row = _get_context_row(session, user_id=user_id, slot_name=slot_name, slot_number=slot_number)
         if row is None:
             raise SlotNotFound()
 
@@ -376,7 +395,7 @@ def load_context(*, user_id: UUID | str, slot_name: str, meta: RequestMeta | Non
             build_access_log_row(
                 user_id=user_id,
                 action="context.load",
-                slot_name=slot_name,
+                slot_name=row["slot_name"],
                 client_type=meta.client_type,
                 result="success",
                 request_id=meta.request_id,
@@ -402,12 +421,20 @@ def resume_context(
     *,
     user_id: UUID | str,
     slot_name: str | None = None,
+    slot_number: int | None = None,
     project: str | None = None,
     prefer_latest: bool = False,
     meta: RequestMeta | None = None,
 ) -> WebResumeResult:
+    if slot_name and slot_number is not None:
+        raise AppError("invalid_slot_selector", "Provide only one of slot_name or slot_number", 422)
     if slot_name:
         return WebResumeResult(mode="loaded", context=load_context(user_id=user_id, slot_name=slot_name, meta=meta))
+    if slot_number is not None:
+        return WebResumeResult(
+            mode="loaded",
+            context=load_context(user_id=user_id, slot_number=slot_number, meta=meta),
+        )
     if not project:
         raise SlotNotFound()
 

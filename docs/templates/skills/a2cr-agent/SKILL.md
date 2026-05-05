@@ -31,6 +31,8 @@ When saving context, include the minimum information needed for the next AI wind
 
 Keep Free saves compact. For Pro detailed saves, include useful rationale, test results, failed attempts, and file responsibility notes when they improve resume quality.
 
+When available, call `get_account_limits` before automatic or large saves so the checkpoint respects the user's current retention, size, and detail-level limits.
+
 Never save secrets, API keys, Authorization headers, private database URLs, personal data, full transcripts, long logs, generated caches, or large code bodies that can be read from the repository.
 
 ## Use WorkThreads

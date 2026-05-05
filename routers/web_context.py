@@ -115,6 +115,7 @@ def list_contexts(user: AuthenticatedUser = Depends(get_current_api_user)) -> li
 @router.get("/context/resume")
 def resume_context(
     slot_name: str | None = None,
+    slot_number: int | None = None,
     project: str | None = None,
     prefer_latest: bool = False,
     user: AuthenticatedUser = Depends(get_current_api_user),
@@ -123,6 +124,7 @@ def resume_context(
     result = web_context_service.resume_context(
         user_id=user.user_id,
         slot_name=slot_name,
+        slot_number=slot_number,
         project=project,
         prefer_latest=prefer_latest,
         meta=meta,
@@ -132,6 +134,15 @@ def resume_context(
         context=_load_response(result.context) if result.context else None,
         candidates=[_metadata_response(item) for item in (result.candidates or [])],
     )
+
+
+@router.get("/context/slot/{slot_number}")
+def load_context_by_slot_number(
+    slot_number: int,
+    user: AuthenticatedUser = Depends(get_current_api_user),
+    meta: RequestMeta = Depends(request_meta),
+) -> WebContextLoadResponse:
+    return _load_response(web_context_service.load_context(user_id=user.user_id, slot_number=slot_number, meta=meta))
 
 
 @router.get("/context/{slot_name}")

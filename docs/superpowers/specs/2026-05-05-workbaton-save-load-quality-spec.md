@@ -359,12 +359,16 @@ MCP設定ファイルに長いプロンプトを埋め込む設計は避ける�
 - Fernetによる本文暗号化
 - load count
 
-未実装またはWeb SaaSで対応するもの:
+Web SaaS実装は次を満たしている。
 
-- Free/Pro planによる保存粒度切替
-- Pro detailed
-- plan別retention
-- plan別body size
-- account limits API
-- dashboardからの保存粒度設定
-- Web SaaSのSupabase Auth/RLS/access log連携
+- Supabase Auth/JWTとA2CR API key認証
+- Postgres RLS/access log連携
+- Free/Pro planによるretention/body size/detail level制限
+- Dashboard APIからの保存粒度、retention、locale/language/timezone設定
+- HTTP MCP `/mcp` の `save_context` / `resume_context` / `load_context` / `list_contexts` / `get_account_limits`
+- `slot_name` と `slot_number` のload/resume
+
+未実装または今後のUI/運用で対応するもの:
+
+- React dashboard UI
+- 本番公開URLでの外部AIクライアント接続検証

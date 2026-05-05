@@ -452,10 +452,13 @@ Status 2026-05-05:
 
 **Files:**
 
-- Update: `mcp/server.py`
+- Create: `routers/mcp_http.py`
+- Update: `main.py`
+- Update: `services/web_context.py`
+- Update: `routers/web_context.py`
 - Create: `tests/test_mcp.py`
 
-- [ ] **Step 1: Choose MCP library**
+- [x] **Step 1: Choose MCP library**
 
 Streamable HTTP対応済みライブラリを使う。手動JSON-RPC実装はしない。実装前に利用ライブラリの現在仕様を確認する。
 
@@ -465,7 +468,7 @@ Verify:
 - `MCP-Session-Id` を使う実装ならsession検証が動く
 - method/nameヘッダーとbody不一致を拒否できる
 
-- [ ] **Step 2: Implement tools**
+- [x] **Step 2: Implement tools**
 
 Tools:
 
@@ -485,7 +488,7 @@ Verify:
 - MCP ambiguous resume returns candidates only
 - auth failure does not leak whether slot exists
 
-- [ ] **Step 3: Client compatibility checks**
+- [x] **Step 3: Client compatibility checks**
 
 Verify with at least:
 
@@ -499,7 +502,7 @@ Expected:
 - Japanese prompt produces Japanese continuation
 - English prompt produces English continuation
 
-- [ ] **Step 4: AI client guidance artifacts**
+- [x] **Step 4: AI client guidance artifacts**
 
 Implement and publish the guidance surfaces that help AI agents use A2CR correctly.
 
@@ -516,6 +519,17 @@ Verify:
 - Codex with the optional Skill follows `resume_context` first and avoids direct HTTP guesses
 - Skill text does not contain API keys, private URLs, or user-specific secrets
 - MCP config examples only contain URL/auth configuration, not long embedded prompts
+
+Status 2026-05-05:
+
+- FastMCP 2.3.4 `streamable-http` transport is used for `/mcp`; no hand-written JSON-RPC server was added.
+- `routers/mcp_http.py` mounts a reusable ASGI wrapper so FastAPI can restart lifespan in tests while production still serves one `/mcp` endpoint.
+- MCP tools implemented: `save_context`, `resume_context`, `load_context`, `list_contexts`, `get_account_limits`.
+- MCP API key auth uses `Authorization: Bearer sk-...` and resolves the user before any slot lookup, so invalid auth does not reveal whether a slot exists.
+- `save_context` returns `resume_context_call` and `resume_prompt`; the prompt points at MCP usage and forbids guessed direct HTTP API calls.
+- `resume_context` and `load_context` support `slot_name` and `slot_number`; ambiguous/no-selector resume returns metadata candidates only.
+- Plain Streamable HTTP initialize, tools/list, and tools/call are covered by `tests/test_mcp.py`. External Codex/Claude client runtime checks remain deployment-time checks because no public `/mcp` URL exists yet.
+- MCP tool descriptions include required content guidance, compact/detailed guidance, secret prohibitions, and the direct HTTP API guessing prohibition.
 
 ---
 

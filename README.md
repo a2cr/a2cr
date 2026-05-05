@@ -27,10 +27,18 @@ Implemented locally:
 - Streamlit local dashboard
 - pytest coverage
 
-Planned Web SaaS:
+Implemented Web SaaS foundation:
+
+- Supabase/Postgres schema, RLS, and least-privileged runtime role design
+- API key and Supabase JWT auth foundation
+- WorkBaton Web Context API with plan limits and sanitized access logs
+- Dashboard API that returns metadata, stats, logs, and API key state without saved content bodies
+- Streamable HTTP MCP `/mcp` with `save_context`, `resume_context`, `load_context`, `list_contexts`, and `get_account_limits`
+
+Planned Web SaaS remaining work:
 
 - Railway runtime for React/Vite + FastAPI + HTTP MCP
-- Supabase Auth + Postgres + RLS
+- React/Vite dashboard UI
 - Cloudflare DNS/domain
 - Stripe billing after the Core MVP is stable
 - WorkThreads after WorkBaton Core is solid
@@ -58,6 +66,23 @@ Dashboard: http://localhost:8501
 ## MCP Configuration
 
 Example only. Do not commit real API keys.
+
+Web SaaS Streamable HTTP example:
+
+```json
+{
+  "mcpServers": {
+    "a2cr": {
+      "url": "https://a2cr.example/mcp",
+      "headers": {
+        "Authorization": "Bearer <your-a2cr-api-key>"
+      }
+    }
+  }
+}
+```
+
+Local prototype stdio example:
 
 ```json
 {
@@ -134,10 +159,18 @@ WorkBatonは「引き継ぎ箱」、WorkThreadsは「AIエージェント用の�
 - Streamlitのローカルダッシュボード
 - pytestによる自動テスト
 
-Web SaaS版で予定しているもの:
+Web SaaS版の基盤で実装済み:
+
+- Supabase/Postgres schema、RLS、最小権限runtime role設計
+- API keyとSupabase JWTの認証基盤
+- plan制限とsanitized access log付きのWorkBaton Web Context API
+- 保存本文を返さないDashboard API
+- `save_context`、`resume_context`、`load_context`、`list_contexts`、`get_account_limits` を持つStreamable HTTP MCP `/mcp`
+
+Web SaaS版で今後実装するもの:
 
 - Railway上でReact/Vite、FastAPI、HTTP MCPを同一origin配信
-- Supabase Auth、Postgres、RLS
+- React/ViteダッシュボードUI
 - CloudflareによるDNS/ドメイン管理
 - Core MVP安定後のStripe課金
 - WorkBaton安定後のWorkThreads

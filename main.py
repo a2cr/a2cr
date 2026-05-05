@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from services.db import init_db
 from services.context import cleanup_expired
 from services.exceptions import AppError
-from routers import health, context, web_context, dashboard
+from routers import health, context, web_context, dashboard, mcp_http
 
 
 async def _cleanup_loop():
@@ -20,8 +20,11 @@ async def _cleanup_loop():
 async def lifespan(app: FastAPI):
     init_db()
     task = asyncio.create_task(_cleanup_loop())
-    yield
-    task.cancel()
+    try:
+        async with mcp_http.mcp_app.lifespan():
+            yield
+    finally:
+        task.cancel()
 
 
 app = FastAPI(
@@ -49,3 +52,4 @@ app.include_router(health.router)
 app.include_router(context.router)
 app.include_router(web_context.router)
 app.include_router(dashboard.router)
+app.mount("/mcp", mcp_http.mcp_app)
