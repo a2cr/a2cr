@@ -99,7 +99,7 @@ TBD. Keep the repository private until the license policy is decided.
 
 ---
 
-## 日本語圏向け概要
+## 概要
 
 A2CRは、AIエージェントの作業文脈を別の会話窓、別のAIクライアント、別の端末へ引き継ぐためのサービスです。
 

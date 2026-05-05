@@ -223,7 +223,7 @@ The public README should be English-first. Add the Japanese section after the fu
 Suggested Japanese section title:
 
 ```markdown
-## 日本語圏向け概要
+## 概要
 ```
 
 Suggested Japanese summary:
