@@ -4,78 +4,6 @@ Agent-to-Agent Context Relay.
 
 A2CR helps AI agents save and resume work context across conversation windows, tools, and clients. The current repository is an early local prototype plus design work for the planned Web SaaS version.
 
-## 日本語概要
-
-A2CRは、AIエージェントの作業文脈を別の会話窓、別のAIクライアント、別の端末へ引き継ぐためのサービスです。
-
-現在のリポジトリには、ローカルプロトタイプとWeb SaaS版の設計資料が含まれています。MVP段階では、A2CRサーバー自身はLLM推論を実行しません。Claude、Codex、CursorなどのMCP/API対応AIクライアントがA2CRを呼び出して、作業文脈を保存・読込・再開します。
-
-### 機能レイヤー
-
-| レイヤー | 目的 |
-|---|---|
-| WorkBaton | 短命な作業チェックポイントを保存し、新しいAI窓で再開する |
-| WorkThreads | 複数の作業中AIエージェントが同じ作業スレッドを見ながら連携する予定のPro機能 |
-
-WorkBatonは「引き継ぎ箱」、WorkThreadsは「AIエージェント用の作業掲示板 / 共有作業スレッド」という位置づけです。
-
-### 現在の状態
-
-ローカルプロトタイプで実装済み:
-
-- FastAPIによるcontext API
-- SQLiteによるローカル保存
-- Fernetによる本文のアプリ層暗号化
-- Slot 1から3の固定スロット
-- MCP wrapper tools: `save_context`, `resume_context`, `load_context`, `list_contexts`
-- Streamlitのローカルダッシュボード
-- pytestによる自動テスト
-
-Web SaaS版で予定しているもの:
-
-- Railway上でReact/Vite、FastAPI、HTTP MCPを同一origin配信
-- Supabase Auth、Postgres、RLS
-- CloudflareによるDNS/ドメイン管理
-- Core MVP安定後のStripe課金
-- WorkBaton安定後のWorkThreads
-
-### ローカル開発
-
-```bash
-pip install -r requirements.txt
-python -m pytest -q
-```
-
-Windowsのローカルプロトタイプは次で起動できます。
-
-```bat
-start.bat
-```
-
-ローカルサービス:
-
-```text
-API:       http://localhost:8000
-Dashboard: http://localhost:8501
-```
-
-### セキュリティ方針
-
-A2CRはAI作業文脈という機密性の高い本文を扱うため、人間向けダッシュボードには保存本文を表示しない設計です。ダッシュボードに表示するのは、slot名、時刻、サイズ、件数、status、ログなどのメタデータに限定します。
-
-重要な方針:
-
-- APIキーやAuthorization headerをログに残さない
-- 保存本文をログに残さない
-- ダッシュボードAPIから復号済み本文を返さない
-- 本文はアプリ層暗号化して保存する
-- Web SaaS版ではRLSとuser_id分離を使う
-- Supabase service role keyを通常runtimeに置かない
-
-初期版ではA2CRサーバーがAPI/MCPレスポンスを返すために本文を復号します。そのため、現時点では完全なE2E暗号化やゼロ知識暗号化とは表現しません。
-
----
-
 ## Product Layers
 
 | Layer | Purpose |
@@ -168,3 +96,75 @@ The project does not currently claim full end-to-end or zero-knowledge encryptio
 ## License
 
 TBD. Keep the repository private until the license policy is decided.
+
+---
+
+## 日本語圏向け概要
+
+A2CRは、AIエージェントの作業文脈を別の会話窓、別のAIクライアント、別の端末へ引き継ぐためのサービスです。
+
+現在のリポジトリには、ローカルプロトタイプとWeb SaaS版の設計資料が含まれています。MVP段階では、A2CRサーバー自身はLLM推論を実行しません。Claude、Codex、CursorなどのMCP/API対応AIクライアントがA2CRを呼び出して、作業文脈を保存・読込・再開します。
+
+### 機能レイヤー
+
+| レイヤー | 目的 |
+|---|---|
+| WorkBaton | 短命な作業チェックポイントを保存し、新しいAI窓で再開する |
+| WorkThreads | 複数の作業中AIエージェントが同じ作業スレッドを見ながら連携する予定のPro機能 |
+
+WorkBatonは「引き継ぎ箱」、WorkThreadsは「AIエージェント用の作業掲示板 / 共有作業スレッド」という位置づけです。
+
+### 現在の状態
+
+ローカルプロトタイプで実装済み:
+
+- FastAPIによるcontext API
+- SQLiteによるローカル保存
+- Fernetによる本文のアプリ層暗号化
+- Slot 1から3の固定スロット
+- MCP wrapper tools: `save_context`, `resume_context`, `load_context`, `list_contexts`
+- Streamlitのローカルダッシュボード
+- pytestによる自動テスト
+
+Web SaaS版で予定しているもの:
+
+- Railway上でReact/Vite、FastAPI、HTTP MCPを同一origin配信
+- Supabase Auth、Postgres、RLS
+- CloudflareによるDNS/ドメイン管理
+- Core MVP安定後のStripe課金
+- WorkBaton安定後のWorkThreads
+
+### ローカル開発
+
+```bash
+pip install -r requirements.txt
+python -m pytest -q
+```
+
+Windowsのローカルプロトタイプは次で起動できます。
+
+```bat
+start.bat
+```
+
+ローカルサービス:
+
+```text
+API:       http://localhost:8000
+Dashboard: http://localhost:8501
+```
+
+### セキュリティ方針
+
+A2CRはAI作業文脈という機密性の高い本文を扱うため、人間向けダッシュボードには保存本文を表示しない設計です。ダッシュボードに表示するのは、slot名、時刻、サイズ、件数、status、ログなどのメタデータに限定します。
+
+重要な方針:
+
+- APIキーやAuthorization headerをログに残さない
+- 保存本文をログに残さない
+- ダッシュボードAPIから復号済み本文を返さない
+- 本文はアプリ層暗号化して保存する
+- Web SaaS版ではRLSとuser_id分離を使う
+- Supabase service role keyを通常runtimeに置かない
+
+初期版ではA2CRサーバーがAPI/MCPレスポンスを返すために本文を復号します。そのため、現時点では完全なE2E暗号化やゼロ知識暗号化とは表現しません。
