@@ -113,7 +113,7 @@ def test_load_by_slot_number():
 def test_save_load_preserves_unicode_content():
     content = dict(CONTENT)
     content["goal"] = "設計書レビュー"
-    content["current_state"] = "Freeは3時間保持、Proは月5ドル"
+    content["current_state"] = "Freeは24時間保持、Proは30日保持"
     content["next_action"] = "日本語のままMCPで読み込めることを確認する"
     content["decisions"] = ["RLSを有効化", "アクセスログは本文を保存しない"]
 

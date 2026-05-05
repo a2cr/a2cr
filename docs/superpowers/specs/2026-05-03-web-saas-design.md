@@ -247,10 +247,10 @@ user_id      UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
 plan         TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro'))
 context_detail_level TEXT NOT NULL DEFAULT 'compact'
   CHECK (context_detail_level IN ('compact', 'detailed'))
-default_retention_seconds INTEGER NOT NULL DEFAULT 10800
+default_retention_seconds INTEGER NOT NULL DEFAULT 86400
 CHECK (plan = 'pro' OR context_detail_level = 'compact')
 CHECK (
-  (plan = 'free' AND default_retention_seconds IN (900, 1800, 3600, 10800)) OR
+  (plan = 'free' AND default_retention_seconds IN (900, 1800, 3600, 10800, 86400)) OR
   (plan = 'pro' AND default_retention_seconds IN (900, 1800, 3600, 10800, 86400, 604800, 2592000))
 )
 preferred_locale TEXT NOT NULL DEFAULT 'auto'
@@ -264,7 +264,7 @@ Stripe決済の実装は今回スコープ外のため、初期状態では全�
 
 `context_detail_level` はAIエージェントが `save_context` で残す粒度を決める。Freeは `compact` 固定、Proは `compact` / `detailed` を選択可能にする。Proへ変更した直後のデフォルトは `detailed` とし、ユーザーが軽量運用したい場合だけ `compact` に戻せる。
 
-`default_retention_seconds` は新規保存時の保持期間を決める。Freeは15分/30分/1時間/3時間から選択でき、デフォルト兼上限は3時間。Proは15分/30分/1時間/3時間/24時間/7日/30日から選択でき、デフォルト兼上限は30日。Proへ変更した直後は30日に設定するが、ユーザーが短命運用を望む場合は15分まで短くできる。
+`default_retention_seconds` は新規保存時の保持期間を決める。Freeは15分/30分/1時間/3時間/24時間から選択でき、デフォルト兼上限は24時間。Proは15分/30分/1時間/3時間/24時間/7日/30日から選択でき、デフォルト兼上限は30日。Proへ変更した直後は30日に設定するが、ユーザーが短命運用を望む場合は15分まで短くできる。
 
 `preferred_locale` はダッシュボード表示言語、`response_language` はAIエージェントの応答言語ヒント、`timezone` は日時表示に使う。`preferred_locale` と `response_language` は `auto` またはBCP 47形式（例: `en`, `ja`, `fr`, `pt-BR`）をFastAPIで検証する。初期値はGoogle OAuthのprofile locale、ブラウザの `Accept-Language`、`UTC` の順に推定し、ユーザーが設定で上書きできる。
 
@@ -703,7 +703,7 @@ FastAPIは認証後に `user_profiles.plan` を読み、保存・読込・一覧
 | 制限 | Free | Pro |
 |---|---:|---:|
 | active slots | 3件 | 100件 |
-| `expires_at` | 選択した保持期間（15分/30分/1時間/3時間、デフォルト3時間） | 選択した保持期間（15分/30分/1時間/3時間/24時間/7日/30日、デフォルト30日） |
+| `expires_at` | 選択した保持期間（15分/30分/1時間/3時間/24時間、デフォルト24時間） | 選択した保持期間（15分/30分/1時間/3時間/24時間/7日/30日、デフォルト30日） |
 | checkpoint本文上限 | 32KB | 128KB |
 | 保存粒度 | `compact` 固定 | `compact` / `detailed` 選択可 |
 | checkpoint保存 | 100回/時間 | 1,000回/時間 |
@@ -844,7 +844,7 @@ WorkThreadsでも同様に、ダッシュボードでは `agent_messages.content
 
 - APIキー発行直後の一回限り表示・コピー・再発行ボタン
 - 既存キー状態（prefix・作成日・最終利用日時）
-- 保持期間設定（Freeは15分/30分/1時間/3時間、Proは15分/30分/1時間/3時間/24時間/7日/30日）
+- 保持期間設定（Freeは15分/30分/1時間/3時間/24時間、Proは15分/30分/1時間/3時間/24時間/7日/30日）
 - 保存粒度設定（FreeはCompact固定、ProはCompact/Detailedを選択可）
 - 表示言語・応答言語・タイムゾーン設定
 - セットアップ手順（Claude / Codex / Cursor タブ切替）
@@ -889,7 +889,7 @@ Answer in the language of this message.
 |---|---|---|
 | 料金 | Free | 5 USD/month |
 | active slots | 3件 | 100件 |
-| checkpoint保持 | 15分/30分/1時間/3時間（デフォルト3時間） | 15分/30分/1時間/3時間/24時間/7日/30日（デフォルト30日） |
+| checkpoint保持 | 15分/30分/1時間/3時間/24時間（デフォルト24時間） | 15分/30分/1時間/3時間/24時間/7日/30日（デフォルト30日） |
 | checkpoint本文上限 | 32KB | 128KB |
 | 保存粒度 | Compact | Compact / Detailed |
 | checkpoint保存 | 100回/時間 | 1,000回/時間 |

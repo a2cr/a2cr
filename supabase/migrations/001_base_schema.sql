@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   plan text NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
   context_detail_level text NOT NULL DEFAULT 'compact'
     CHECK (context_detail_level IN ('compact', 'detailed')),
-  default_retention_seconds integer NOT NULL DEFAULT 10800,
+  default_retention_seconds integer NOT NULL DEFAULT 86400,
   preferred_locale text NOT NULL DEFAULT 'auto',
   response_language text NOT NULL DEFAULT 'auto',
   timezone text NOT NULL DEFAULT 'UTC',
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CHECK (plan = 'pro' OR context_detail_level = 'compact'),
   CHECK (
-    (plan = 'free' AND default_retention_seconds IN (900, 1800, 3600, 10800)) OR
+    (plan = 'free' AND default_retention_seconds IN (900, 1800, 3600, 10800, 86400)) OR
     (plan = 'pro' AND default_retention_seconds IN (900, 1800, 3600, 10800, 86400, 604800, 2592000))
   )
 );
