@@ -1,8 +1,17 @@
 class AppError(Exception):
-    def __init__(self, code: str, message: str, status: int):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        status: int,
+        extra: dict | None = None,
+        headers: dict | None = None,
+    ):
         self.code = code
         self.message = message
         self.status = status
+        self.extra = extra or {}
+        self.headers = headers or {}
         super().__init__(message)
 
 
@@ -34,3 +43,29 @@ class InvalidSlotName(AppError):
 class SlotNotFound(AppError):
     def __init__(self):
         super().__init__("slot_not_found", "Slot not found or expired", 404)
+
+
+class RetentionNotAllowed(AppError):
+    def __init__(self):
+        super().__init__("retention_not_allowed", "Retention is not allowed for this plan", 422)
+
+
+class DetailLevelNotAllowed(AppError):
+    def __init__(self):
+        super().__init__("detail_level_not_allowed", "Detail level is not allowed for this plan", 422)
+
+
+class BodyTooLarge(AppError):
+    def __init__(self):
+        super().__init__("body_too_large", "Request body exceeds this plan's limit", 413)
+
+
+class PlanLimitExceeded(AppError):
+    def __init__(self, code: str, message: str, retry_after: int = 3600):
+        super().__init__(
+            code,
+            message,
+            429,
+            extra={"retry_after": retry_after},
+            headers={"Retry-After": str(retry_after)},
+        )

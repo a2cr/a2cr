@@ -32,7 +32,10 @@ def get_web_engine():
 
 
 def set_rls_user_context(session: Session, user_id: UUID | str) -> None:
-    session.execute(text("SET LOCAL app.user_id = :user_id"), {"user_id": str(user_id)})
+    session.execute(
+        text("SELECT set_config('app.user_id', :user_id, true)"),
+        {"user_id": str(user_id)},
+    )
 
 
 @contextmanager

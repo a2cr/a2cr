@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from services.db import init_db
 from services.context import cleanup_expired
 from services.exceptions import AppError
-from routers import health, context
+from routers import health, context, web_context
 
 
 async def _cleanup_loop():
@@ -36,11 +36,15 @@ app = FastAPI(
 
 @app.exception_handler(AppError)
 def app_error_handler(request: Request, exc: AppError):
+    content = {"code": exc.code, "message": exc.message}
+    content.update(exc.extra)
     return JSONResponse(
         status_code=exc.status,
-        content={"code": exc.code, "message": exc.message},
+        content=content,
+        headers=exc.headers,
     )
 
 
 app.include_router(health.router)
 app.include_router(context.router)
+app.include_router(web_context.router)

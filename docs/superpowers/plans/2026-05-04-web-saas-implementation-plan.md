@@ -255,7 +255,7 @@ Status 2026-05-05:
 - `services/db.py` にPostgres engine、`SET LOCAL app.user_id`、transaction helperを追加した。
 - `services/logs.py` に本文、secret、Authorization、生IP、full UAを保存しないaccess log helperを追加した。
 - `tests/test_auth.py` でJWT expiry/audience/signature/unsigned alg、API key hash、RLS user context、safe loggingを検証済み。
-- 現時点では基盤部品の実装であり、dashboard/API/MCP routesへの接続はTask 3/4/5で行う。
+- Context API routeへの接続はTask 3で完了した。dashboard/MCP routesへの接続はTask 4/5で行う。
 
 ---
 
@@ -273,7 +273,7 @@ Status 2026-05-05:
 - Create: `tests/test_context_api.py`
 - Create: `tests/test_limits.py`
 
-- [ ] **Step 1: Implement plan limits**
+- [x] **Step 1: Implement plan limits**
 
 Free:
 
@@ -303,7 +303,7 @@ Verify:
 - invalid retention returns 422 `retention_not_allowed`
 - oversized body returns 413 or 422 without logging body
 
-- [ ] **Step 2: Save context**
+- [x] **Step 2: Save context**
 
 `POST /api/v1/context` encrypts content, applies retention, writes logs, updates stats, and returns `resume_context_call` + `resume_prompt`.
 
@@ -316,7 +316,7 @@ Verify:
 - response prompt explicitly says to use the A2CR MCP tool and not guessed direct HTTP endpoints
 - response prompt contains no content/API key/private URL
 
-- [ ] **Step 3: List context metadata**
+- [x] **Step 3: List context metadata**
 
 `GET /api/v1/contexts` returns active slot metadata only.
 
@@ -326,7 +326,7 @@ Verify:
 - expired slots are not listed
 - cross-user rows are not listed
 
-- [ ] **Step 4: Load context**
+- [x] **Step 4: Load context**
 
 `GET /api/v1/context/{slot_name}` decrypts content only for API/MCP path.
 
@@ -336,7 +336,7 @@ Verify:
 - dashboard path cannot call this without API key
 - load count and access log are updated
 
-- [ ] **Step 5: Resume context**
+- [x] **Step 5: Resume context**
 
 `GET /api/v1/context/resume` supports `slot_name`, `project`, and `prefer_latest`.
 
@@ -347,7 +347,7 @@ Verify:
 - multiple candidates without `prefer_latest` returns metadata only
 - candidates-only response does not count as content load
 
-- [ ] **Step 6: Delete context**
+- [x] **Step 6: Delete context**
 
 Explicit delete logs `context.delete` and does not produce `context.expire`.
 
@@ -356,6 +356,16 @@ Verify:
 - user can delete own slot
 - user cannot delete another user's slot
 - explicit and automatic deletion are distinguishable in logs
+
+Status 2026-05-05:
+
+- `routers/web_context.py` にWeb SaaS版 `/api/v1/context`, `/api/v1/contexts`, `/api/v1/context/resume`, `/api/v1/context/{slot_name}` を追加した。
+- `services/limits.py` にFree/Pro retention、body size、detail level、save/load hourly limit、active slot limitを追加した。
+- `services/web_context.py` にPostgres/RLS transaction対応のsave/list/load/resume/deleteを追加した。
+- `services/prompts.py` にcontent/API keyを含まない `resume_context` prompt生成を追加した。
+- `tests/test_limits.py` と `tests/test_context_api.py` を追加し、route responseがdashboard向けmetadataに本文を含めないことを検証した。
+- ローカルPostgres実DBでservice層のsave/list/load/resume/deleteを検証済み。
+- ローカルPostgres実DB + `Authorization: Bearer sk-...` でHTTP routeのsave/list/load/deleteを検証済み。
 
 ---
 
@@ -812,7 +822,7 @@ Railway runtime does not contain `SUPABASE_SERVICE_ROLE_KEY`; app startup reject
 
 Automated tests prove user A cannot read/update/delete/list user B data across dashboard/API/MCP paths.
 
-Status: DB-level isolation passed on local Postgres at 2026-05-05. Dashboard/API/MCP route-level tests are still pending.
+Status: DB-level isolation passed on local Postgres at 2026-05-05. API key route smoke test also passed through local Postgres. Dashboard/MCP route-level tests are still pending.
 
 - [ ] **Gate C: Dashboard content blindness**
 
@@ -834,7 +844,7 @@ Free and Pro limits enforce active slots, retention, save rate, load rate, body 
 
 Automatic expiration writes `context.expire`; explicit delete writes `context.delete`.
 
-Status: `app.expire_contexts()` writes `context.expire` and deletes only expired rows in local Postgres verification. Explicit delete audit still depends on Context API implementation.
+Status: `app.expire_contexts()` writes `context.expire` and deletes only expired rows in local Postgres verification. Context API explicit delete writes `context.delete` through the Web Context service.
 
 - [ ] **Gate H: Multilingual behavior**
 
@@ -873,17 +883,17 @@ MCP can start before the final dashboard because the product's core value is AI-
 
 ## First Concrete Next Step
 
-Task 1のDB基盤とTask 2のFastAPI security foundationは完了した。次はTask 3のContext API and plan limitsへ進む。
+Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limitsは完了した。次はTask 5のStreamable HTTP MCPへ進む。
 
 Minimum next milestone:
 
-- Web SaaS版 `POST /api/v1/context` をA2CR API key authとRLS transactionへ接続する
-- Free/Pro retention、slot数、body size、detail levelの制限をDB/APIで強制する
-- save/list/load/resume/deleteでaccess logとstatsを更新する
-- dashboard向けmetadata APIには本文を返さない境界を保つ
-- 既存ローカルMVP APIを壊さず、Web SaaS APIのテストを別に追加する
+- Web SaaS版 `/mcp` の方式を確定する
+- `save_context`, `resume_context`, `load_context`, `list_contexts`, `get_account_limits` をTask 3のWeb Context serviceへ接続する
+- MCP tool descriptions/schemaに「A2CR MCPを使い、HTTP APIを推測しない」ルールを入れる
+- API key authをMCP経路でも同じ `Authorization: Bearer sk-...` に統一する
+- fresh AI windowから `resume_context(slot_name="...")` で再開できることをテストする
 
-このmilestoneが通ると、WorkBatonのWeb SaaS CoreがAPI key経由で実用可能になる。
+このmilestoneが通ると、WorkBatonのWeb SaaS CoreをAIエージェントがMCP経由で実用できる。
 
 ## WorkThreads Clarification Addendum
 

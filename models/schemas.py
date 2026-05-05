@@ -88,3 +88,74 @@ class HandoffResponse(BaseModel):
 class ErrorResponse(BaseModel):
     code: str
     message: str
+
+
+class WebContextSaveRequest(BaseModel):
+    slot_name: str
+    slot_number: Optional[int] = None
+    content: ContentSchema
+    original_length: Optional[int] = None
+    model_source: Optional[Literal["claude", "gpt", "gemini", "other"]] = None
+    retention_seconds: Optional[int] = None
+    detail_level: Optional[Literal["compact", "detailed"]] = "compact"
+
+    @field_validator("slot_name")
+    @classmethod
+    def validate_slot_name(cls, v: str) -> str:
+        import re
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", v):
+            raise ValueError("slot_name must match ^[a-zA-Z0-9_-]{1,64}$")
+        return v
+
+    @field_validator("slot_number")
+    @classmethod
+    def validate_slot_number(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("slot_number must be >= 1")
+        return v
+
+    @field_validator("retention_seconds")
+    @classmethod
+    def validate_retention_seconds(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v <= 0:
+            raise ValueError("retention_seconds must be > 0")
+        return v
+
+
+class WebContextSaveResponse(BaseModel):
+    slot_name: str
+    slot_number: int
+    expires_at: datetime
+    compressed_tokens: int
+    saved_tokens: Optional[int] = None
+    resume_context_call: str
+    resume_prompt: str
+
+
+class WebContextMetadataItem(BaseModel):
+    slot_name: str
+    slot_number: int
+    expires_at: datetime
+    updated_at: datetime
+    size_bytes: int
+    compressed_tokens: int
+    detail_level: str
+    model_source: Optional[str] = None
+    load_count: int
+
+
+class WebContextLoadResponse(BaseModel):
+    slot_name: str
+    slot_number: int
+    content: ContentSchema
+    expires_at: datetime
+    compressed_tokens: int
+    detail_level: str
+    model_source: Optional[str] = None
+    load_count: int
+
+
+class WebContextResumeResponse(BaseModel):
+    mode: Literal["loaded", "candidates"]
+    context: Optional[WebContextLoadResponse] = None
+    candidates: list[WebContextMetadataItem] = []

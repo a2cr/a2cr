@@ -190,7 +190,7 @@ def test_set_rls_user_context_uses_set_local():
     set_rls_user_context(session, USER_ID)
 
     statement, params = session.executed[0]
-    assert "SET LOCAL app.user_id" in statement
+    assert "set_config('app.user_id'" in statement
     assert params == {"user_id": str(USER_ID)}
 
 
