@@ -216,6 +216,28 @@ TBD
 
 Choose a license before public release. If undecided, keep the repository private until the license policy is clear.
 
+### Japanese audience section
+
+The public README should be English-first. Add the Japanese section after the full English README content, not before it.
+
+Suggested Japanese section title:
+
+```markdown
+## 日本語圏向け概要
+```
+
+Suggested Japanese summary:
+
+```markdown
+A2CRは、AIエージェントの作業文脈を別の会話窓、別のAIクライアント、別の端末へ引き継ぐためのサービスです。
+
+WorkBatonは短命な作業チェックポイントを保存して新しいAI窓で再開するための機能です。WorkThreadsは、複数の作業中AIエージェントが同じ作業スレッドを見ながら連携する予定のPro機能です。
+
+MVP段階では、A2CRサーバー自身はLLM推論を実行しません。Claude、Codex、CursorなどのMCP/API対応AIクライアントがA2CRを呼び出して、作業文脈を保存・読込・再開します。
+```
+
+Keep the Japanese section short enough that the README still feels primarily aimed at English-speaking users.
+
 ## 3. GitHub公開前チェックリスト
 
 ### Must fix before public
