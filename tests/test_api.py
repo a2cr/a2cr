@@ -19,7 +19,13 @@ def client():
 def test_health(client):
     r = client.get("/v1/health")
     assert r.status_code == 200
-    assert r.json() == {"status": "🟢 正常稼働中"}
+    assert r.json() == {"status": "ok"}
+
+
+def test_api_health_alias(client):
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok"}
 
 
 def test_save_returns_201(client, monkeypatch):
@@ -66,8 +72,11 @@ def test_save_no_api_key_returns_401(client):
 
 
 def test_save_wrong_api_key_returns_401(client):
-    r = client.post("/v1/context/save", json={"slot_name": "s", "content": CONTENT},
-                    headers={"X-API-Key": "wrong-key"})
+    r = client.post(
+        "/v1/context/save",
+        json={"slot_name": "s", "content": CONTENT},
+        headers={"X-API-Key": "wrong-key"},
+    )
     assert r.status_code == 401
 
 
@@ -80,9 +89,11 @@ def test_save_slot_limit_returns_400(client):
 
 
 def test_save_invalid_slot_name_returns_422(client):
-    r = client.post("/v1/context/save",
-                    json={"slot_name": "invalid name!", "content": CONTENT},
-                    headers=HEADERS)
+    r = client.post(
+        "/v1/context/save",
+        json={"slot_name": "invalid name!", "content": CONTENT},
+        headers=HEADERS,
+    )
     assert r.status_code == 422
 
 

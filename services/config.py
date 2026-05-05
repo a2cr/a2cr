@@ -2,9 +2,11 @@ import os
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
+_WEB_RUNTIME_ENVS = {"production", "staging"}
 _APPDATA_DIR = Path(os.environ.get("APPDATA", Path.home()))
 _DEFAULT_ENV_DIR = _APPDATA_DIR / "a2cr"
 _LEGACY_ENV_DIR = _APPDATA_DIR / "ai_clipboard"
@@ -94,14 +96,67 @@ def _required_env(name: str) -> str:
     return value
 
 
+def app_env() -> str:
+    return os.environ.get("APP_ENV", "development").strip().lower() or "development"
+
+
+def is_web_runtime() -> bool:
+    return app_env() in _WEB_RUNTIME_ENVS or os.environ.get("A2CR_WEB_RUNTIME") == "1"
+
+
+def _reject_runtime_service_role_key() -> None:
+    if os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+        raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY must not be present in normal runtime")
+
+
+def _origin_from_url(value: str | None) -> str | None:
+    if not value:
+        return None
+    parsed = urlparse(value)
+    if not parsed.scheme or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _configured_allowed_origins() -> set[str]:
+    explicit = os.environ.get("A2CR_ALLOWED_ORIGINS")
+    if explicit:
+        return {origin.strip().rstrip("/") for origin in explicit.split(",") if origin.strip()}
+
+    public_origin = os.environ.get("A2CR_PUBLIC_ORIGIN")
+    derived = _origin_from_url(public_origin) or _origin_from_url(os.environ.get("A2CR_SERVICE_URL"))
+    return {derived.rstrip("/")} if derived else set()
+
+
+def should_enforce_same_origin() -> bool:
+    return app_env() in _WEB_RUNTIME_ENVS or os.environ.get("A2CR_ENFORCE_SAME_ORIGIN") == "1"
+
+
+def is_request_origin_allowed(origin: str | None) -> bool:
+    if not origin or not should_enforce_same_origin():
+        return True
+    return origin.rstrip("/") in _configured_allowed_origins()
+
+
+def _validate_fernet_key(value: str) -> None:
+    try:
+        Fernet(value.encode("utf-8"))
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("FERNET_KEY must be a valid Fernet key") from exc
+
+
+def _validate_production_secret(name: str, value: str) -> None:
+    if app_env() == "production" and len(value) < 32:
+        raise RuntimeError(f"{name} must be at least 32 characters in production")
+
+
 def get_web_config() -> WebConfig:
     """Return Web SaaS runtime config without generating local secrets."""
     global _web_config
     if _web_config is not None:
         return _web_config
 
-    if os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
-        raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY must not be present in normal runtime")
+    _reject_runtime_service_role_key()
 
     jwt_secret = _required_env("SUPABASE_JWT_SECRET")
     jwks_url = os.environ.get("SUPABASE_JWKS_URL")
@@ -121,6 +176,32 @@ def get_web_config() -> WebConfig:
         public_api_key_prefix=os.environ.get("A2CR_API_KEY_PREFIX", "sk-a2cr"),
     )
     return _web_config
+
+
+def validate_runtime_environment() -> WebConfig | None:
+    """Fail fast for unsafe production/runtime environment choices."""
+    _reject_runtime_service_role_key()
+    if not is_web_runtime():
+        return None
+
+    config = get_web_config()
+    _validate_fernet_key(config.fernet_key)
+    _validate_production_secret("API_KEY_HASH_SECRET", config.api_key_hash_secret)
+    _validate_production_secret("AUDIT_HASH_SECRET", config.audit_hash_secret)
+
+    if app_env() == "production":
+        parsed_service_url = urlparse(config.a2cr_service_url)
+        public_origin = _origin_from_url(config.a2cr_service_url)
+        if public_origin is None or not public_origin.startswith("https://"):
+            raise RuntimeError("A2CR_SERVICE_URL must be an HTTPS public URL in production")
+        if parsed_service_url.hostname in {"localhost", "127.0.0.1"}:
+            raise RuntimeError("A2CR_SERVICE_URL must not point to localhost in production")
+        for origin in _configured_allowed_origins():
+            parsed_origin = urlparse(origin)
+            if parsed_origin.scheme != "https" or parsed_origin.hostname in {"localhost", "127.0.0.1"}:
+                raise RuntimeError("Allowed production origins must be HTTPS public origins")
+
+    return config
 
 
 def reset_config() -> None:

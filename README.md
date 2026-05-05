@@ -35,10 +35,11 @@ Implemented Web SaaS foundation:
 - Dashboard API that returns metadata, stats, logs, and API key state without saved content bodies
 - Streamable HTTP MCP `/mcp` with `save_context`, `resume_context`, `load_context`, `list_contexts`, and `get_account_limits`
 - React/Vite dashboard UI for login, WorkBaton metadata, settings, API key management, and pricing
+- Railway Docker build wiring, production startup guards, same-origin guard, and deployment/security runbooks
 
 Planned Web SaaS remaining work:
 
-- Railway runtime for React/Vite + FastAPI + HTTP MCP
+- Railway/Supabase/Cloudflare project provisioning and first hosted deployment
 - Cloudflare DNS/domain
 - Stripe billing after the Core MVP is stable
 - WorkThreads after WorkBaton Core is solid
@@ -66,6 +67,24 @@ API:       http://localhost:8000
 Dashboard: http://localhost:8501
 Web dev:   http://localhost:5173
 ```
+
+## Deployment
+
+The MVP deployment target is one Railway Dockerfile service. The Dockerfile builds the React/Vite app, installs the Python runtime, copies `web/dist`, and starts FastAPI with Uvicorn.
+
+Railway health check:
+
+```text
+/api/v1/health
+```
+
+Maintenance cleanup command:
+
+```bash
+python -m services.maintenance expire-contexts
+```
+
+See [deploy runbook](docs/runbooks/deploy.md) and [security runbook](docs/runbooks/security.md).
 
 ## MCP Configuration
 
@@ -125,6 +144,8 @@ The project does not currently claim full end-to-end or zero-knowledge encryptio
 - WorkBaton save/load quality spec: `docs/superpowers/specs/2026-05-05-workbaton-save-load-quality-spec.md`
 - Web SaaS design: `docs/superpowers/specs/2026-05-03-web-saas-design.md`
 - Implementation plan: `docs/superpowers/plans/2026-05-04-web-saas-implementation-plan.md`
+- Deploy runbook: `docs/runbooks/deploy.md`
+- Security runbook: `docs/runbooks/security.md`
 - Optional AI client Skill template: `docs/templates/skills/a2cr-agent/SKILL.md`
 - GitHub publication draft: `docs/github-publication-draft.md`
 
@@ -171,10 +192,11 @@ Web SaaS版の基盤で実装済み:
 - 保存本文を返さないDashboard API
 - `save_context`、`resume_context`、`load_context`、`list_contexts`、`get_account_limits` を持つStreamable HTTP MCP `/mcp`
 - ログイン、WorkBatonメタデータ、設定、APIキー管理、料金表示のReact/ViteダッシュボードUI
+- Railway向けDocker build、production起動ガード、same-origin guard、deploy/security runbook
 
 Web SaaS版で今後実装するもの:
 
-- Railway上でReact/Vite、FastAPI、HTTP MCPを同一origin配信
+- Railway/Supabase/Cloudflare project作成と初回hosted deploy
 - CloudflareによるDNS/ドメイン管理
 - Core MVP安定後のStripe課金
 - WorkBaton安定後のWorkThreads
@@ -202,6 +224,24 @@ API:       http://localhost:8000
 Dashboard: http://localhost:8501
 Web dev:   http://localhost:5173
 ```
+
+### デプロイ
+
+MVPの本番配置はRailwayのDockerfile serviceです。DockerfileはReact/Viteをbuildし、Python runtimeへ `web/dist` をコピーして、UvicornでFastAPIを起動します。
+
+Railway health check:
+
+```text
+/api/v1/health
+```
+
+期限切れ削除のmaintenance command:
+
+```bash
+python -m services.maintenance expire-contexts
+```
+
+詳しくは [deploy runbook](docs/runbooks/deploy.md) と [security runbook](docs/runbooks/security.md) を参照してください。
 
 ### セキュリティ方針
 

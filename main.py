@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from services.db import init_db
 from services.context import cleanup_expired
+from services.config import is_request_origin_allowed, is_web_runtime, validate_runtime_environment
 from services.exceptions import AppError
 from routers import health, context, web_context, dashboard, mcp_http
 
@@ -22,13 +23,17 @@ async def _cleanup_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
-    task = asyncio.create_task(_cleanup_loop())
+    validate_runtime_environment()
+    task = None
+    if not is_web_runtime():
+        init_db()
+        task = asyncio.create_task(_cleanup_loop())
     try:
         async with mcp_http.mcp_app.lifespan():
             yield
     finally:
-        task.cancel()
+        if task is not None:
+            task.cancel()
 
 
 app = FastAPI(
@@ -39,6 +44,17 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+
+
+@app.middleware("http")
+async def same_origin_guard(request: Request, call_next):
+    origin = request.headers.get("origin")
+    if not is_request_origin_allowed(origin):
+        return JSONResponse(
+            status_code=403,
+            content={"code": "origin_not_allowed", "message": "Origin not allowed"},
+        )
+    return await call_next(request)
 
 
 @app.exception_handler(AppError)

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import pytest
+from cryptography.fernet import Fernet
 
 from services.auth import (
     AuthError,
@@ -13,7 +14,7 @@ from services.auth import (
     hash_api_key,
     verify_supabase_jwt,
 )
-from services.config import WebConfig, get_web_config, reset_config
+from services.config import WebConfig, get_web_config, is_request_origin_allowed, reset_config, validate_runtime_environment
 from services.db import set_rls_user_context
 from services.logs import build_access_log_row, write_access_log
 
@@ -69,6 +70,16 @@ def set_required_web_env(monkeypatch):
     monkeypatch.setenv("SUPABASE_JWT_SECRET", "jwt-secret")
 
 
+def set_required_production_env(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://a2cr_app:test@localhost:5432/a2cr")
+    monkeypatch.setenv("FERNET_KEY", Fernet.generate_key().decode())
+    monkeypatch.setenv("API_KEY_HASH_SECRET", "a" * 40)
+    monkeypatch.setenv("AUDIT_HASH_SECRET", "b" * 40)
+    monkeypatch.setenv("A2CR_SERVICE_URL", "https://a2cr.example/mcp")
+    monkeypatch.setenv("SUPABASE_JWT_SECRET", "jwt-secret")
+
+
 def test_web_config_requires_database_url(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("APP_ENV", "test")
@@ -88,6 +99,60 @@ def test_web_config_rejects_service_role_in_runtime(monkeypatch):
 
     with pytest.raises(RuntimeError, match="SUPABASE_SERVICE_ROLE_KEY"):
         get_web_config()
+
+
+def test_runtime_validation_requires_web_env_in_production(monkeypatch):
+    set_required_production_env(monkeypatch)
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    reset_config()
+
+    with pytest.raises(RuntimeError, match="DATABASE_URL is required"):
+        validate_runtime_environment()
+
+
+def test_runtime_validation_rejects_invalid_fernet_key(monkeypatch):
+    set_required_production_env(monkeypatch)
+    monkeypatch.setenv("FERNET_KEY", "not-a-fernet-key")
+    reset_config()
+
+    with pytest.raises(RuntimeError, match="FERNET_KEY"):
+        validate_runtime_environment()
+
+
+def test_runtime_validation_rejects_http_public_url_in_production(monkeypatch):
+    set_required_production_env(monkeypatch)
+    monkeypatch.setenv("A2CR_SERVICE_URL", "http://a2cr.example/mcp")
+    reset_config()
+
+    with pytest.raises(RuntimeError, match="HTTPS public URL"):
+        validate_runtime_environment()
+
+
+def test_runtime_validation_rejects_localhost_public_url_in_production(monkeypatch):
+    set_required_production_env(monkeypatch)
+    monkeypatch.setenv("A2CR_SERVICE_URL", "https://localhost:8000/mcp")
+    reset_config()
+
+    with pytest.raises(RuntimeError, match="localhost"):
+        validate_runtime_environment()
+
+
+def test_runtime_validation_rejects_unsafe_allowed_origin_in_production(monkeypatch):
+    set_required_production_env(monkeypatch)
+    monkeypatch.setenv("A2CR_ALLOWED_ORIGINS", "https://a2cr.example,http://localhost:5173")
+    reset_config()
+
+    with pytest.raises(RuntimeError, match="Allowed production origins"):
+        validate_runtime_environment()
+
+
+def test_same_origin_policy_uses_public_service_origin(monkeypatch):
+    set_required_production_env(monkeypatch)
+    reset_config()
+
+    assert is_request_origin_allowed("https://a2cr.example")
+    assert not is_request_origin_allowed("https://evil.example")
 
 
 def test_web_config_loads_required_runtime_values(monkeypatch):

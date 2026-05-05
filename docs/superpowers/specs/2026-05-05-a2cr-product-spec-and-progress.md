@@ -233,7 +233,7 @@ MVPではA2CRサーバー側でOpenAI/Anthropic等のLLM APIを呼ばない。AI
 | サービス | 用途 | 採用判断 | 契約状況 | 次の確認/作業 |
 |---|---|---|---|---|
 | Cloudflare | ドメイン取得、DNS、SSL/TLS、DNSSEC、基本的なedge保護 | MVPで採用 | 未確認 | A2CR用ドメインを取得し、DNS管理先をCloudflareにする |
-| Railway | FastAPI、React/Vite build、HTTP MCP `/mcp` の本番runtime | MVPで採用 | 未確認 | Railway Hobby以上でproject作成。本番originを1つに統一する |
+| Railway | FastAPI、React/Vite build、HTTP MCP `/mcp` の本番runtime | MVPで採用 | 未確認 | Dockerfile/railway.json/runbookは作成済み。Railway Hobby以上でproject作成し、本番originを1つに統一する |
 | Supabase | Postgres、Supabase Auth、Google OAuth連携、RLS、migration | MVPで採用 | 未確認 | 開発はFreeで開始可。本番前にPro化するか判断する |
 | Google Cloud OAuth | Googleログイン用OAuth client | MVPで採用 | 未確認 | Supabase Authに設定するOAuth Client ID/secretを作成する |
 | GitHub | リポジトリ、issue、PR、CI/CD | MVPで採用 | 未確認 | remote repositoryとActions方針を確認する |
@@ -250,10 +250,10 @@ MVPではA2CRサーバー側でOpenAI/Anthropic等のLLM APIを呼ばない。AI
 | PostgreSQL / SQL | Web SaaS DB、RLS、least-privileged role | 採用予定 | `supabase/migrations/001_base_schema.sql` は作成済み |
 | SQLite | ローカルMVP DB | 使用中 | 製品版の主DBではなく参照実装用 |
 | FastMCP | MCP tool server wrapper | 使用中 | ローカルMCP wrapperとWeb SaaS HTTP MCP `/mcp` で利用中 |
-| pytest | 自動テスト | 使用中 | 2026-05-05時点で `103 passed` |
+| pytest | 自動テスト | 使用中 | 2026-05-06時点で `115 passed` |
 | ripgrep (`rg`) | 高速検索 | 使用中 | `winget`で `ripgrep 15.1.0` を導入済み |
 | winget | Windows package install | 使用中 | `rg`導入に使用済み |
-| Docker | Railway build、将来の本番image | 採用予定 | 導入状況は未確認 |
+| Docker | Railway build、将来の本番image | 採用済み | `Dockerfile` と `.dockerignore` を追加済み。ローカルDocker build/container smoke確認済み |
 
 ### 7.3 現時点では採用しないサービス
 
@@ -403,10 +403,10 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | Gate | 内容 | 状態 |
 |---|---|---|
 | Secret scan | GitHub公開前にsecret、API key、DB URL、OAuth secretがないことを確認 | 未実施 |
-| Runtime secret separation | 通常Railway runtimeにservice role keyを置かない | 設計済み、未実装 |
+| Runtime secret separation | 通常Railway runtimeにservice role keyを置かない | 起動時guard実装済み。実Railway envでの確認は未実施 |
 | RLS isolation | user Aがuser Bのdataを読めないことをテスト | 静的テスト + ローカルPostgres実DB検証済み。API key routeとDashboard JWT routeのDB smoke test済み。MCP統合は未実装 |
 | Dashboard blindness | dashboard API/React payloadに本文が含まれないことをテスト | Dashboard APIは実装/テスト済み。React dashboardは `/api/dashboard/*` のmetadataだけを取得する構成で実装済み |
-| Safe logging | logに本文、secret、Authorization、生IPが含まれないことをテスト | helperとContext API success logは実装済み。app log全体の検証は未実施 |
+| Safe logging | logに本文、secret、Authorization、生IPが含まれないことをテスト | helperとContext API success logは実装済み。security runbookに監視/incident手順を追加。app log全体の検証は未実施 |
 | Rate limit | Free/Pro制限と429が効くことをテスト | plan limit unit testあり。実DBでの超過ケース検証は未実施 |
 | MCP auth | API keyなし/不正keyでslot存在有無を漏らさないことをテスト | 一部ローカル実装済み |
 | Dependency check | FastAPI、MCP、暗号、Supabase関連依存の脆弱性確認 | 未実施 |
@@ -432,20 +432,20 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | ローカルStreamlit dashboard | 完了 | A2CR名へ更新済み。ただし製品主対象ではない |
 | Supabase schema/RLS案 | 一部完了 | migration、静的テスト、ローカルPostgres実DB検証済み。remote Supabase projectへの適用は未実施 |
 | Web SaaS詳細設計 | 一部完了 | Railway + Supabase + Cloudflare + Stripe構成で確定寄り |
-| Web SaaS実装 | 一部着手 | FastAPI security foundation、WorkBaton Web Context API、Dashboard API、HTTP MCP `/mcp`、React/Vite dashboardを追加済み。Railway deploy/opsは未実装 |
+| Web SaaS実装 | 一部着手 | FastAPI security foundation、WorkBaton Web Context API、Dashboard API、HTTP MCP `/mcp`、React/Vite dashboard、Railway Dockerfile/ops runbookを追加済み。実Railway deployは未実施 |
 | HTTP MCP `/mcp` | 完了 | FastMCP Streamable HTTPで実装。`save_context`、`resume_context`、`load_context`、`list_contexts`、`get_account_limits` をTask 3のWeb Context serviceへ接続済み |
 | AIクライアント誘導 | 一部完了 | MCP tool descriptions / schemaを必須誘導面にし、任意の `SKILL.md` templateを追加 |
 | WorkThreads仕様 | 一部完了 | 目的、更新確認、負荷方針、相談ループ防止方針を本書に確定仕様として追加 |
 | WorkThreads実装 | 未着手 | DB、API、MCP tools、long polling、load testが未実装 |
 | Stripe課金 | 未着手 | Core安定後に着手 |
-| 本番デプロイ | 未着手 | Railway/Supabase/Cloudflare接続が未完了 |
+| 本番デプロイ | 一部着手 | Dockerfile、railway.json、deploy/security runbook、production startup guardを追加済み。Railway/Supabase/Cloudflare接続は未完了 |
 | サービス契約管理 | 一部完了 | 採用サービスと契約状況欄を本書に追加。実契約状態は要確認 |
 | セキュリティ仕様 | 一部完了 | データ分類、認証、暗号化、ログ、RLS、公開前ゲートを本書に追加 |
 
 ## 11. 次に固める項目
 
 1. WorkThreads MVPにtask/leaseまで含めるか、まずはmessage + unread + long pollingだけで始めるか。
-2. 次の実装単位としてRailway deploy/opsを固める。React buildをFastAPIから配信し、`/dashboard` direct reload、`/api/v1/health`、`/mcp` を同一originで検証する。
+2. 次の実装単位として、実Railway/Supabase/Cloudflare環境を作成し、React buildをFastAPIから配信して `/dashboard` direct reload、`/api/v1/health`、`/mcp` を同一originで検証する。
 3. ダッシュボード上でWorkThreadsをどこまで見せるか。本文非表示は確定、metadataの粒度を決める。
 
 現時点の推奨は、WorkThreads MVPを `message + unread + check_updates + wait_updates` までに絞り、task/leaseは第2段階に回すこと。これなら「作業中のAI同士が気づく」価値を最小実装で検証できる。

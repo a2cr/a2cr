@@ -642,7 +642,7 @@ Status 2026-05-05:
 - Create: `docs/runbooks/security.md`
 - Create: `docs/runbooks/deploy.md`
 
-- [ ] **Step 1: Build pipeline**
+- [x] **Step 1: Build pipeline**
 
 Build React, then serve static assets from FastAPI.
 
@@ -652,7 +652,7 @@ Verify:
 - `/api/v1/health` works
 - `/dashboard` direct access returns SPA
 
-- [ ] **Step 2: Environment hardening**
+- [x] **Step 2: Environment hardening**
 
 Railway env:
 
@@ -667,7 +667,7 @@ Verify:
 - startup fails on unsafe env
 - CORS rejects unexpected origins
 
-- [ ] **Step 3: Cleanup scheduler**
+- [x] **Step 3: Cleanup scheduler**
 
 Use a narrow maintenance DB function or protected scheduled job. It must only expire due contexts and write sanitized `context.expire` logs.
 
@@ -677,7 +677,7 @@ Verify:
 - job cannot delete non-expired rows
 - job is idempotent
 
-- [ ] **Step 4: Monitoring**
+- [x] **Step 4: Monitoring**
 
 Track:
 
@@ -691,6 +691,18 @@ Verify:
 
 - security events do not contain secrets
 - alerting path exists for cleanup failure and auth anomaly
+
+Status 2026-05-06:
+
+- Added `Dockerfile`, `.dockerignore`, and `railway.json` for one Railway Dockerfile service.
+- Docker build path runs `npm ci`/`npm run build` in `web/`, copies `web/dist`, and starts `uvicorn main:app` on `$PORT`.
+- Added `/api/v1/health` alias returning `{"status":"ok"}` for Railway health checks.
+- Production startup validates Web SaaS env, rejects `SUPABASE_SERVICE_ROLE_KEY`, validates Fernet key, requires HTTPS `A2CR_SERVICE_URL`, and rejects too-short production hash/audit secrets.
+- Added same-origin guard: unexpected browser `Origin` values are rejected with 403 in production/staging.
+- Added `python -m services.maintenance expire-contexts`, which only calls `SELECT app.expire_contexts()`.
+- Added deploy and security runbooks with Railway env, smoke checks, cleanup job, monitoring, and incident steps.
+- Verification added in tests for Docker/Railway config, production origin rejection, runtime env validation, and maintenance function scope. Local test suite: `115 passed`.
+- Local Docker smoke passed: image builds, container starts without Vite dev server, `/api/v1/health` returns `{"status":"ok"}`, `/dashboard` returns SPA, and unexpected `Origin` returns 403.
 
 ---
 
@@ -917,16 +929,16 @@ MCP can start before the final dashboard because the product's core value is AI-
 
 ## First Concrete Next Step
 
-Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limits、Task 4のDashboard API、Task 5のStreamable HTTP MCP、Task 6のReact/Vite dashboardは完了した。次はTask 7のDeployment and Operationsへ進む。
+Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limits、Task 4のDashboard API、Task 5のStreamable HTTP MCP、Task 6のReact/Vite dashboard、Task 7のDeployment and Operations repository workは完了した。
 
 Minimum next milestone:
 
-- Railway向けにReact buildとFastAPI起動をつなぐ
-- `/api/v1/health`、`/dashboard` direct reload、`/mcp` を同一originで確認する
-- 本番環境変数を整理し、通常runtimeにservice role keyを置かない
-- cleanup scheduler、monitoring、runbookを追加する
+- Railway projectを作成し、Dockerfile serviceとしてdeployする
+- Supabase projectを作成し、migrationを適用し、Google OAuthを接続する
+- Cloudflare domainをRailway public originへ向ける
+- hosted環境で `/api/v1/health`、`/dashboard` direct reload、`/mcp`、unexpected `Origin` 403を確認する
 
-このmilestoneが通ると、WorkBatonのWeb SaaS Coreを本番候補環境で検証できる。
+このmilestoneが通ると、WorkBatonのWeb SaaS Coreを実hosted環境で検証できる。
 
 ## WorkThreads Clarification Addendum
 
