@@ -159,3 +159,85 @@ class WebContextResumeResponse(BaseModel):
     mode: Literal["loaded", "candidates"]
     context: Optional[WebContextLoadResponse] = None
     candidates: list[WebContextMetadataItem] = []
+
+
+class DashboardProfileResponse(BaseModel):
+    user_id: str
+    plan: str
+    context_detail_level: str
+    default_retention_seconds: int
+    preferred_locale: str
+    response_language: str
+    timezone: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class DashboardProfileUpdateRequest(BaseModel):
+    context_detail_level: Optional[Literal["compact", "detailed"]] = None
+    default_retention_seconds: Optional[int] = None
+    preferred_locale: Optional[str] = None
+    response_language: Optional[str] = None
+    timezone: Optional[str] = None
+
+    @field_validator("default_retention_seconds")
+    @classmethod
+    def validate_default_retention_seconds(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v <= 0:
+            raise ValueError("default_retention_seconds must be > 0")
+        return v
+
+    @field_validator("preferred_locale", "response_language", "timezone")
+    @classmethod
+    def validate_short_setting(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and (not v or len(v) > 64):
+            raise ValueError("setting must be 1-64 characters")
+        return v
+
+
+class DashboardContextItem(BaseModel):
+    slot_name: str
+    slot_number: int
+    created_at: datetime
+    updated_at: datetime
+    expires_at: datetime
+    size_bytes: int
+    compressed_tokens: int
+    saved_tokens: int
+    detail_level: str
+    model_source: Optional[str] = None
+    load_count: int
+    resume_context_call: str
+    resume_prompt: str
+
+
+class DashboardStatsResponse(BaseModel):
+    total_saves: int
+    total_loads: int
+    total_deletes: int
+    total_tokens_saved: int
+    active_slots: int
+
+
+class DashboardAccessLogItem(BaseModel):
+    action: str
+    slot_name: Optional[str] = None
+    client_type: str
+    result: str
+    error_code: Optional[str] = None
+    size_bytes: Optional[int] = None
+    request_id: Optional[str] = None
+    created_at: datetime
+
+
+class DashboardApiKeyResponse(BaseModel):
+    key_prefix: str
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+
+
+class DashboardApiKeyCreateResponse(BaseModel):
+    api_key: str
+    key_prefix: str
+    created_at: datetime

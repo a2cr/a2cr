@@ -61,6 +61,7 @@ class WebConfig:
     a2cr_service_url: str
     app_env: str
     audit_hash_secret: str
+    public_api_key_prefix: str
 
 
 _config: Config | None = None
@@ -117,6 +118,7 @@ def get_web_config() -> WebConfig:
         a2cr_service_url=_required_env("A2CR_SERVICE_URL"),
         app_env=_required_env("APP_ENV"),
         audit_hash_secret=os.environ.get("AUDIT_HASH_SECRET", api_key_hash_secret),
+        public_api_key_prefix=os.environ.get("A2CR_API_KEY_PREFIX", "sk-a2cr"),
     )
     return _web_config
 

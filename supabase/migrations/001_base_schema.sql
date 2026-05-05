@@ -234,6 +234,12 @@ CREATE POLICY users_create_free_profile ON public.user_profiles
   FOR INSERT
   WITH CHECK (user_id = app.current_user_id() AND plan = 'free');
 
+DROP POLICY IF EXISTS users_update_profile ON public.user_profiles;
+CREATE POLICY users_update_profile ON public.user_profiles
+  FOR UPDATE
+  USING (user_id = app.current_user_id())
+  WITH CHECK (user_id = app.current_user_id());
+
 DROP POLICY IF EXISTS users_own_slots ON public.contexts;
 CREATE POLICY users_own_slots ON public.contexts
   FOR ALL

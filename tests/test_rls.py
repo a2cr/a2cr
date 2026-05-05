@@ -44,7 +44,7 @@ def test_core_tables_have_user_scoped_uniqueness_and_constraints():
 def test_rls_policies_use_current_user_id_for_all_user_tables():
     text = normalized_sql()
     expected_policies = {
-        "user_profiles": ("users_read_profile", "users_create_free_profile"),
+        "user_profiles": ("users_read_profile", "users_create_free_profile", "users_update_profile"),
         "contexts": ("users_own_slots",),
         "stats": ("users_own_stats",),
         "api_keys": ("users_own_api_key",),

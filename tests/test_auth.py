@@ -33,6 +33,7 @@ def web_config() -> WebConfig:
         a2cr_service_url="https://a2cr.example",
         app_env="test",
         audit_hash_secret="audit-secret",
+        public_api_key_prefix="sk-a2cr",
     )
 
 

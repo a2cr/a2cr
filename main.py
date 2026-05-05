@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from services.db import init_db
 from services.context import cleanup_expired
 from services.exceptions import AppError
-from routers import health, context, web_context
+from routers import health, context, web_context, dashboard
 
 
 async def _cleanup_loop():
@@ -48,3 +48,4 @@ def app_error_handler(request: Request, exc: AppError):
 app.include_router(health.router)
 app.include_router(context.router)
 app.include_router(web_context.router)
+app.include_router(dashboard.router)

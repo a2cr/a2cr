@@ -379,7 +379,7 @@ Status 2026-05-05:
 - Update: `routers/auth.py`
 - Create: `tests/test_dashboard_api.py`
 
-- [ ] **Step 1: Current profile and settings**
+- [x] **Step 1: Current profile and settings**
 
 Endpoints:
 
@@ -400,7 +400,7 @@ Verify:
 - Free cannot set `detailed`
 - invalid locale/timezone rejected
 
-- [ ] **Step 2: Slot metadata**
+- [x] **Step 2: Slot metadata**
 
 `GET /api/dashboard/contexts` returns slot name, created/updated/expires, size, token estimate, source metadata, and generated resume prompt.
 
@@ -409,7 +409,7 @@ Verify:
 - response does not include encrypted content
 - response does not include decrypted content
 
-- [ ] **Step 3: Stats and access logs**
+- [x] **Step 3: Stats and access logs**
 
 Endpoints:
 
@@ -422,7 +422,7 @@ Verify:
 - logs contain no secret/content fields
 - log retention pruning follows plan
 
-- [ ] **Step 4: API key management**
+- [x] **Step 4: API key management**
 
 Endpoints:
 
@@ -434,6 +434,15 @@ Verify:
 - plaintext key is shown only once
 - issuing a new key revokes/replaces previous key
 - key hash uses HMAC secret, not raw SHA-256 alone
+
+Status 2026-05-05:
+
+- `routers/dashboard.py` に `/api/dashboard/profile`, `/api/dashboard/contexts`, `/api/dashboard/stats`, `/api/dashboard/access-logs`, `/api/dashboard/api-key` を追加した。
+- `services/dashboard.py` にprofile更新、slot metadata、stats、sanitized access logs、API key発行/参照/失効を追加した。
+- Dashboard APIは `contexts.content` を返さず、API key参照もprefixだけを返す。plaintext API keyは発行時の1回だけ返す。
+- `user_profiles` をdashboardから更新できるよう、RLSに `users_update_profile` policyを追加した。
+- `tests/test_dashboard_api.py` と `tests/test_dashboard_service.py` を追加し、本文非表示、plan非変更、safe log、API key HMAC保存を検証した。
+- ローカルPostgres実DB + Supabase JWT形式のBearer tokenでdashboard route smoke testを実施済み。
 
 ---
 
@@ -883,7 +892,7 @@ MCP can start before the final dashboard because the product's core value is AI-
 
 ## First Concrete Next Step
 
-Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limitsは完了した。次はTask 5のStreamable HTTP MCPへ進む。
+Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limits、Task 4のDashboard APIは完了した。次はTask 5のStreamable HTTP MCPへ進む。
 
 Minimum next milestone:
 
