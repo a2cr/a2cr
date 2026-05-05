@@ -8,6 +8,8 @@
 
 **Naming:** サービス名は **A2CR**、展開名は **Agent-to-Agent Context Relay**。無料機能は **WorkBaton**、Pro機能は **WorkThreads**、技術名は **A2CR MCP / A2CR API** とする。`A2CR Protocol` は将来の成否を見て判断し、MVPでは前面に出さない。
 
+**LLM boundary:** A2CRサーバーはLLM推論、AI起動、レビュー生成、要約生成、相談仲裁を行わない。MCP/API対応AIクライアントが自分のモデルで考え、A2CRは保存・読込・共有・状態管理・監査だけを担当する。ループ防止やrate limitはLLM判定ではなく、`consultation_id`、message数、重複hash、wait回数などの決定的ルールで実装する。
+
 **Primary success criteria:**
 
 - Google OAuthでログインできる
@@ -37,6 +39,7 @@
 - 複数APIキー
 - ダッシュボードでの保存本文閲覧
 - 管理者が任意ユーザーの本文を読む機能
+- サーバー側LLMによる要約、レビュー、相談仲裁、ループ判定
 
 ---
 
@@ -762,6 +765,7 @@ Verify:
 - repeated question loops return `409 loop_guard_triggered`
 - approaching limits returns `loop_warning`
 - blocked loop audit logs do not contain message content
+- loop detection does not call any LLM/model API
 - human-hidden dashboard shows only loop status metadata
 - AI can still post final `decision`, `handoff`, `blocked`, or `result`
 

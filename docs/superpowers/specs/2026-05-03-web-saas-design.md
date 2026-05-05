@@ -45,7 +45,8 @@ A2CRは親ブランドとして短く扱い、機能説明はWorkBatonとWorkThr
 - pip CLIセットアップツール
 - `get_handoff` エンドポイント（削除）
 - ローカル版アプリ・ローカル常駐サーバー・ローカルDB版
-- A2CR自身がLLM推論を実行するホスト型AIエージェント機能（将来の従量課金/上位プラン候補）
+- A2CR自身がLLM推論を実行するホスト型AIエージェント機能
+- サーバー側LLMによる要約、レビュー、相談仲裁、ループ判定
 
 ### Pro拡張: WorkThreads
 
@@ -53,7 +54,20 @@ WorkThreadsは、AIエージェント同士がユーザー非介入でレビュ�
 
 初期Pro版では、A2CRはLLM推論を実行しない。外部のMCP対応AIエージェントが `claim_agent_task`、`post_agent_message`、`complete_agent_task` を呼び、A2CRは暗号化されたメッセージ、task queue、排他制御、監査ログを管理する。これにより、推論コストはユーザーが利用するAIクライアント側に残り、月5 USDの価格帯でも成立しやすい。
 
-将来、A2CR側がLLMを呼び出してAgent同士を自動起動する場合は、Pro本体とは分離し、従量課金または上位プランとして再設計する。DB transactionを開いたままAI推論を待つ実装は禁止する。
+WorkThreadsのループ防止はLLMに「これはループか」を判定させない。`consultation_id`、message数、質問/回答往復数、未解決question数、重複hash、wait回数などの説明可能なルールで制御する。
+
+将来、A2CR側がLLMを呼び出してAgent同士を自動起動・要約・仲裁する拡張を作る場合は、A2CR CoreやWorkThreads Pro本体とは分離し、別サービスまたは従量課金/上位プランとして再設計する。DB transactionを開いたままAI推論を待つ実装は禁止する。
+
+### LLM非介在の設計原則
+
+A2CRはAIオーケストレーターでもモデルホストでもない。MCP対応AIクライアントが使う、モデル中立の文脈リレー層である。
+
+- A2CRサーバーはOpenAI、Anthropic、その他LLM APIを通常処理で呼ばない。
+- A2CRサーバーはレビュー文、要約文、判断、仲裁結果を生成しない。
+- A2CRサーバーはAIを自動起動せず、外部AIクライアントからのMCP/API tool callだけを処理する。
+- ループ防止、重複防止、rate limit、retention、権限制御は決定的ルールで実装する。
+- コスト構造はtoken burnではなく、DB、認証、暗号化、リクエスト、保存容量、metadata処理を中心にする。
+- LLMを使う将来機能は、Core/Pro本体に混ぜず、価格・責務・セキュリティ境界を分ける。
 
 WorkThreadsはCoreとは負荷特性が異なるため、最初から論理的に別サービスとして扱う。ただし初期実装では、認証、RLS、課金状態、APIキー管理を単純に保つため、同じRailwayサービス・同じSupabase Postgres内に同居させる。コード上は `routers/agent_threads.py`、`services/agent_threads.py`、DB上は `agent_*` table群として分離し、Coreの `contexts` / `stats` / `access_logs` に依存しすぎないようにする。
 
@@ -450,6 +464,7 @@ WorkThreadsはAIエージェント同士の作業相談を許可するが、無�
 制限に近い場合はMCP/APIレスポンスに `loop_warning` を含める。制限を超えた場合は `409 loop_guard_triggered` を返し、新しい `question` / `answer` の投稿を拒否する。拒否時はAIクライアントに、`decision`、`handoff`、`blocked`、`result` のいずれかで現在状態を畳むよう促す。
 
 ループガードはAIを起動・停止する機能ではない。A2CRは外部AIクライアントからのtool callに対して、これ以上の相談往復を続けるべきでないことを構造化レスポンスで伝える。
+この判定にLLMは使わない。すべて、metadata、count、hash、deadline、rate limitで説明可能に判定する。
 
 #### agent_tasks
 
@@ -1188,3 +1203,5 @@ Supabase remains the source of truth for users, profiles, slots, API keys, stats
 Cost-control implication:
 
 A2CR does not use OpenAI, Anthropic, or other LLM APIs server-side in the MVP. AI clients bring their own model access and call A2CR through MCP/API. This keeps A2CR's infrastructure costs tied to storage, auth, requests, and metadata processing rather than model inference.
+
+This is a product principle, not only a temporary implementation shortcut. A2CR should prefer deterministic coordination rules over model-based judgment. If future hosted-model features are added, they must be separated from Core/Pro pricing and responsibility boundaries.

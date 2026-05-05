@@ -11,7 +11,9 @@ A2CR helps AI agents save and resume work context across conversation windows, t
 | WorkBaton | Save a short-lived work checkpoint and resume it in a new AI window |
 | WorkThreads | Planned shared work threads for active AI-agent coordination |
 
-In the MVP, A2CR does not run LLM inference on the server. Users bring their own AI clients, and those clients call A2CR through MCP/API.
+A2CR does not run LLM inference on the server in the MVP. It does not think for your agents, choose models, or generate reviews. Users bring their own AI clients, and those clients call A2CR through MCP/API.
+
+This keeps A2CR model-neutral and keeps pricing tied to storage, requests, and coordination rather than token burn.
 
 ## Current Status
 
@@ -107,7 +109,9 @@ TBD. Keep the repository private until the license policy is decided.
 
 A2CRは、AIエージェントの作業文脈を別の会話窓、別のAIクライアント、別の端末へ引き継ぐためのサービスです。
 
-現在のリポジトリには、ローカルプロトタイプとWeb SaaS版の設計資料が含まれています。MVP段階では、A2CRサーバー自身はLLM推論を実行しません。Claude、Codex、CursorなどのMCP/API対応AIクライアントがA2CRを呼び出して、作業文脈を保存・読込・再開します。
+現在のリポジトリには、ローカルプロトタイプとWeb SaaS版の設計資料が含まれています。MVP段階では、A2CRサーバー自身はLLM推論を実行しません。A2CRはAIエージェントの代わりに考えず、モデル選択やレビュー生成も行いません。Claude、Codex、CursorなどのMCP/API対応AIクライアントがA2CRを呼び出して、作業文脈を保存・読込・再開します。
+
+これにより、A2CRはモデル中立のまま、料金をトークン消費ではなく保存・読込・連携の利用量に結びつける設計にします。
 
 ### 機能レイヤー
 

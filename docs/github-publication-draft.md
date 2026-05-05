@@ -57,7 +57,9 @@ The project is designed around two product layers:
 | WorkBaton | Save a short-lived work checkpoint and resume it in a new AI window |
 | WorkThreads | Let multiple active AI agents coordinate through a shared work thread |
 
-In the initial version, A2CR does not run LLM inference on the server. Users bring their own AI clients, and those clients call A2CR through MCP/API.
+In the initial version, A2CR does not run LLM inference on the server. Users bring their own AI clients, and those clients call A2CR through MCP/API. A2CR relays work context; it does not think for the agents, choose models, generate reviews, or arbitrate discussions.
+
+This is intentional: pricing should stay tied to storage, requests, retention, and coordination metadata rather than model token burn.
 
 ### Why?
 
@@ -126,6 +128,7 @@ The initial WorkThreads design favors:
 - update checks
 - optional long polling such as `wait_workthread_updates`
 - no server-side LLM inference
+- deterministic loop guards instead of model-based judgment
 - no attempt to wake sleeping or stopped AI windows
 
 ### Security and privacy direction
@@ -275,6 +278,7 @@ Say:
 - WorkBaton is for context checkpoints.
 - WorkThreads is planned for active cross-agent work coordination.
 - A2CR does not run LLM inference in the MVP.
+- A2CR should remain model-neutral; hosted-model features, if ever added, should be separate from Core/Pro.
 - The dashboard is designed to show metadata, not saved context bodies.
 
 Do not overclaim:
