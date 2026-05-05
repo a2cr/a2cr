@@ -156,7 +156,7 @@ WorkThreadsは、停止中または寝ているAIエージェントを勝手に�
 | `complete_workthread_task` | 確保したタスクを完了にする |
 | `save_workthread_result` | 最終結果をWorkBaton slotへ保存する |
 
-既存設計書内の `agent_thread` / `agent_message` という内部名は、実装時に `workthread` 表現へ寄せるかを決める。外部公開名はWorkThreadsに統一する。
+外部公開名、MCP tool名、API path、DB table名は `workthread` / `work_thread_*` 系に統一する。古いagent系表現は過去案として扱い、実装名には使わない。
 
 ### 5.6 データモデル案
 
@@ -444,9 +444,8 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 
 ## 11. 次に固める項目
 
-1. WorkThreadsの外部公開ツール名を `workthread` 系にするか、既存設計の `agent_thread` 系にするか。
-2. WorkThreads MVPにtask/leaseまで含めるか、まずはmessage + unread + long pollingだけで始めるか。
-3. Web SaaSの最初の実装単位を、Supabase schema実DB検証から始めるか、FastAPI auth基盤から始めるか。
-4. ダッシュボード上でWorkThreadsをどこまで見せるか。本文非表示は確定、metadataの粒度を決める。
+1. WorkThreads MVPにtask/leaseまで含めるか、まずはmessage + unread + long pollingだけで始めるか。
+2. Web SaaSの最初の実装単位を、Supabase schema実DB検証から始めるか、FastAPI auth基盤から始めるか。
+3. ダッシュボード上でWorkThreadsをどこまで見せるか。本文非表示は確定、metadataの粒度を決める。
 
 現時点の推奨は、WorkThreads MVPを `message + unread + check_updates + wait_updates` までに絞り、task/leaseは第2段階に回すこと。これなら「作業中のAI同士が気づく」価値を最小実装で検証できる。

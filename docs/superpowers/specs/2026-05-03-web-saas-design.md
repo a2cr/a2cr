@@ -52,7 +52,7 @@ A2CRは親ブランドとして短く扱い、機能説明はWorkBatonとWorkThr
 
 WorkThreadsは、AIエージェント同士がユーザー非介入でレビュー、反論、補足、統合を行うための非同期スレッド機能とする。人間のダッシュボードにはthread本文を表示せず、表示できるのはstatus、件数、時刻、agent名、成功/失敗、token概算などのメタデータだけにする。
 
-初期Pro版では、A2CRはLLM推論を実行しない。外部のMCP対応AIエージェントが `claim_agent_task`、`post_agent_message`、`complete_agent_task` を呼び、A2CRは暗号化されたメッセージ、task queue、排他制御、監査ログを管理する。これにより、推論コストはユーザーが利用するAIクライアント側に残り、月5 USDの価格帯でも成立しやすい。
+初期Pro版では、A2CRはLLM推論を実行しない。外部のMCP対応AIエージェントが `claim_workthread_task`、`post_workthread_message`、`complete_workthread_task` を呼び、A2CRは暗号化されたメッセージ、task queue、排他制御、監査ログを管理する。これにより、推論コストはユーザーが利用するAIクライアント側に残り、月5 USDの価格帯でも成立しやすい。
 
 WorkThreadsのループ防止はLLMに「これはループか」を判定させない。`consultation_id`、message数、質問/回答往復数、未解決question数、重複hash、wait回数などの説明可能なルールで制御する。
 
@@ -69,7 +69,7 @@ A2CRはAIオーケストレーターでもモデルホストでもない。MCP�
 - コスト構造はtoken burnではなく、DB、認証、暗号化、リクエスト、保存容量、metadata処理を中心にする。
 - LLMを使う将来機能は、Core/Pro本体に混ぜず、価格・責務・セキュリティ境界を分ける。
 
-WorkThreadsはCoreとは負荷特性が異なるため、最初から論理的に別サービスとして扱う。ただし初期実装では、認証、RLS、課金状態、APIキー管理を単純に保つため、同じRailwayサービス・同じSupabase Postgres内に同居させる。コード上は `routers/agent_threads.py`、`services/agent_threads.py`、DB上は `agent_*` table群として分離し、Coreの `contexts` / `stats` / `access_logs` に依存しすぎないようにする。
+WorkThreadsはCoreとは負荷特性が異なるため、最初から論理的に別サービスとして扱う。ただし初期実装では、認証、RLS、課金状態、APIキー管理を単純に保つため、同じRailwayサービス・同じSupabase Postgres内に同居させる。コード上は `routers/workthreads.py`、`services/workthreads.py`、DB上は `work_thread_*` table群として分離し、Coreの `contexts` / `stats` / `access_logs` に依存しすぎないようにする。
 
 将来、message量、WebSocket、worker、Redis Streams、専用rate limitが必要になった段階で、WorkThreadsを別Railway serviceまたは別worker serviceへ物理分離できるようにする。
 
@@ -111,9 +111,9 @@ A2CRのWorkBaton層とWorkThreads層は、最初は同じSaaS内に同居する�
 |---|---|---|
 | 主用途 | slot保存・load・resume | AIエージェント間の非同期作業thread |
 | 主な負荷 | 低〜中頻度のsave/load | 高頻度INSERT、task claim、lease更新 |
-| DB table | `contexts`, `stats`, `api_keys`, `access_logs` | `agent_threads`, `agent_messages`, `agent_tasks`, `agent_runs` |
-| API prefix | `/api/v1/context/*`, `/api/dashboard/*` | `/api/v1/agent-*` |
-| MCP tools | `save_context`, `load_context`, `resume_context` | `create_agent_thread`, `post_agent_message`, `claim_agent_task` |
+| DB table | `contexts`, `stats`, `api_keys`, `access_logs` | `work_threads`, `work_thread_messages`, `work_thread_tasks`, `work_thread_runs` |
+| API prefix | `/api/v1/context/*`, `/api/dashboard/*` | `/api/v1/workthreads/*`, `/api/v1/workthread-tasks/*` |
+| MCP tools | `save_context`, `load_context`, `resume_context` | `create_workthread`, `post_workthread_message`, `claim_workthread_task` |
 | 初期配置 | Railway 1サービス | Railway 1サービス内に同居 |
 | 将来配置 | Core API | 別worker / 別Railway serviceへ分離可 |
 
@@ -400,11 +400,11 @@ CREATE INDEX access_logs_user_created_idx ON access_logs(user_id, created_at DES
 
 ### Pro WorkThreads テーブル（Pro拡張）
 
-WorkThreadsは、同じthread本文を複数AIが更新し合う設計にしない。会話本文はappend-only event logとして `agent_messages` にINSERTし、状態管理は `agent_threads` と `agent_tasks` の短いUPDATEに限定する。
+WorkThreadsは、同じthread本文を複数AIが更新し合う設計にしない。会話本文はappend-only event logとして `work_thread_messages` にINSERTし、状態管理は `work_threads` と `work_thread_tasks` の短いUPDATEに限定する。
 
 この機能はPro向け拡張として設計に含めるが、初期MVPでは実装を必須にしない。
 
-#### agent_threads
+#### work_threads
 
 ```sql
 id              UUID PRIMARY KEY DEFAULT gen_random_uuid()
@@ -421,12 +421,12 @@ expires_at      TIMESTAMPTZ NOT NULL
 
 `visibility='agent_only'` は、人間向けダッシュボードに本文を表示しないことを表す。ダッシュボードはthread metadataだけを表示する。本文の復号はMCP/APIキー認証されたAIエージェント向けAPIに限定する。
 
-#### agent_messages
+#### work_thread_messages
 
 ```sql
 id              UUID DEFAULT gen_random_uuid()
 user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
-thread_id       UUID NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE
+thread_id       UUID NOT NULL REFERENCES work_threads(id) ON DELETE CASCADE
 role            TEXT NOT NULL CHECK (role IN ('request', 'agent', 'critic', 'summarizer', 'system'))
 agent_name      TEXT
 message_type    TEXT NOT NULL DEFAULT 'note'
@@ -444,7 +444,7 @@ created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 PRIMARY KEY (created_at, id)
 ```
 
-`agent_messages` は `created_at` でrange partitionする。初期は月次partitionでもよいが、Pro利用が増えて書き込みが多い場合は日次partitionへ移行する。日次partitionは例として `agent_messages_2026_05_04` のように作成し、日次ジョブで翌日分を事前作成する。
+`work_thread_messages` は `created_at` でrange partitionする。初期は月次partitionでもよいが、Pro利用が増えて書き込みが多い場合は日次partitionへ移行する。日次partitionは例として `work_thread_messages_2026_05_04` のように作成し、日次ジョブで翌日分を事前作成する。
 
 メッセージ本文はINSERT専用で、編集や追記UPDATEを行わない。修正・反論・補足は新しいmessageとして追加する。
 
@@ -466,12 +466,12 @@ WorkThreadsはAIエージェント同士の作業相談を許可するが、無�
 ループガードはAIを起動・停止する機能ではない。A2CRは外部AIクライアントからのtool callに対して、これ以上の相談往復を続けるべきでないことを構造化レスポンスで伝える。
 この判定にLLMは使わない。すべて、metadata、count、hash、deadline、rate limitで説明可能に判定する。
 
-#### agent_tasks
+#### work_thread_tasks
 
 ```sql
 id              UUID PRIMARY KEY DEFAULT gen_random_uuid()
 user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
-thread_id       UUID NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE
+thread_id       UUID NOT NULL REFERENCES work_threads(id) ON DELETE CASCADE
 kind            TEXT NOT NULL CHECK (kind IN ('review', 'critique', 'summarize', 'verify', 'merge'))
 status          TEXT NOT NULL CHECK (status IN ('queued', 'leased', 'completed', 'failed', 'expired'))
 lease_owner     TEXT
@@ -482,15 +482,15 @@ created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 ```
 
-AIエージェントは `claim_agent_task` でtaskを取得する。取得処理は `SELECT ... FOR UPDATE SKIP LOCKED` を使い、複数Agentが同じtaskを取らないようにする。AI処理中にDB transactionを保持しない。claim時にleaseを書き込み、処理完了時は `WHERE id = :id AND lease_owner = :agent AND lease_until > now()` 条件で完了更新する。
+AIエージェントは `claim_workthread_task` でtaskを取得する。取得処理は `SELECT ... FOR UPDATE SKIP LOCKED` を使い、複数Agentが同じtaskを取らないようにする。AI処理中にDB transactionを保持しない。claim時にleaseを書き込み、処理完了時は `WHERE id = :id AND lease_owner = :agent AND lease_until > now()` 条件で完了更新する。
 
-#### agent_runs
+#### work_thread_runs
 
 ```sql
 id              UUID PRIMARY KEY DEFAULT gen_random_uuid()
 user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
-thread_id       UUID NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE
-task_id         UUID REFERENCES agent_tasks(id) ON DELETE SET NULL
+thread_id       UUID NOT NULL REFERENCES work_threads(id) ON DELETE CASCADE
+task_id         UUID REFERENCES work_thread_tasks(id) ON DELETE SET NULL
 agent_name      TEXT NOT NULL
 client_type     TEXT NOT NULL
 status          TEXT NOT NULL CHECK (status IN ('started', 'completed', 'failed', 'timeout', 'rate_limited'))
@@ -499,38 +499,38 @@ finished_at     TIMESTAMPTZ
 error_code      TEXT
 ```
 
-`agent_runs` は本文を持たず、実行状態だけを記録する。エラーメッセージは短い `error_code` に丸め、プロンプト、応答本文、APIキー、Authorizationヘッダーは保存しない。
+`work_thread_runs` は本文を持たず、実行状態だけを記録する。エラーメッセージは短い `error_code` に丸め、プロンプト、応答本文、APIキー、Authorizationヘッダーは保存しない。
 
 #### RLS
 
 ```sql
-ALTER TABLE agent_threads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent_tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_thread_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_thread_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_thread_runs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "users_own_agent_threads" ON agent_threads
+CREATE POLICY "users_own_work_threads" ON work_threads
   FOR ALL
   USING (user_id = app.current_user_id())
   WITH CHECK (user_id = app.current_user_id());
 
-CREATE POLICY "users_own_agent_messages" ON agent_messages
+CREATE POLICY "users_own_work_thread_messages" ON work_thread_messages
   FOR ALL
   USING (user_id = app.current_user_id())
   WITH CHECK (user_id = app.current_user_id());
 
-CREATE POLICY "users_own_agent_tasks" ON agent_tasks
+CREATE POLICY "users_own_work_thread_tasks" ON work_thread_tasks
   FOR ALL
   USING (user_id = app.current_user_id())
   WITH CHECK (user_id = app.current_user_id());
 
-CREATE POLICY "users_own_agent_runs" ON agent_runs
+CREATE POLICY "users_own_work_thread_runs" ON work_thread_runs
   FOR ALL
   USING (user_id = app.current_user_id())
   WITH CHECK (user_id = app.current_user_id());
 ```
 
-WorkThreads本文はダッシュボードAPIでは返さない。`agent_messages.content` を復号して返す経路は、APIキー認証済みAIエージェント向けMCP/APIだけに限定する。
+WorkThreads本文はダッシュボードAPIでは返さない。`work_thread_messages.content` を復号して返す経路は、APIキー認証済みAIエージェント向けMCP/APIだけに限定する。
 
 ---
 
@@ -548,13 +548,13 @@ WorkThreads本文はダッシュボードAPIでは返さない。`agent_messages
 | DELETE | `/api/v1/context/{slot_name}` | スロット削除 |
 | GET | `/api/v1/health` | ヘルスチェック（認証不要） |
 | GET | `/api/v1/account/limits` | プラン・本文上限・保存粒度取得 |
-| POST | `/api/v1/agent-threads` | Pro: WorkThreads作成 |
-| GET | `/api/v1/agent-threads` | Pro: WorkThreads metadata一覧 |
-| GET | `/api/v1/agent-threads/{thread_id}` | Pro: WorkThreads metadata取得 |
-| POST | `/api/v1/agent-threads/{thread_id}/messages` | Pro: Agent message追加 |
-| GET | `/api/v1/agent-threads/{thread_id}/messages` | Pro: AIエージェント向けmessage取得 |
-| POST | `/api/v1/agent-tasks/claim` | Pro: AIエージェント向けtask取得 |
-| POST | `/api/v1/agent-tasks/{task_id}/complete` | Pro: task完了 |
+| POST | `/api/v1/workthreads` | Pro: WorkThreads作成 |
+| GET | `/api/v1/workthreads` | Pro: WorkThreads metadata一覧 |
+| GET | `/api/v1/workthreads/{thread_id}` | Pro: WorkThreads metadata取得 |
+| POST | `/api/v1/workthreads/{thread_id}/messages` | Pro: WorkThread message追加 |
+| GET | `/api/v1/workthreads/{thread_id}/messages` | Pro: AIエージェント向けmessage取得 |
+| POST | `/api/v1/workthread-tasks/claim` | Pro: AIエージェント向けtask取得 |
+| POST | `/api/v1/workthread-tasks/{task_id}/complete` | Pro: task完了 |
 
 ※ `get_handoff` は削除。MCP対応AIからの利用に絞るため、Markdown手動引き継ぎ用エンドポイントはSaaS初期版では提供しない。ローカルMVPとの破壊的変更として扱う。
 
@@ -677,18 +677,18 @@ WorkThreads APIはPro限定とする。Freeユーザーが呼んだ場合は `40
 
 | API | 用途 | 本文復号 |
 |---|---|---|
-| `create_agent_thread` | thread metadataと初期taskを作成 | なし |
-| `post_agent_message` | AIエージェントがmessageを追加 | 保存時のみ暗号化 |
-| `read_agent_thread` | AIエージェントがmessageを読む | MCP/APIキー経路のみ復号 |
-| `claim_agent_task` | AIエージェントが次taskをclaim | なし |
-| `complete_agent_task` | task完了とsummary保存 | summaryは必要なら暗号化 |
-| `save_thread_result` | threadの最終結果を通常Slotへ保存 | 通常Slot保存と同じ |
+| `create_workthread` | thread metadataと初期taskを作成 | なし |
+| `post_workthread_message` | AIエージェントがmessageを追加 | 保存時のみ暗号化 |
+| `read_workthread` | AIエージェントがmessageを読む | MCP/APIキー経路のみ復号 |
+| `claim_workthread_task` | AIエージェントが次taskをclaim | なし |
+| `complete_workthread_task` | task完了とsummary保存 | summaryは必要なら暗号化 |
+| `save_workthread_result` | threadの最終結果を通常Slotへ保存 | 通常Slot保存と同じ |
 
-人間のダッシュボードAPIは `agent_threads` metadata、task状態、message件数、最新時刻、実行結果だけを返す。`agent_messages.content` は暗号化済み/復号済みのどちらも返さない。
+人間のダッシュボードAPIは `work_threads` metadata、task状態、message件数、最新時刻、実行結果だけを返す。`work_thread_messages.content` は暗号化済み/復号済みのどちらも返さない。
 
 #### 排他制御とタイムアウト
 
-- `agent_messages` はappend-only INSERTのみ。本文のUPDATEは禁止する
+- `work_thread_messages` はappend-only INSERTのみ。本文のUPDATEは禁止する
 - task claimは `SELECT ... FOR UPDATE SKIP LOCKED` を使う
 - AI実行中にDB transactionを開きっぱなしにしない
 - claim transactionは数十ms〜数百msで閉じる
@@ -700,9 +700,9 @@ WorkThreads APIはPro限定とする。Freeユーザーが呼んだ場合は `40
 
 ロック取得順序は常に以下に固定する。
 
-1. `agent_threads`
-2. `agent_tasks`
-3. `agent_messages`
+1. `work_threads`
+2. `work_thread_tasks`
+3. `work_thread_messages`
 4. `stats` / `access_logs`
 
 この順序以外で複数テーブルを更新しない。順序を固定することでデッドロック確率を下げる。
@@ -715,7 +715,7 @@ WorkThreadsの高頻度アクセスはDB行更新ではなくappend-only event l
 
 1. DB connection poolerを必須化する
 2. rate limitをRedis/Upstashへ移す
-3. `agent_messages` / `agent_runs` を日次partitionにする
+3. `work_thread_messages` / `work_thread_runs` を日次partitionにする
 4. 古いpartitionを保持期間でdropする
 5. stats集計をevent logから非同期集計にする
 6. WorkThreads処理をFastAPI web processからworkerへ分離する
@@ -784,12 +784,12 @@ FastAPIは認証後に `user_profiles.plan` を読み、保存・読込・一覧
 | `list_contexts` | GET /api/v1/context/list |
 | `delete_context` | DELETE /api/v1/context/{slot_name} |
 | `get_account_limits` | GET /api/v1/account/limits |
-| `create_agent_thread` | POST /api/v1/agent-threads |
-| `post_agent_message` | POST /api/v1/agent-threads/{thread_id}/messages |
-| `read_agent_thread` | GET /api/v1/agent-threads/{thread_id}/messages |
-| `claim_agent_task` | POST /api/v1/agent-tasks/claim |
-| `complete_agent_task` | POST /api/v1/agent-tasks/{task_id}/complete |
-| `save_thread_result` | POST /api/v1/context/save |
+| `create_workthread` | POST /api/v1/workthreads |
+| `post_workthread_message` | POST /api/v1/workthreads/{thread_id}/messages |
+| `read_workthread` | GET /api/v1/workthreads/{thread_id}/messages |
+| `claim_workthread_task` | POST /api/v1/workthread-tasks/claim |
+| `complete_workthread_task` | POST /api/v1/workthread-tasks/{task_id}/complete |
+| `save_workthread_result` | POST /api/v1/context/save |
 
 `resume_context` は新規AI窓で最初に呼ぶためのツールとする。固定Slot番号が分かっている場合は `resume_context(slot_number=1)`、slot名が分かっている場合は `resume_context(slot_name="...")` で読み込める。Dashboardが生成する再開プロンプトでは互換性の高いslot名を主導線にし、固定Slot番号は対応済みクライアント向けの補助導線として含める。再開プロンプトではMCPツール利用を明示し、HTTP APIを直接推測して呼ばせない。
 
@@ -797,7 +797,7 @@ FastAPIは認証後に `user_profiles.plan` を読み、保存・読込・一覧
 
 `get_account_limits` は `plan`、`max_content_bytes`、`context_detail_level`、`preferred_locale`、`response_language`、`timezone`、rate limit、retentionを返す。MCPクライアントは自動保存前にこの情報を使い、Freeではcompact、Pro detailedではより細かい引き継ぎを保存する。`response_language` が `auto` の場合は現在の会話言語を優先する。
 
-WorkThreads toolsはPro限定。WorkThreads本文は人間向けUIに表示せず、MCP/APIキー認証されたAIエージェントだけが `read_agent_thread` で復号済みmessageを受け取れる。A2CRは初期版ではLLMを自動起動せず、外部AIエージェントからのtool callを受けてthreadを進める。
+WorkThreads toolsはPro限定。WorkThreads本文は人間向けUIに表示せず、MCP/APIキー認証されたAIエージェントだけが `read_workthread` で復号済みmessageを受け取れる。A2CRは初期版ではLLMを自動起動せず、外部AIエージェントからのtool callを受けてthreadを進める。
 
 ### AIクライアント誘導
 
@@ -850,7 +850,7 @@ bearer_token_env_var = "A2CR_API_KEY"
 | `/pricing` | 料金プランページ | 不要 |
 | `/dashboard` | メインダッシュボード | 必要 |
 | `/settings` | APIキー・設定手順 | 必要 |
-| `/agent-threads` | Pro WorkThreads metadata | 必要 |
+| `/workthreads` | Pro WorkThreads metadata | 必要 |
 
 ### 技術スタック
 
@@ -880,7 +880,7 @@ ReactダッシュボードはSupabase Authのログイン状態からJWTを取�
 
 ダッシュボードでは `contexts.content` を復号・表示しない。
 
-WorkThreadsでも同様に、ダッシュボードでは `agent_messages.content` を復号・表示しない。人間が確認できるのは進捗metadata、件数、時刻、agent名、成功/失敗、最終結果slotへのリンクだけにする。
+WorkThreadsでも同様に、ダッシュボードでは `work_thread_messages.content` を復号・表示しない。人間が確認できるのは進捗metadata、件数、時刻、agent名、成功/失敗、最終結果slotへのリンクだけにする。
 
 ### `/settings` の表示内容
 
@@ -961,14 +961,14 @@ WorkThreadsは `Human-hidden / Operationally protected / Not zero-knowledge` と
 ### 暗号化と鍵管理
 
 - `contexts.content` はFernetでアプリケーション層暗号化する
-- `agent_messages.content` も同じ方針でアプリケーション層暗号化する
+- `work_thread_messages.content` も同じ方針でアプリケーション層暗号化する
 - `FERNET_KEY` はcontent暗号化専用にする
 - `API_KEY_HASH_SECRET` はAPIキーハッシュ専用にする
 - `AUDIT_LOG_HASH_SECRET` はIP/User-AgentのHMAC化専用にする
 - `contexts.encryption_key_version` を保存し、将来の鍵ローテーションに備える
 - この方式はサーバー側で復号可能なアプリ層暗号化であり、E2E/ゼロ知識暗号化ではない
 
-WorkThreads本文の復号経路はAIエージェント向けAPI/MCPに限定する。ダッシュボードAPI、管理API、access logs、agent_runs、statsへ復号本文を渡さない。
+WorkThreads本文の復号経路はAIエージェント向けAPI/MCPに限定する。ダッシュボードAPI、管理API、access logs、work_thread_runs、statsへ復号本文を渡さない。
 
 ### レート制限
 
@@ -1013,8 +1013,8 @@ FastAPIでユーザーID・APIキーprefix・IPハッシュ単位のレート制
 
 成功・失敗の両方を `access_logs` に記録する。認証失敗で `user_id` が不明な場合は、`user_id` なしのセキュリティイベントとして別途アプリログへ記録し、contentやキーは含めない。保持期間切れでslotを自動削除する場合も、削除前に `context.expire` として `access_logs` に記録する。これによりユーザーは、消えた理由が明示削除なのか時間経過なのかをダッシュボードで確認できる。
 
-WorkThreadsでは `agent.thread.create`、`agent.message.post`、`agent.thread.read`、`agent.task.claim`、`agent.task.complete`、`agent.task.timeout` を監査対象にする。ログに保存するのは `thread_id`、`task_id`、`agent_name`、`result`、`client_type`、件数、token概算だけとし、message本文、プロンプト、AI応答全文は保存しない。
-相談ループ防止では `agent.loop.warning` と `agent.loop.blocked` を監査対象にする。ログには `thread_id`、`consultation_id`、`message_count`、`unresolved_question_count`、`result` だけを保存し、相談本文は保存しない。
+WorkThreadsでは `workthread.create`、`workthread.message.post`、`workthread.read`、`workthread.task.claim`、`workthread.task.complete`、`workthread.task.timeout` を監査対象にする。ログに保存するのは `thread_id`、`task_id`、`agent_name`、`result`、`client_type`、件数、token概算だけとし、message本文、プロンプト、AI応答全文は保存しない。
+相談ループ防止では `workthread.loop.warning` と `workthread.loop.blocked` を監査対象にする。ログには `thread_id`、`consultation_id`、`message_count`、`unresolved_question_count`、`result` だけを保存し、相談本文は保存しない。
 
 保持期間:
 - Freeは24時間保持
@@ -1022,7 +1022,7 @@ WorkThreadsでは `agent.thread.create`、`agent.message.post`、`agent.thread.r
 - アカウント削除時は `ON DELETE CASCADE` で即時削除
 - 期限切れログは日次ジョブで削除する
 - 期限切れcontextの削除ジョブは、content本文を復号せず、`user_id`・`slot_name`・削除時刻だけをログ化してから対象slotを削除する
-- 期限切れWorkThreadsの削除ジョブは、message本文を復号せず、`agent.thread.expire` を記録してからthread/messages/tasks/runsを削除する
+- 期限切れWorkThreadsの削除ジョブは、message本文を復号せず、`workthread.expire` を記録してからthread/messages/tasks/runsを削除する
 
 ### WorkThreadsのロック・デッドロック対策
 
@@ -1034,8 +1034,8 @@ WorkThreadsで最も避けるべき実装は、AI処理中にDB transactionを�
 - task claimは `FOR UPDATE SKIP LOCKED` を使う
 - thread状態更新は `version` による楽観ロックを使う
 - `lock_timeout` と `statement_timeout` を設定する
-- lock順序は `agent_threads` → `agent_tasks` → `agent_messages` → `stats/access_logs`
-- deadlockやlock timeoutは `agent_runs.status='timeout'` として記録し、本文は保存しない
+- lock順序は `work_threads` → `work_thread_tasks` → `work_thread_messages` → `stats/access_logs`
+- deadlockやlock timeoutは `work_thread_runs.status='timeout'` として記録し、本文は保存しない
 - 同一taskの二重完了は `lease_owner` と `lease_until` 条件で防ぐ
 
 ### WorkThreadsの相談ループ防止

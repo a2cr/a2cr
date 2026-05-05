@@ -643,10 +643,10 @@ Verify:
 
 **Files:**
 
-- Create: `supabase/migrations/00x_agent_threads.sql`
-- Create: `routers/agent_threads.py`
-- Create: `services/agent_threads.py`
-- Create: `tests/test_agent_threads.py`
+- Create: `supabase/migrations/00x_workthreads.sql`
+- Create: `routers/workthreads.py`
+- Create: `services/workthreads.py`
+- Create: `tests/test_workthreads.py`
 - Update: `mcp/server.py`
 - Update: `web/src/*`
 
@@ -654,17 +654,17 @@ Verify:
 
 Create:
 
-- `agent_threads`
-- `agent_messages`
-- `agent_tasks`
-- `agent_runs`
+- `work_threads`
+- `work_thread_messages`
+- `work_thread_tasks`
+- `work_thread_runs`
 
 Rules:
 
-- `agent_messages` is append-only
-- `agent_messages.content` is encrypted
-- `agent_messages` supports `message_type`, `parent_message_id`, `consultation_id`, `requires_response`, `target_agent_name`, `response_deadline`, and `idempotency_key`
-- dashboard APIs never return `agent_messages.content`
+- `work_thread_messages` is append-only
+- `work_thread_messages.content` is encrypted
+- `work_thread_messages` supports `message_type`, `parent_message_id`, `consultation_id`, `requires_response`, `target_agent_name`, `response_deadline`, and `idempotency_key`
+- dashboard APIs never return `work_thread_messages.content`
 - message table is range-partition ready by `created_at`
 - high volume mode uses daily partitions
 
@@ -677,7 +677,7 @@ Verify:
 
 - [ ] **Step 2: Task claim and leases**
 
-Implement `claim_agent_task` with `SELECT ... FOR UPDATE SKIP LOCKED`.
+Implement `claim_workthread_task` with `SELECT ... FOR UPDATE SKIP LOCKED`.
 
 Verify:
 
@@ -691,12 +691,12 @@ Verify:
 
 Tools/APIs:
 
-- `create_agent_thread`
-- `post_agent_message`
-- `read_agent_thread`
-- `claim_agent_task`
-- `complete_agent_task`
-- `save_thread_result`
+- `create_workthread`
+- `post_workthread_message`
+- `read_workthread`
+- `claim_workthread_task`
+- `complete_workthread_task`
+- `save_workthread_result`
 
 Verify:
 
@@ -705,7 +705,7 @@ Verify:
 - `question` / `answer` messages are grouped by `consultation_id`
 - loop guard returns warnings before blocking further consultation
 - final result can be saved to a normal Slot
-- WorkThreads APIs remain under `/api/v1/agent-*`
+- WorkThreads APIs remain under `/api/v1/workthreads/*` and `/api/v1/workthread-tasks/*`
 
 - [ ] **Step 4: Human-hidden dashboard**
 
@@ -745,7 +745,7 @@ Verify:
 
 - p95/p99 remain within chosen SLA
 - deadlocks are zero or extremely rare and safely retried
-- lock timeout records sanitized `agent_runs.status='timeout'`
+- lock timeout records sanitized `work_thread_runs.status='timeout'`
 
 - [ ] **Step 6: Consultation loop guard**
 
