@@ -36,8 +36,8 @@ def test_core_tables_have_user_scoped_uniqueness_and_constraints():
     assert "check (slot_number >= 1)" in text
     assert "check (plan in ('free', 'pro'))" in text
     assert "check (plan = 'pro' or context_detail_level = 'compact')" in text
-    assert "plan = 'free' and default_retention_seconds in (900, 1800, 3600, 10800, 86400)" in text
-    assert "plan = 'pro' and default_retention_seconds in (900, 1800, 3600, 10800, 86400, 604800, 2592000)" in text
+    assert "plan = 'free' and default_retention_seconds in (900, 1800, 3600, 10800, 21600, 43200, 86400)" in text
+    assert "plan = 'pro' and default_retention_seconds in (900, 1800, 3600, 10800, 21600, 43200, 86400, 259200, 604800, 864000, 1209600, 2592000)" in text
     assert "create unique index if not exists api_keys_hash_idx on public.api_keys(key_hash)" in text
 
 

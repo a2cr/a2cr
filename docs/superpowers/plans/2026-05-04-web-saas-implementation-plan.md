@@ -123,8 +123,8 @@ Important constraints:
 - `contexts.content` は暗号化済み本文だけを保存する
 - `contexts.slot_number` はユーザー内固定の表示位置として保存する
 - `user_profiles.plan` は `free` / `pro`
-- Free retention: `900, 1800, 3600, 10800, 86400`
-- Pro retention: `900, 1800, 3600, 10800, 86400, 604800, 2592000`
+- Free retention: `900, 1800, 3600, 10800, 21600, 43200, 86400`
+- Pro retention: `900, 1800, 3600, 10800, 21600, 43200, 86400, 259200, 604800, 864000, 1209600, 2592000`
 - Free detail: `compact` only
 - API keyは1 user 1 key
 
@@ -258,7 +258,7 @@ Verify:
 Free:
 
 - active slots: 3
-- retention: 15m / 30m / 1h / 3h / 24h, default 24h
+- retention: 15m / 30m / 1h / 3h / 6h / 12h / 24h, default 24h
 - max body: 32KB
 - detail: compact only
 - saves: 100/hour
@@ -269,7 +269,7 @@ Free:
 Pro:
 
 - active slots: 100
-- retention: 15m / 30m / 1h / 3h / 24h / 7d / 30d, default 30d
+- retention: 15m / 30m / 1h / 3h / 6h / 12h / 24h / 3d / 7d / 10d / 14d / 30d, default 30d
 - max body: 128KB
 - detail: compact / detailed
 - saves: 1000/hour

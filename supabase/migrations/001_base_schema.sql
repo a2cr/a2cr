@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CHECK (plan = 'pro' OR context_detail_level = 'compact'),
   CHECK (
-    (plan = 'free' AND default_retention_seconds IN (900, 1800, 3600, 10800, 86400)) OR
-    (plan = 'pro' AND default_retention_seconds IN (900, 1800, 3600, 10800, 86400, 604800, 2592000))
+    (plan = 'free' AND default_retention_seconds IN (900, 1800, 3600, 10800, 21600, 43200, 86400)) OR
+    (plan = 'pro' AND default_retention_seconds IN (900, 1800, 3600, 10800, 21600, 43200, 86400, 259200, 604800, 864000, 1209600, 2592000))
   )
 );
 
