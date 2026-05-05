@@ -72,6 +72,7 @@ def test_api_key_resolution_is_security_definer_and_secret_safe():
 def test_expiration_logs_before_delete_semantics():
     text = normalized_sql()
     assert "create or replace function app.expire_contexts()" in text
+    assert "returns integer language plpgsql security definer set search_path = pg_catalog, pg_temp" in text
     assert "delete from public.contexts" in text
     assert "select id, user_id, slot_name from public.contexts where expires_at <= now()" in text
     assert "insert into public.access_logs" in text
@@ -79,6 +80,7 @@ def test_expiration_logs_before_delete_semantics():
     assert "'context.expire'" in text
     assert "'system'" in text
     assert "'success'" in text
+    assert "grant execute on function app.expire_contexts() to a2cr_app" in text
 
 
 def test_migration_does_not_reference_runtime_service_role_or_log_secret_fields():

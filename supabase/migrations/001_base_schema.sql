@@ -188,6 +188,8 @@ $$;
 CREATE OR REPLACE FUNCTION app.expire_contexts()
 RETURNS integer
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
   v_deleted_count integer;

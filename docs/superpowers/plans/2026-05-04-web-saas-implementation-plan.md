@@ -92,7 +92,7 @@
 - Create: `supabase/migrations/001_base_schema.sql`
 - Create: `tests/test_rls.py`
 
-- [ ] **Step 1: Create least-privileged runtime role**
+- [x] **Step 1: Create least-privileged runtime role**
 
 `a2cr_app` を作成し、Runtimeからはこのroleだけで接続する。`SUPABASE_SERVICE_ROLE_KEY` は通常のRailway環境変数に置かない。
 
@@ -102,7 +102,7 @@ Verify:
 - service roleなしで通常操作が動く
 - service roleがない状態をCI/起動時チェックで検出できる
 
-- [ ] **Step 2: Add `app.current_user_id()`**
+- [x] **Step 2: Add `app.current_user_id()`**
 
 `SET LOCAL app.user_id = '<uuid>'` を参照するDB関数を作る。未設定時はNULLを返し、RLSは通さない。
 
@@ -111,7 +111,7 @@ Verify:
 - `SET LOCAL app.user_id` 未設定では `contexts` / `stats` / `user_profiles` / `api_keys` / `access_logs` が読めない
 - user Aのtransactionではuser Bの行が読めない
 
-- [ ] **Step 3: Create tables**
+- [x] **Step 3: Create tables**
 
 Create:
 
@@ -138,7 +138,7 @@ Verify:
 - 同一user内で同名active slotは一意
 - 同一user内で同じ `slot_number` のactive slotは一意
 
-- [ ] **Step 4: Add API key verification function**
+- [x] **Step 4: Add API key verification function**
 
 APIキー照合だけは `SECURITY DEFINER` 関数で行い、一致した `user_id` だけを返す。`key_hash`、plaintext、他ユーザー情報は返さない。
 
@@ -148,7 +148,7 @@ Verify:
 - revoked keyは通らない
 - 関数戻り値にsecretやkey metadataが含まれない
 
-- [ ] **Step 5: Add stats and expiration functions**
+- [x] **Step 5: Add stats and expiration functions**
 
 Stats更新はDB側の関数/triggerで原子的に行う。期限切れ削除は本文を復号せず、削除直前に `context.expire` を `client_type=system` で記録する。
 
@@ -159,7 +159,7 @@ Verify:
 - 期限切れ削除で `context.expire` が残る
 - `context.delete` と `context.expire` をログ上で区別できる
 
-- [ ] **Step 6: Add RLS policies**
+- [x] **Step 6: Add RLS policies**
 
 All user tables enable RLS and use `app.current_user_id()` for separation.
 
@@ -168,6 +168,13 @@ Verify:
 - dashboard JWT path, API key path, MCP pathのすべてで同じRLS境界を使える
 - cross-user select/update/deleteが失敗する
 - dashboard APIが本文を返せないことをテストで確認する
+
+Status 2026-05-05:
+
+- `supabase/migrations/001_base_schema.sql` をローカルPostgres実DBへ適用し、再適用も成功した。
+- `a2cr_app` role、`SET LOCAL app.user_id`、user A/BのRLS分離、Free制約、API key解決、stats更新を実DBで検証済み。
+- `app.expire_contexts()` はRLSに阻まれないよう `SECURITY DEFINER` に修正し、期限切れ削除と `context.expire` のsanitized log作成を実DBで検証済み。
+- dashboard/API/MCPのHTTP経路から同じRLS境界を通る統合テストはTask 2以降で実装する。
 
 ---
 
@@ -795,6 +802,8 @@ Railway runtime does not contain `SUPABASE_SERVICE_ROLE_KEY`; app startup reject
 
 Automated tests prove user A cannot read/update/delete/list user B data across dashboard/API/MCP paths.
 
+Status: DB-level isolation passed on local Postgres at 2026-05-05. Dashboard/API/MCP route-level tests are still pending.
+
 - [ ] **Gate C: Dashboard content blindness**
 
 Dashboard API and React network payloads never include encrypted or decrypted context body.
@@ -814,6 +823,8 @@ Free and Pro limits enforce active slots, retention, save rate, load rate, body 
 - [ ] **Gate G: Expiration auditability**
 
 Automatic expiration writes `context.expire`; explicit delete writes `context.delete`.
+
+Status: `app.expire_contexts()` writes `context.expire` and deletes only expired rows in local Postgres verification. Explicit delete audit still depends on Context API implementation.
 
 - [ ] **Gate H: Multilingual behavior**
 
@@ -852,18 +863,17 @@ MCP can start before the final dashboard because the product's core value is AI-
 
 ## First Concrete Next Step
 
-Start with `supabase/migrations/001_base_schema.sql` and `tests/test_rls.py`.
+Task 1のDB基盤はローカルPostgres実DB検証まで完了した。次はTask 2のFastAPI security foundationへ進む。
 
-Minimum first milestone:
+Minimum next milestone:
 
-- `contexts`, `user_profiles`, `api_keys`, `access_logs`, `stats`
-- `app.current_user_id()`
-- API key verification DB function
-- RLS policies
-- cross-user isolation tests
-- runtime role permission tests
+- `DATABASE_URL` ベースのPostgres connectionを追加する
+- authenticated requestごとにtransactionを開き、`SET LOCAL app.user_id` を設定する
+- Supabase JWT authとA2CR API key authの入口を分ける
+- runtimeに `SUPABASE_SERVICE_ROLE_KEY` がある場合は起動を拒否する
+- access log helperを作り、本文・secret・Authorization・生IP・full UAを保存しない
 
-When this milestone passes, the rest of the SaaS can be built on a secure base instead of patching isolation later.
+このmilestoneが通ると、実DBで検証済みのRLS境界をHTTP API/MCP経路へ接続できる。
 
 ## WorkThreads Clarification Addendum
 

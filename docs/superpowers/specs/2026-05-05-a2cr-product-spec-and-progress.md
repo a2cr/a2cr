@@ -404,7 +404,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 |---|---|---|
 | Secret scan | GitHub公開前にsecret、API key、DB URL、OAuth secretがないことを確認 | 未実施 |
 | Runtime secret separation | 通常Railway runtimeにservice role keyを置かない | 設計済み、未実装 |
-| RLS isolation | user Aがuser Bのdataを読めないことをテスト | 静的テストあり、実DB未検証 |
+| RLS isolation | user Aがuser Bのdataを読めないことをテスト | 静的テスト + ローカルPostgres実DB検証済み。API経路の統合テストは未実装 |
 | Dashboard blindness | dashboard API/React payloadに本文が含まれないことをテスト | 未実装 |
 | Safe logging | logに本文、secret、Authorization、生IPが含まれないことをテスト | 未実装 |
 | Rate limit | Free/Pro制限と429が効くことをテスト | 未実装 |
@@ -430,7 +430,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | ローカルWorkBaton API | 完了 | save/load/list/delete、slot番号、TTL、Fernet暗号化 |
 | ローカルMCP wrapper | 完了 | `save_context`、`resume_context`、`load_context`、`list_contexts`等 |
 | ローカルStreamlit dashboard | 完了 | A2CR名へ更新済み。ただし製品主対象ではない |
-| Supabase schema/RLS案 | 一部完了 | migrationと静的テストあり。実DB接続テストは未実施 |
+| Supabase schema/RLS案 | 一部完了 | migration、静的テスト、ローカルPostgres実DB検証済み。remote Supabase projectへの適用は未実施 |
 | Web SaaS詳細設計 | 一部完了 | Railway + Supabase + Cloudflare + Stripe構成で確定寄り |
 | Web SaaS実装 | 未着手 | FastAPIのPostgres/Auth/RLS移行、React dashboardは未実装 |
 | HTTP MCP `/mcp` | 未着手 | ローカルstdio/HTTP wrapperはあるが、Web SaaS用HTTP MCPは未実装 |
@@ -445,7 +445,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 ## 11. 次に固める項目
 
 1. WorkThreads MVPにtask/leaseまで含めるか、まずはmessage + unread + long pollingだけで始めるか。
-2. Web SaaSの最初の実装単位を、Supabase schema実DB検証から始めるか、FastAPI auth基盤から始めるか。
+2. 次の実装単位としてFastAPI auth/DB transaction基盤を作る。実DB検証済みのRLSをAPI/JWT/APIキー経路へ接続する。
 3. ダッシュボード上でWorkThreadsをどこまで見せるか。本文非表示は確定、metadataの粒度を決める。
 
 現時点の推奨は、WorkThreads MVPを `message + unread + check_updates + wait_updates` までに絞り、task/leaseは第2段階に回すこと。これなら「作業中のAI同士が気づく」価値を最小実装で検証できる。
