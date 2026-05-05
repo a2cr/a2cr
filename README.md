@@ -94,6 +94,7 @@ The project does not currently claim full end-to-end or zero-knowledge encryptio
 - WorkBaton save/load quality spec: `docs/superpowers/specs/2026-05-05-workbaton-save-load-quality-spec.md`
 - Web SaaS design: `docs/superpowers/specs/2026-05-03-web-saas-design.md`
 - Implementation plan: `docs/superpowers/plans/2026-05-04-web-saas-implementation-plan.md`
+- Optional AI client Skill template: `docs/templates/skills/a2cr-agent/SKILL.md`
 - GitHub publication draft: `docs/github-publication-draft.md`
 
 ## License

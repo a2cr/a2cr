@@ -757,6 +757,23 @@ FastAPIは認証後に `user_profiles.plan` を読み、保存・読込・一覧
 
 WorkThreads toolsはPro限定。WorkThreads本文は人間向けUIに表示せず、MCP/APIキー認証されたAIエージェントだけが `read_agent_thread` で復号済みmessageを受け取れる。A2CRは初期版ではLLMを自動起動せず、外部AIエージェントからのtool callを受けてthreadを進める。
 
+### AIクライアント誘導
+
+A2CRの振る舞いは、MCP設定ファイルに長いプロンプトを埋め込んで成立させない。必須の誘導はMCP tool descriptions / schema、MCP tool response、`resume_prompt` に置く。
+
+MCP tool descriptions / schemaには次を明記する。
+
+- `save_context` は `goal`、`current_state`、`next_action` を必須にする。
+- `save_context` はFreeならcompact、Pro detailedなら判断根拠・失敗履歴・検証結果を含められる。
+- secret、API key、Authorization header、private DB URL、会話全文、長大ログを保存しない。
+- `resume_context` は新しいAI窓で最初に呼ぶtoolであり、直接HTTP APIを推測しない。
+- ロード後は、保存本文と現在のプロジェクトファイルを照合し、現在のファイル状態を優先する。
+- 回答言語は保存本文ではなく、現在のユーザーメッセージに合わせる。
+
+MCP prompts/resourcesに対応したクライアントでは、同じ内容を補助資料として提供してよい。ただし、対応状況がクライアントごとに異なるため、MCP prompts/resourcesを必須前提にはしない。
+
+CodexなどSkill対応クライアント向けには、任意テンプレートとして `docs/templates/skills/a2cr-agent/SKILL.md` を提供する。このSkillは、A2CR MCPが使える時の保存・再開・WorkThreads運用の作法を短く伝えるためのものであり、A2CRのセキュリティ境界や認証設定を担わせない。
+
 **ユーザーの設定（Claude）：**
 ```json
 {

@@ -83,6 +83,7 @@ Implemented locally:
 - Fernet application-layer encryption for saved context bodies
 - fixed Slot 1-3 support
 - MCP wrapper tools such as `save_context`, `resume_context`, `load_context`, and `list_contexts`
+- optional AI client Skill template at `docs/templates/skills/a2cr-agent/SKILL.md`
 - Streamlit local dashboard
 - automated pytest coverage
 
@@ -191,6 +192,8 @@ A2CR service: http://localhost:8000
 A2CR MCPツールを使ってください。HTTP APIを直接推測して呼び出さないでください。
 まず resume_context(slot_name="your-slot") を実行して、A2CRから引き継ぎ文脈を読み込んでください。
 ```
+
+The optional `docs/templates/skills/a2cr-agent/SKILL.md` template can be used by Skill-capable clients such as Codex. A2CR should still work without it because the required guidance lives in MCP tool descriptions, tool responses, and generated resume prompts.
 
 ### Roadmap
 

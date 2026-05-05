@@ -231,6 +231,32 @@ After loading, you may inspect the project files normally as needed.
 Respond in the language of this message.
 ```
 
+### 8.5 AIクライアント誘導アーティファクト
+
+A2CRはMCP-firstで設計する。AIエージェントへの誘導は、特定クライアントだけに依存させず、次の複数面に分ける。
+
+| アーティファクト | 位置づけ | 必須度 |
+|---|---|---|
+| MCP tool descriptions / schema | `save_context`、`resume_context`、`load_context`などの使い方、必須項目、禁止事項をAIへ伝える主導線 | 必須 |
+| MCP tool response | `resume_context_call`、`resume_prompt`、validation error、rate limitなどの実行時結果を伝える | 必須 |
+| `resume_prompt` | 新しいAI窓に貼るslot固有の再開指示 | 必須 |
+| MCP prompts/resources | MCPクライアントが対応している場合の補助説明 | 任意 |
+| `SKILL.md` template | CodexなどSkill対応クライアント向けのプロジェクト/ユーザー導入ガイド | 任意 |
+| MCP設定ファイル | server URLと認証設定を置く場所。プロンプト注入の主導線にはしない | 設定上必要 |
+
+MCP tool descriptions / schemaには少なくとも次を入れる。
+
+- `save_context` は `goal`、`current_state`、`next_action` を必須にする。
+- Freeではcompact、Pro detailedでは判断根拠・失敗履歴・検証結果を追加できることを示す。
+- secret、API key、Authorization header、private DB URL、長大ログ、会話全文を保存してはいけないことを明記する。
+- `resume_context` は新窓の最初に呼ぶtoolであり、HTTP APIを直接推測しないことを明記する。
+- ロード後は、保存本文だけでなく必要なプロジェクトファイルを参照してよいことを明記する。
+- 回答言語は保存本文ではなく、現在のユーザーメッセージに合わせることを明記する。
+
+`SKILL.md` は有効だが、A2CRの成立条件にはしない。理由は、すべてのAIクライアントがSkillを読むわけではなく、MCP tool call前にプロジェクトファイルを読まないクライアントもあるためである。公開テンプレートは `docs/templates/skills/a2cr-agent/SKILL.md` に置き、Codexなどの利用者が自分の環境へコピーして使える補助資料とする。
+
+MCP設定ファイルに長いプロンプトを埋め込む設計は避ける。設定ファイルはsecret管理や接続先管理の責務が強く、クライアントごとの差も大きい。入れてよいのはserver URL、認証設定、短い表示名程度とし、A2CR固有の行動規則はMCP tool descriptions / schema、`resume_prompt`、任意の `SKILL.md` に分離する。
+
 ## 9. ロード仕様
 
 ### 9.1 `resume_context`

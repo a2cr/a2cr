@@ -91,6 +91,16 @@ WorkBatonは、現在のAI作業状態を構造化JSONとして保存し、新�
 
 詳細なセキュリティ仕様は `8. セキュリティ仕様` にまとめる。
 
+### 4.6 AIクライアント誘導
+
+A2CRの標準誘導面はMCP tool descriptions / schema、MCP tool response、`resume_prompt` とする。ここに保存粒度、禁止情報、ロード後の振る舞い、回答言語、直接HTTP APIを推測しない方針を入れる。
+
+`SKILL.md` はCodexなどSkill対応クライアント向けの任意テンプレートとして提供する。A2CR本体はSkillに依存しない。Skill非対応クライアントでも、MCP tool descriptions / schemaと `resume_prompt` だけで保存・ロード・再開品質を維持できることを必須条件にする。
+
+公開テンプレート:
+
+- `docs/templates/skills/a2cr-agent/SKILL.md`
+
 ## 5. WorkThreads仕様
 
 ### 5.1 目的
@@ -383,6 +393,7 @@ Web SaaSではSupabase PostgresのRLSを必須とする。
 | Web SaaS詳細設計 | 一部完了 | Railway + Supabase + Cloudflare + Stripe構成で確定寄り |
 | Web SaaS実装 | 未着手 | FastAPIのPostgres/Auth/RLS移行、React dashboardは未実装 |
 | HTTP MCP `/mcp` | 未着手 | ローカルstdio/HTTP wrapperはあるが、Web SaaS用HTTP MCPは未実装 |
+| AIクライアント誘導 | 一部完了 | MCP tool descriptions / schemaを必須誘導面にし、任意の `SKILL.md` templateを追加 |
 | WorkThreads仕様 | 一部完了 | 目的、更新確認、負荷方針を本書に確定仕様として追加 |
 | WorkThreads実装 | 未着手 | DB、API、MCP tools、long polling、load testが未実装 |
 | Stripe課金 | 未着手 | Core安定後に着手 |

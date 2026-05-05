@@ -460,6 +460,24 @@ Expected:
 - Japanese prompt produces Japanese continuation
 - English prompt produces English continuation
 
+- [ ] **Step 4: AI client guidance artifacts**
+
+Implement and publish the guidance surfaces that help AI agents use A2CR correctly.
+
+Required:
+
+- MCP tool descriptions and JSON schemas contain required fields, compact/detailed guidance, secret prohibitions, and the "do not guess direct HTTP API" rule
+- `save_context` responses include `resume_context_call` and `resume_prompt`
+- dashboard setup text explains that `SKILL.md` is optional and client-specific
+- public template exists at `docs/templates/skills/a2cr-agent/SKILL.md`
+
+Verify:
+
+- WorkBaton save/load/resume works without installing any Skill
+- Codex with the optional Skill follows `resume_context` first and avoids direct HTTP guesses
+- Skill text does not contain API keys, private URLs, or user-specific secrets
+- MCP config examples only contain URL/auth configuration, not long embedded prompts
+
 ---
 
 ## Task 6: React/Vite Dashboard
