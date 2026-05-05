@@ -8,11 +8,13 @@ import os
 
 project_root = os.path.dirname(os.path.abspath(__file__))
 
+# MCP stdio messages must stay UTF-8 on Windows too.
+for stream in (sys.stdin, sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8")
+
 # Remove project root from sys.path so local mcp/ does not shadow installed mcp package
 sys.path = [p for p in sys.path if p and os.path.abspath(p) != project_root]
-
-# Add mcp/ dir so server.py itself can be found if needed
-sys.path.insert(0, os.path.join(project_root, "mcp"))
 
 # Execute the actual server
 server_path = os.path.join(project_root, "mcp", "server.py")

@@ -6,13 +6,19 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from services.config import get_config
 from services.crypto import encrypt, decrypt
 from services.db import get_engine, Context, Stats
-from services.exceptions import SlotLimitExceeded, ContentTooLarge, SlotNotFound
+from services.exceptions import (
+    SlotLimitExceeded,
+    ContentTooLarge,
+    SlotNotFound,
+    InvalidSlotNumber,
+    SlotNameConflict,
+)
 from services.tokens import count_tokens, original_tokens_from_length_optional
 
 _MAX_SLOTS = 3
@@ -23,6 +29,7 @@ _TTL_MINUTES = 30
 @dataclass
 class SaveResult:
     slot_name: str
+    slot_number: int | None
     expires_at: datetime
     compressed_tokens: int
     saved_tokens: Optional[int]
@@ -32,6 +39,7 @@ class SaveResult:
 @dataclass
 class LoadResult:
     slot_name: str
+    slot_number: int | None
     content: dict
     expires_at: datetime
     compressed_tokens: int
@@ -42,6 +50,7 @@ class LoadResult:
 @dataclass
 class ListResult:
     slot_name: str
+    slot_number: int | None
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
@@ -59,12 +68,46 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _validate_slot_number(slot_number: Optional[int]) -> None:
+    if slot_number is not None and not 1 <= slot_number <= _MAX_SLOTS:
+        raise InvalidSlotNumber()
+
+
+def _delete_expired(session: Session, now: datetime) -> None:
+    expired = session.execute(
+        select(Context).where(Context.expires_at <= now)
+    ).scalars().all()
+    for ctx in expired:
+        session.delete(ctx)
+    if expired:
+        session.flush()
+
+
+def _next_free_slot_number(session: Session, now: datetime) -> int:
+    used = {
+        n
+        for n in session.scalars(
+            select(Context.slot_number).where(
+                Context.expires_at > now,
+                Context.slot_number.is_not(None),
+            )
+        ).all()
+        if n is not None
+    }
+    for candidate in range(1, _MAX_SLOTS + 1):
+        if candidate not in used:
+            return candidate
+    raise SlotLimitExceeded()
+
+
 def save_context(
     slot_name: str,
     content_dict: dict,
     original_length: Optional[int],
     model_source: Optional[str],
+    slot_number: Optional[int] = None,
 ) -> SaveResult:
+    _validate_slot_number(slot_number)
     content_json = json.dumps(content_dict, ensure_ascii=False)
     content_bytes = content_json.encode("utf-8")
     if len(content_bytes) > _MAX_BYTES:
@@ -79,19 +122,38 @@ def save_context(
     expires_at = now + timedelta(minutes=_TTL_MINUTES)
 
     with Session(get_engine()) as session:
-        existing = session.execute(
+        _delete_expired(session, now)
+
+        existing_by_name = session.execute(
             select(Context).where(Context.slot_name == slot_name)
         ).scalar_one_or_none()
 
+        existing_by_number = None
+        if slot_number is not None:
+            existing_by_number = session.execute(
+                select(Context).where(Context.slot_number == slot_number)
+            ).scalar_one_or_none()
+
+        if (
+            existing_by_number is not None
+            and existing_by_name is not None
+            and existing_by_number.id != existing_by_name.id
+        ):
+            raise SlotNameConflict()
+
+        existing = existing_by_number or existing_by_name
+        assigned_slot_number = (
+            slot_number
+            if slot_number is not None
+            else existing.slot_number if existing is not None and existing.slot_number is not None
+            else _next_free_slot_number(session, now)
+        )
+
         if existing is None:
-            count = session.scalar(
-                select(func.count()).select_from(Context).where(Context.expires_at > now)
-            )
-            if count >= _MAX_SLOTS:
-                raise SlotLimitExceeded()
             ctx = Context(
                 id=str(uuid4()),
                 slot_name=slot_name,
+                slot_number=assigned_slot_number,
                 content=encrypted,
                 created_at=now,
                 updated_at=now,
@@ -104,6 +166,8 @@ def save_context(
             )
             session.add(ctx)
         else:
+            existing.slot_name = slot_name
+            existing.slot_number = assigned_slot_number
             existing.content = encrypted
             existing.updated_at = now
             existing.expires_at = expires_at
@@ -121,6 +185,7 @@ def save_context(
 
     return SaveResult(
         slot_name=slot_name,
+        slot_number=assigned_slot_number,
         expires_at=expires_at,
         compressed_tokens=compressed_tokens,
         saved_tokens=saved_tokens,
@@ -128,12 +193,30 @@ def save_context(
     )
 
 
-def load_context(slot_name: str) -> LoadResult:
-    now = _now_utc()
-    with Session(get_engine()) as session:
+def _find_context(
+    session: Session,
+    slot_name: Optional[str] = None,
+    slot_number: Optional[int] = None,
+) -> Context | None:
+    _validate_slot_number(slot_number)
+    if slot_number is not None:
         ctx = session.execute(
+            select(Context).where(Context.slot_number == slot_number)
+        ).scalar_one_or_none()
+        if ctx is not None and slot_name is not None and ctx.slot_name != slot_name:
+            return None
+        return ctx
+    if slot_name is not None:
+        return session.execute(
             select(Context).where(Context.slot_name == slot_name)
         ).scalar_one_or_none()
+    return None
+
+
+def load_context(slot_name: Optional[str] = None, slot_number: Optional[int] = None) -> LoadResult:
+    now = _now_utc()
+    with Session(get_engine()) as session:
+        ctx = _find_context(session, slot_name=slot_name, slot_number=slot_number)
 
         if ctx is None or ctx.expires_at < now:
             if ctx is not None:
@@ -149,6 +232,7 @@ def load_context(slot_name: str) -> LoadResult:
         content_dict = json.loads(decrypt(ctx.content))
         return LoadResult(
             slot_name=ctx.slot_name,
+            slot_number=ctx.slot_number,
             content=content_dict,
             expires_at=ctx.expires_at,
             compressed_tokens=ctx.compressed_tokens,
@@ -173,10 +257,12 @@ def list_contexts() -> list[ListResult]:
     with Session(get_engine()) as session:
         rows = session.execute(
             select(Context).where(Context.expires_at > now)
+            .order_by(Context.slot_number.asc(), Context.updated_at.desc())
         ).scalars().all()
         return [
             ListResult(
                 slot_name=r.slot_name,
+                slot_number=r.slot_number,
                 expires_at=r.expires_at,
                 updated_at=r.updated_at,
                 size_bytes=r.size_bytes,
@@ -201,7 +287,7 @@ def cleanup_expired() -> int:
 
 
 def get_handoff(slot_name: str) -> HandoffResult:
-    result = load_context(slot_name)  # raises SlotNotFound if missing/expired
+    result = load_context(slot_name=slot_name)  # raises SlotNotFound if missing/expired
     text = _build_handoff_text(result.content)
     return HandoffResult(slot_name=slot_name, handoff_text=text)
 

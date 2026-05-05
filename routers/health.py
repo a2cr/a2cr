@@ -5,4 +5,4 @@ router = APIRouter()
 
 @router.get("/v1/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "🟢 正常稼働中"}

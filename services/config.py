@@ -5,8 +5,26 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
-_ENV_DIR = Path(os.environ.get("APPDATA", Path.home())) / "ai_clipboard"
+_APPDATA_DIR = Path(os.environ.get("APPDATA", Path.home()))
+_DEFAULT_ENV_DIR = _APPDATA_DIR / "a2cr"
+_LEGACY_ENV_DIR = _APPDATA_DIR / "ai_clipboard"
+
+
+def _resolve_env_dir() -> Path:
+    configured = os.environ.get("A2CR_HOME") or os.environ.get("AI_CLIPBOARD_HOME")
+    if configured:
+        return Path(configured)
+    if (_LEGACY_ENV_DIR / ".env").exists():
+        return _LEGACY_ENV_DIR
+    return _DEFAULT_ENV_DIR
+
+
+_ENV_DIR = _resolve_env_dir()
 _ENV_PATH = _ENV_DIR / ".env"
+
+
+def get_data_dir() -> Path:
+    return _ENV_DIR
 
 
 def _ensure_env_file() -> None:
@@ -19,7 +37,7 @@ def _ensure_env_file() -> None:
     _ENV_PATH.write_text(
         f"API_KEY={api_key}\n"
         f"FERNET_KEY={fernet_key}\n"
-        f"DB_PATH={_ENV_DIR / 'ai_clipboard.db'}\n",
+        f"DB_PATH={_ENV_DIR / 'a2cr.db'}\n",
         encoding="utf-8",
     )
 
@@ -48,7 +66,7 @@ def get_config() -> Config:
     _config = Config(
         api_key=os.environ["API_KEY"],
         fernet_key=os.environ["FERNET_KEY"],
-        db_path=os.environ.get("DB_PATH", str(_ENV_DIR / "ai_clipboard.db")),
+        db_path=os.environ.get("DB_PATH", str(_ENV_DIR / "a2cr.db")),
     )
     return _config
 

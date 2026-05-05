@@ -16,8 +16,40 @@ CONTENT = {
 def test_save_creates_slot():
     result = ctx_service.save_context("proj-a", CONTENT, None, None)
     assert result.slot_name == "proj-a"
+    assert result.slot_number == 1
     assert result.compressed_tokens > 0
     assert result.saved_tokens is None  # no original_length
+
+
+def test_save_assigns_fixed_slot_numbers():
+    first = ctx_service.save_context("slot-one", CONTENT, None, None)
+    second = ctx_service.save_context("slot-two", CONTENT, None, None)
+    assert first.slot_number == 1
+    assert second.slot_number == 2
+
+
+def test_save_to_fixed_slot_number_overwrites_that_position():
+    first = ctx_service.save_context("fixed-a", CONTENT, None, None, slot_number=2)
+    second = ctx_service.save_context("fixed-b", CONTENT, None, None, slot_number=2)
+
+    assert first.slot_number == 2
+    assert second.slot_number == 2
+
+    results = ctx_service.list_contexts()
+    assert [(r.slot_number, r.slot_name) for r in results] == [(2, "fixed-b")]
+    with pytest.raises(SlotNotFound):
+        ctx_service.load_context("fixed-a")
+
+
+def test_list_contexts_returns_fixed_slot_order():
+    ctx_service.save_context("slot-two", CONTENT, None, None, slot_number=2)
+    ctx_service.save_context("slot-one", CONTENT, None, None, slot_number=1)
+
+    results = ctx_service.list_contexts()
+    assert [(r.slot_number, r.slot_name) for r in results] == [
+        (1, "slot-one"),
+        (2, "slot-two"),
+    ]
 
 
 def test_save_with_original_length():
@@ -65,8 +97,30 @@ def test_load_existing():
     result = ctx_service.load_context("proj-load")
     assert result is not None
     assert result.content["goal"] == "test goal"
+    assert result.slot_number == 1
     assert result.model_source == "gpt"
     assert result.load_count == 1
+
+
+def test_load_by_slot_number():
+    ctx_service.save_context("number-load", CONTENT, None, "gpt", slot_number=2)
+    result = ctx_service.load_context(slot_number=2)
+    assert result.slot_name == "number-load"
+    assert result.slot_number == 2
+    assert result.content["goal"] == "test goal"
+
+
+def test_save_load_preserves_unicode_content():
+    content = dict(CONTENT)
+    content["goal"] = "設計書レビュー"
+    content["current_state"] = "Freeは3時間保持、Proは月5ドル"
+    content["next_action"] = "日本語のままMCPで読み込めることを確認する"
+    content["decisions"] = ["RLSを有効化", "アクセスログは本文を保存しない"]
+
+    ctx_service.save_context("proj-unicode", content, None, None)
+    result = ctx_service.load_context("proj-unicode")
+
+    assert result.content == content
 
 
 def test_load_increments_load_count():

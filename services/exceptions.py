@@ -11,6 +11,16 @@ class SlotLimitExceeded(AppError):
         super().__init__("slot_limit_exceeded", "Maximum slot count (3) reached", 400)
 
 
+class InvalidSlotNumber(AppError):
+    def __init__(self):
+        super().__init__("invalid_slot_number", "slot_number must be between 1 and 3", 400)
+
+
+class SlotNameConflict(AppError):
+    def __init__(self):
+        super().__init__("slot_name_conflict", "slot_name already belongs to another slot", 409)
+
+
 class ContentTooLarge(AppError):
     def __init__(self):
         super().__init__("content_too_large", "Content exceeds 10KB limit", 400)

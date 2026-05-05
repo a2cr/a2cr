@@ -1,4 +1,4 @@
-# AI Clipboard 使用説明書
+# A2CR 使用説明書
 
 AIエージェント（Claude・GPT・Gemini等）が会話コンテキストを30分間保存・復元できるローカルサービスです。
 
@@ -26,7 +26,7 @@ AIエージェント（Claude・GPT・Gemini等）が会話コンテキストを
 ### インストール
 
 ```bash
-cd C:\Users\sirot\Desktop\AIClipboard_b
+cd <project-root>
 pip install -r requirements.txt
 ```
 
@@ -35,14 +35,14 @@ pip install -r requirements.txt
 初回 `start.bat` 実行時に自動生成されます。
 
 ```
-C:\Users\sirot\AppData\Roaming\ai_clipboard\.env
+%APPDATA%\a2cr\.env
 ```
 
 内容例：
 ```
 API_KEY=sk-xxxxxxxxxxxxxxxx...
 FERNET_KEY=xxxxxxxxxxxx...
-DB_PATH=C:\Users\sirot\AppData\Roaming\ai_clipboard\ai_clipboard.db
+DB_PATH=%APPDATA%\a2cr\a2cr.db
 ```
 
 ---
@@ -281,7 +281,7 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ AI Clipboard                                        │
+│ A2CR                                        │
 │                                                     │
 │  累計保存回数   累計ロード回数   累計節約トークン      │
 │      3              1              4500             │
@@ -299,7 +299,7 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 ▼ my-project  — 残り 28分
   モデル: claude   サイズ: 982B   圧縮後: 353tok   節約: 4913tok   ロード: 1回
 
-  goal: AI Clipboard ローカルMVPの実装
+  goal: A2CR ローカルMVPの実装
   current_state: 全12タスク実装済み...
   next_action: 実際の作業でMCPを活用...
 
@@ -327,7 +327,7 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ AI Clipboard  0.1.0                  [ Authorize 🔒]│  ← APIキー入力ボタン
+│ A2CR  0.1.0                  [ Authorize 🔒]│  ← APIキー入力ボタン
 │─────────────────────────────────────────────────────│
 │ GET   /v1/health        ▼                           │
 │ POST  /v1/context/save  ▼                           │  ← クリックで展開
@@ -363,7 +363,7 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 
 ## MCPサーバー（Claude Code連携）
 
-Claude Code から直接 AI Clipboard を操作できます。
+Claude Code から直接 A2CR を操作できます。
 
 ### 登録方法
 
@@ -372,11 +372,11 @@ Claude Code から直接 AI Clipboard を操作できます。
 ```json
 {
   "mcpServers": {
-    "ai-clipboard": {
+    "a2cr": {
       "command": "python",
-      "args": ["C:/Users/sirot/Desktop/AIClipboard_b/mcp/server.py"],
+      "args": ["<project-root>/mcp/server.py"],
       "env": {
-        "AI_CLIPBOARD_API_KEY": "<.envファイルのAPI_KEYの値>"
+        "A2CR_API_KEY": "<.envファイルのAPI_KEYの値>"
       }
     }
   }
@@ -385,7 +385,7 @@ Claude Code から直接 AI Clipboard を操作できます。
 
 APIキーは `.env` ファイルから確認：
 ```
-C:\Users\sirot\AppData\Roaming\ai_clipboard\.env
+%APPDATA%\a2cr\.env
 ```
 
 ### 利用可能なMCPツール
@@ -403,11 +403,11 @@ C:\Users\sirot\AppData\Roaming\ai_clipboard\.env
 Claude に対してこのように指示するだけで動作します：
 
 ```
-今の作業内容を ai-clipboard の "my-project-main" スロットに保存してください
+今の作業内容を a2cr の "my-project-main" スロットに保存してください
 ```
 
 ```
-ai-clipboard の "my-project-main" を読み込んで、作業を再開してください
+a2cr の "my-project-main" を読み込んで、作業を再開してください
 ```
 
 ---
@@ -474,7 +474,7 @@ curl -X DELETE http://localhost:8000/v1/context/{slot_name} -H "X-API-Key: $API_
 ### APIキーがわからない
 
 ```
-C:\Users\sirot\AppData\Roaming\ai_clipboard\.env
+%APPDATA%\a2cr\.env
 ```
 
 を開いて `API_KEY=` の値を確認してください。

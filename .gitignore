@@ -1,0 +1,54 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local A2CR data
+*.db
+*.sqlite
+*.sqlite3
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Frontend/build artifacts
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Local tool/editor state
+.claude/
+.codex/
+.superpowers/
+.vscode/
+.idea/
+
+# Internal working notes not intended for public GitHub
+CLAUDE.md
+ai_clipboard_handover.md
+service_selection.md
+AI_Clipboard_Service_Selection.md
+ai_clipboard_service_selection*.md
+docs/handoff.md
+docs/superpowers/plans/2026-05-03-ai-clipboard-local-mvp.md
+docs/superpowers/specs/2026-05-03-ai-clipboard-local-mvp-design.md
+
+# OS files
+.DS_Store
+Thumbs.db

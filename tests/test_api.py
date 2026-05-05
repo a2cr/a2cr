@@ -19,16 +19,45 @@ def client():
 def test_health(client):
     r = client.get("/v1/health")
     assert r.status_code == 200
-    assert r.json() == {"status": "ok"}
+    assert r.json() == {"status": "🟢 正常稼働中"}
 
 
-def test_save_returns_201(client):
+def test_save_returns_201(client, monkeypatch):
+    monkeypatch.setenv("A2CR_SERVICE_URL", "https://example.test/mcp")
     r = client.post("/v1/context/save", json={"slot_name": "test-slot", "content": CONTENT}, headers=HEADERS)
     assert r.status_code == 201
     body = r.json()
     assert body["slot_name"] == "test-slot"
+    assert body["slot_number"] == 1
     assert "expires_at" in body
     assert body["compressed_tokens"] > 0
+    assert body["resume_context_call"] == 'resume_context(slot_name="test-slot")'
+    assert "A2CR service: https://example.test/mcp" in body["resume_prompt"]
+    assert 'resume_context(slot_name="test-slot")' in body["resume_prompt"]
+    assert "resume_context(slot_number=1)" in body["resume_prompt"]
+    assert "HTTP API" in body["resume_prompt"]
+    assert "Do not read local files" not in body["resume_prompt"]
+    assert "\u30ed\u30fc\u30ab\u30eb\u30d5\u30a1\u30a4\u30eb" not in body["resume_prompt"]
+    assert "\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u30d5\u30a1\u30a4\u30eb" in body["resume_prompt"]
+
+
+def test_save_accepts_fixed_slot_number(client):
+    r = client.post(
+        "/v1/context/save",
+        json={"slot_name": "fixed-slot", "slot_number": 3, "content": CONTENT},
+        headers=HEADERS,
+    )
+    assert r.status_code == 201
+    assert r.json()["slot_number"] == 3
+
+
+def test_save_rejects_invalid_slot_number(client):
+    r = client.post(
+        "/v1/context/save",
+        json={"slot_name": "bad-slot", "slot_number": 4, "content": CONTENT},
+        headers=HEADERS,
+    )
+    assert r.status_code == 422
 
 
 def test_save_no_api_key_returns_401(client):
@@ -63,7 +92,22 @@ def test_load_existing(client):
     assert r.status_code == 200
     body = r.json()
     assert body["content"]["goal"] == "test goal"
+    assert body["slot_number"] == 1
     assert body["load_count"] == 1
+
+
+def test_load_by_slot_number(client):
+    client.post(
+        "/v1/context/save",
+        json={"slot_name": "number-load", "slot_number": 2, "content": CONTENT},
+        headers=HEADERS,
+    )
+    r = client.get("/v1/context/slot/2", headers=HEADERS)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["slot_name"] == "number-load"
+    assert body["slot_number"] == 2
+    assert body["content"]["goal"] == "test goal"
 
 
 def test_load_not_found_returns_404(client):
@@ -73,13 +117,14 @@ def test_load_not_found_returns_404(client):
 
 
 def test_list_returns_slots(client):
-    client.post("/v1/context/save", json={"slot_name": "list-slot-a", "content": CONTENT}, headers=HEADERS)
-    client.post("/v1/context/save", json={"slot_name": "list-slot-b", "content": CONTENT}, headers=HEADERS)
+    client.post("/v1/context/save", json={"slot_name": "list-slot-a", "slot_number": 2, "content": CONTENT}, headers=HEADERS)
+    client.post("/v1/context/save", json={"slot_name": "list-slot-b", "slot_number": 1, "content": CONTENT}, headers=HEADERS)
     r = client.get("/v1/context/list", headers=HEADERS)
     assert r.status_code == 200
     names = [s["slot_name"] for s in r.json()]
     assert "list-slot-a" in names
     assert "list-slot-b" in names
+    assert [s["slot_number"] for s in r.json()] == [1, 2]
 
 
 def test_list_does_not_conflict_with_load(client):

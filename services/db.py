@@ -30,6 +30,7 @@ class Context(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     slot_name: Mapped[str] = mapped_column(String, unique=True, index=True)
+    slot_number: Mapped[Optional[int]] = mapped_column(Integer, unique=True, index=True, nullable=True)
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     updated_at: Mapped[datetime] = mapped_column(DateTime)
@@ -53,7 +54,37 @@ class Stats(Base):
 def init_db() -> None:
     engine = get_engine()
     Base.metadata.create_all(engine)
+    _migrate_slot_number(engine)
     with Session(engine) as session:
         if session.get(Stats, 1) is None:
             session.add(Stats(id=1, total_saves=0, total_loads=0, total_tokens_saved=0))
             session.commit()
+
+
+def _migrate_slot_number(engine) -> None:
+    with engine.begin() as conn:
+        columns = {
+            row[1]
+            for row in conn.exec_driver_sql("PRAGMA table_info(contexts)").fetchall()
+        }
+        if "slot_number" not in columns:
+            conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN slot_number INTEGER")
+        conn.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_contexts_slot_number ON contexts(slot_number)"
+        )
+
+        used = {
+            row[0]
+            for row in conn.exec_driver_sql(
+                "SELECT slot_number FROM contexts WHERE slot_number IS NOT NULL"
+            ).fetchall()
+        }
+        available = [n for n in range(1, 4) if n not in used]
+        unassigned = conn.exec_driver_sql(
+            "SELECT id FROM contexts WHERE slot_number IS NULL ORDER BY updated_at DESC"
+        ).fetchall()
+        for row, slot_number in zip(unassigned, available):
+            conn.exec_driver_sql(
+                "UPDATE contexts SET slot_number = ? WHERE id = ?",
+                (slot_number, row[0]),
+            )

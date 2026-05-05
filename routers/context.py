@@ -1,4 +1,5 @@
 import hmac
+import os
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import JSONResponse
@@ -9,6 +10,39 @@ from services.config import get_config
 from services.exceptions import AppError
 
 router = APIRouter()
+
+
+def build_resume_context_call(slot_name: str, slot_number: Optional[int] = None) -> str:
+    return f'resume_context(slot_name="{slot_name}")'
+
+
+def get_service_url() -> str:
+    return os.environ.get(
+        "A2CR_SERVICE_URL",
+        os.environ.get("AI_CLIPBOARD_SERVICE_URL", "http://localhost:8000"),
+    )
+
+
+def build_resume_prompt(
+    slot_name: str,
+    slot_number: Optional[int] = None,
+    service_url: str = "http://localhost:8000",
+) -> str:
+    slot_number_hint = (
+        f"Slot番号対応済みなら resume_context(slot_number={slot_number}) "
+        "でも読み込めます。\n"
+        if slot_number is not None
+        else ""
+    )
+    return (
+        f"A2CR service: {service_url}\n"
+        "A2CR MCPツールを使ってください。HTTP APIを直接推測して呼び出さないでください。\n"
+        f"まず {build_resume_context_call(slot_name, slot_number)} "
+        "を実行して、A2CRから引き継ぎ文脈を読み込んでください。\n"
+        f"{slot_number_hint}"
+        "読み込み後は、作業に必要なプロジェクトファイルを通常通り参照して構いません。\n"
+        "回答はこのメッセージの言語に合わせてください。"
+    )
 
 
 def verify_api_key(x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")) -> None:
@@ -32,12 +66,20 @@ def save(req: SaveRequest, _: None = Depends(verify_api_key)) -> SaveResponse:
         content_dict=req.content.model_dump(),
         original_length=req.original_length,
         model_source=req.model_source,
+        slot_number=req.slot_number,
     )
     return SaveResponse(
         slot_name=result.slot_name,
+        slot_number=result.slot_number,
         expires_at=result.expires_at,
         compressed_tokens=result.compressed_tokens,
         saved_tokens=result.saved_tokens,
+        resume_context_call=build_resume_context_call(result.slot_name, result.slot_number),
+        resume_prompt=build_resume_prompt(
+            result.slot_name,
+            slot_number=result.slot_number,
+            service_url=get_service_url(),
+        ),
     )
 
 
@@ -47,6 +89,7 @@ def list_contexts(_: None = Depends(verify_api_key)) -> list[ListItem]:
     return [
         ListItem(
             slot_name=r.slot_name,
+            slot_number=r.slot_number,
             expires_at=r.expires_at,
             updated_at=r.updated_at,
             size_bytes=r.size_bytes,
@@ -63,11 +106,26 @@ def get_handoff(slot_name: str, _: None = Depends(verify_api_key)) -> HandoffRes
     return HandoffResponse(slot_name=result.slot_name, handoff_text=result.handoff_text)
 
 
-@router.get("/v1/context/{slot_name}")
-def load(slot_name: str, _: None = Depends(verify_api_key)) -> LoadResponse:
-    result = ctx_service.load_context(slot_name)
+@router.get("/v1/context/slot/{slot_number}")
+def load_by_slot_number(slot_number: int, _: None = Depends(verify_api_key)) -> LoadResponse:
+    result = ctx_service.load_context(slot_number=slot_number)
     return LoadResponse(
         slot_name=result.slot_name,
+        slot_number=result.slot_number,
+        content=result.content,
+        expires_at=result.expires_at,
+        compressed_tokens=result.compressed_tokens,
+        model_source=result.model_source,
+        load_count=result.load_count,
+    )
+
+
+@router.get("/v1/context/{slot_name}")
+def load(slot_name: str, _: None = Depends(verify_api_key)) -> LoadResponse:
+    result = ctx_service.load_context(slot_name=slot_name)
+    return LoadResponse(
+        slot_name=result.slot_name,
+        slot_number=result.slot_number,
         content=result.content,
         expires_at=result.expires_at,
         compressed_tokens=result.compressed_tokens,

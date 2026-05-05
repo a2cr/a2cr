@@ -22,6 +22,7 @@ class ContentSchema(BaseModel):
 
 class SaveRequest(BaseModel):
     slot_name: str
+    slot_number: Optional[int] = None
     content: ContentSchema
     original_length: Optional[int] = None
     model_source: Optional[Literal["claude", "gpt", "gemini", "other"]] = None
@@ -34,6 +35,13 @@ class SaveRequest(BaseModel):
             raise ValueError("slot_name must match ^[a-zA-Z0-9_-]{1,64}$")
         return v
 
+    @field_validator("slot_number")
+    @classmethod
+    def validate_slot_number(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and not 1 <= v <= 3:
+            raise ValueError("slot_number must be between 1 and 3")
+        return v
+
     @field_validator("original_length")
     @classmethod
     def validate_original_length(cls, v: Optional[int]) -> Optional[int]:
@@ -44,13 +52,17 @@ class SaveRequest(BaseModel):
 
 class SaveResponse(BaseModel):
     slot_name: str
+    slot_number: Optional[int] = None
     expires_at: datetime
     compressed_tokens: int
     saved_tokens: Optional[int] = None
+    resume_context_call: str
+    resume_prompt: str
 
 
 class LoadResponse(BaseModel):
     slot_name: str
+    slot_number: Optional[int] = None
     content: ContentSchema
     expires_at: datetime
     compressed_tokens: int
@@ -60,6 +72,7 @@ class LoadResponse(BaseModel):
 
 class ListItem(BaseModel):
     slot_name: str
+    slot_number: Optional[int] = None
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
