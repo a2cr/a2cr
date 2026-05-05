@@ -1,13 +1,17 @@
 from contextlib import asynccontextmanager
 import asyncio
+from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from services.db import init_db
 from services.context import cleanup_expired
 from services.exceptions import AppError
 from routers import health, context, web_context, dashboard, mcp_http
+
+WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
+WEB_INDEX_FILE = WEB_DIST_DIR / "index.html"
 
 
 async def _cleanup_loop():
@@ -53,3 +57,65 @@ app.include_router(context.router)
 app.include_router(web_context.router)
 app.include_router(dashboard.router)
 app.mount("/mcp", mcp_http.mcp_app)
+
+
+@app.api_route("/mcp", methods=["GET", "POST", "DELETE", "OPTIONS"])
+async def serve_mcp_exact(request: Request):
+    scope = dict(request.scope)
+    scope["path"] = "/"
+    scope["raw_path"] = b"/"
+    scope["root_path"] = f'{scope.get("root_path", "")}/mcp'
+
+    messages: asyncio.Queue[dict] = asyncio.Queue()
+
+    async def send(message: dict):
+        await messages.put(message)
+
+    task = asyncio.create_task(mcp_http.mcp_app(scope, request.receive, send))
+    first_message = asyncio.create_task(messages.get())
+    done, _ = await asyncio.wait({task, first_message}, return_when=asyncio.FIRST_COMPLETED)
+    if task in done and not first_message.done():
+        await task
+    start = first_message.result()
+    raw_headers = start.get("headers", [])
+    headers = {
+        key.decode("latin-1"): value.decode("latin-1")
+        for key, value in raw_headers
+        if key.lower() != b"content-length"
+    }
+
+    async def body_stream():
+        try:
+            while True:
+                message = await messages.get()
+                if message["type"] != "http.response.body":
+                    continue
+                body = message.get("body", b"")
+                if body:
+                    yield body
+                if not message.get("more_body", False):
+                    break
+            await task
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(body_stream(), status_code=start["status"], headers=headers)
+
+
+@app.get("/")
+@app.get("/{full_path:path}")
+def serve_spa(full_path: str = ""):
+    if full_path.startswith(("api/", "mcp")):
+        raise HTTPException(status_code=404)
+    if not WEB_INDEX_FILE.exists():
+        raise HTTPException(status_code=404)
+
+    candidate = (WEB_DIST_DIR / full_path).resolve()
+    try:
+        candidate.relative_to(WEB_DIST_DIR.resolve())
+    except ValueError as exc:
+        raise HTTPException(status_code=404) from exc
+    if candidate.is_file():
+        return FileResponse(candidate)
+    return FileResponse(WEB_INDEX_FILE)

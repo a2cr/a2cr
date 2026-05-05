@@ -34,11 +34,11 @@ Implemented Web SaaS foundation:
 - WorkBaton Web Context API with plan limits and sanitized access logs
 - Dashboard API that returns metadata, stats, logs, and API key state without saved content bodies
 - Streamable HTTP MCP `/mcp` with `save_context`, `resume_context`, `load_context`, `list_contexts`, and `get_account_limits`
+- React/Vite dashboard UI for login, WorkBaton metadata, settings, API key management, and pricing
 
 Planned Web SaaS remaining work:
 
 - Railway runtime for React/Vite + FastAPI + HTTP MCP
-- React/Vite dashboard UI
 - Cloudflare DNS/domain
 - Stripe billing after the Core MVP is stable
 - WorkThreads after WorkBaton Core is solid
@@ -48,6 +48,9 @@ Planned Web SaaS remaining work:
 ```bash
 pip install -r requirements.txt
 python -m pytest -q
+cd web
+npm install
+npm run build
 ```
 
 On Windows, the local prototype can be started with:
@@ -61,6 +64,7 @@ Local services:
 ```text
 API:       http://localhost:8000
 Dashboard: http://localhost:8501
+Web dev:   http://localhost:5173
 ```
 
 ## MCP Configuration
@@ -166,11 +170,11 @@ Web SaaS版の基盤で実装済み:
 - plan制限とsanitized access log付きのWorkBaton Web Context API
 - 保存本文を返さないDashboard API
 - `save_context`、`resume_context`、`load_context`、`list_contexts`、`get_account_limits` を持つStreamable HTTP MCP `/mcp`
+- ログイン、WorkBatonメタデータ、設定、APIキー管理、料金表示のReact/ViteダッシュボードUI
 
 Web SaaS版で今後実装するもの:
 
 - Railway上でReact/Vite、FastAPI、HTTP MCPを同一origin配信
-- React/ViteダッシュボードUI
 - CloudflareによるDNS/ドメイン管理
 - Core MVP安定後のStripe課金
 - WorkBaton安定後のWorkThreads
@@ -180,6 +184,9 @@ Web SaaS版で今後実装するもの:
 ```bash
 pip install -r requirements.txt
 python -m pytest -q
+cd web
+npm install
+npm run build
 ```
 
 Windowsのローカルプロトタイプは次で起動できます。
@@ -193,6 +200,7 @@ start.bat
 ```text
 API:       http://localhost:8000
 Dashboard: http://localhost:8501
+Web dev:   http://localhost:5173
 ```
 
 ### セキュリティ方針

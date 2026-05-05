@@ -543,7 +543,7 @@ Status 2026-05-05:
 - Create: `web/vite.config.ts`
 - Create: `web/src/*`
 
-- [ ] **Step 1: App shell**
+- [x] **Step 1: App shell**
 
 Pages:
 
@@ -558,7 +558,7 @@ Verify:
 - authenticated user can reload routes directly
 - FastAPI serves SPA fallback for non-API paths
 
-- [ ] **Step 2: Dashboard**
+- [x] **Step 2: Dashboard**
 
 Show:
 
@@ -582,7 +582,7 @@ Verify:
 - copy prompts wrap correctly on desktop/mobile
 - empty state works
 
-- [ ] **Step 3: Settings**
+- [x] **Step 3: Settings**
 
 Settings:
 
@@ -599,7 +599,7 @@ Verify:
 - Pro options appear only when `plan=pro`
 - language setting persists after reload
 
-- [ ] **Step 4: i18n**
+- [x] **Step 4: i18n**
 
 Use `i18next` / `react-i18next`. Initial locales: `en`, `ja`; fallback: `en`.
 
@@ -609,7 +609,7 @@ Verify:
 - date/time respects timezone
 - unsupported locale falls back cleanly
 
-- [ ] **Step 5: Frontend security**
+- [x] **Step 5: Frontend security**
 
 Add CSP-compatible implementation, avoid inline secret exposure, and keep Supabase anon key only on client.
 
@@ -618,6 +618,15 @@ Verify:
 - no secret env is embedded in JS bundle
 - access token is not printed in console/logs
 - API errors do not expose internals
+
+Status 2026-05-05:
+
+- React/Vite app added under `web/` with `/login`, `/dashboard`, `/settings`, and `/pricing`.
+- Dashboard uses Dashboard API metadata only: slot metadata, stats, access logs, and API key prefix/state. It does not call body-returning context APIs.
+- Settings supports retention, detail level, locale/language, timezone, and one-time API key issue/revoke.
+- `i18next`/`react-i18next` locales are `en` and `ja`, with `en` fallback and local language persistence.
+- FastAPI serves the built SPA for direct route reloads while `/api/*` remains 404-safe and `/mcp` exact-path POST still reaches Streamable HTTP MCP.
+- Verification passed: `npm run build`, `python -m pytest -q`, and TestClient direct-route checks for `/`, `/dashboard`, `/settings`, `/pricing`, `/login`.
 
 ---
 
@@ -847,9 +856,11 @@ Automated tests prove user A cannot read/update/delete/list user B data across d
 
 Status: DB-level isolation passed on local Postgres at 2026-05-05. API key route smoke test also passed through local Postgres. Dashboard/MCP route-level tests are still pending.
 
-- [ ] **Gate C: Dashboard content blindness**
+- [x] **Gate C: Dashboard content blindness**
 
 Dashboard API and React network payloads never include encrypted or decrypted context body.
+
+Status: Dashboard API tests cover metadata-only responses, and the React dashboard fetches only `/api/dashboard/*` endpoints. The UI does not fetch `/api/v1/context/*` load/resume routes and does not render saved context bodies.
 
 - [ ] **Gate D: Secret-safe logging**
 
@@ -906,17 +917,16 @@ MCP can start before the final dashboard because the product's core value is AI-
 
 ## First Concrete Next Step
 
-Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limits、Task 4のDashboard APIは完了した。次はTask 5のStreamable HTTP MCPへ進む。
+Task 1のDB基盤、Task 2のFastAPI security foundation、Task 3のContext API and plan limits、Task 4のDashboard API、Task 5のStreamable HTTP MCP、Task 6のReact/Vite dashboardは完了した。次はTask 7のDeployment and Operationsへ進む。
 
 Minimum next milestone:
 
-- Web SaaS版 `/mcp` の方式を確定する
-- `save_context`, `resume_context`, `load_context`, `list_contexts`, `get_account_limits` をTask 3のWeb Context serviceへ接続する
-- MCP tool descriptions/schemaに「A2CR MCPを使い、HTTP APIを推測しない」ルールを入れる
-- API key authをMCP経路でも同じ `Authorization: Bearer sk-...` に統一する
-- fresh AI windowから `resume_context(slot_name="...")` で再開できることをテストする
+- Railway向けにReact buildとFastAPI起動をつなぐ
+- `/api/v1/health`、`/dashboard` direct reload、`/mcp` を同一originで確認する
+- 本番環境変数を整理し、通常runtimeにservice role keyを置かない
+- cleanup scheduler、monitoring、runbookを追加する
 
-このmilestoneが通ると、WorkBatonのWeb SaaS CoreをAIエージェントがMCP経由で実用できる。
+このmilestoneが通ると、WorkBatonのWeb SaaS Coreを本番候補環境で検証できる。
 
 ## WorkThreads Clarification Addendum
 
