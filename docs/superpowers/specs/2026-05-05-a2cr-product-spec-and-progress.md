@@ -39,6 +39,8 @@ WorkBatonは「引き継ぎ箱」、WorkThreadsは「AIエージェント用の�
 
 WorkBatonは、現在のAI作業状態を構造化JSONとして保存し、新しいAI窓で `resume_context` から再開できるようにする。
 
+保存・ロード・新窓再開の品質仕様は `2026-05-05-workbaton-save-load-quality-spec.md` を基準にする。特に、Freeはcompactな取捨選択、Proはdetailedな判断根拠・失敗履歴・検証結果まで含める差分を明確に扱う。
+
 ### 4.2 基本操作
 
 | 操作 | MCPツール | API |

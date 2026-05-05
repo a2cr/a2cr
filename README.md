@@ -91,6 +91,7 @@ The project does not currently claim full end-to-end or zero-knowledge encryptio
 ## Documentation
 
 - Product spec and progress: `docs/superpowers/specs/2026-05-05-a2cr-product-spec-and-progress.md`
+- WorkBaton save/load quality spec: `docs/superpowers/specs/2026-05-05-workbaton-save-load-quality-spec.md`
 - Web SaaS design: `docs/superpowers/specs/2026-05-03-web-saas-design.md`
 - Implementation plan: `docs/superpowers/plans/2026-05-04-web-saas-implementation-plan.md`
 - GitHub publication draft: `docs/github-publication-draft.md`
