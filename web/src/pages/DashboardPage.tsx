@@ -42,7 +42,7 @@ function Stat({
   );
 }
 
-function SlotCard({ item, timezone }: { item: DashboardContext; timezone: string }) {
+function SlotCard({ item, timezone, isNewest }: { item: DashboardContext; timezone: string; isNewest: boolean }) {
   const { t } = useTranslation();
   return (
     <article className="rounded-md border border-neutral-200 bg-white p-4">
@@ -55,6 +55,11 @@ function SlotCard({ item, timezone }: { item: DashboardContext; timezone: string
             <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
               {item.detail_level}
             </span>
+            {isNewest && (
+              <span className="rounded bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">
+                new
+              </span>
+            )}
           </div>
           <h2 className="mt-3 truncate text-lg font-semibold">{item.slot_name}</h2>
         </div>
@@ -276,8 +281,13 @@ export function DashboardPage() {
         {slotsOpen &&
           (contextsByNewest.length > 0 ? (
             <div className="grid gap-3 xl:grid-cols-2">
-              {contextsByNewest.map((item) => (
-                <SlotCard key={`${item.slot_number}-${item.slot_name}`} item={item} timezone={timezone} />
+              {contextsByNewest.map((item, index) => (
+                <SlotCard
+                  key={`${item.slot_number}-${item.slot_name}`}
+                  item={item}
+                  timezone={timezone}
+                  isNewest={index === 0}
+                />
               ))}
             </div>
           ) : (
