@@ -13,6 +13,8 @@ from routers import health, context, web_context, dashboard, workthreads, mcp_ht
 
 WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
 WEB_INDEX_FILE = WEB_DIST_DIR / "index.html"
+WEB_GUIDE_FILE = WEB_DIST_DIR / "guide.html"
+WEB_PUBLIC_GUIDE_FILE = Path(__file__).resolve().parent / "web" / "public" / "guide.html"
 
 
 async def _cleanup_loop():
@@ -127,6 +129,11 @@ def serve_spa(full_path: str = ""):
         raise HTTPException(status_code=404)
     if any(part.startswith(".") for part in Path(full_path).parts):
         raise HTTPException(status_code=404)
+    if full_path.rstrip("/") == "guide":
+        guide_file = WEB_GUIDE_FILE if WEB_GUIDE_FILE.exists() else WEB_PUBLIC_GUIDE_FILE
+        if not guide_file.exists():
+            raise HTTPException(status_code=404)
+        return FileResponse(guide_file, media_type="text/html; charset=utf-8")
     if not WEB_INDEX_FILE.exists():
         raise HTTPException(status_code=404)
 
