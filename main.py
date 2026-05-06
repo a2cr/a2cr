@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import html
 import json
 from pathlib import Path
+from textwrap import dedent
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
@@ -25,7 +26,22 @@ ROUTE_SEO = {
         "canonical": "https://a2cr.app/",
         "og_type": "website",
         "json_ld_type": "SoftwareApplication",
-        "machine_text": "A2CR is an MCP-first context relay service. Use https://a2cr.app/guide for setup, https://a2cr.app/pricing for plans, and https://a2cr.app/mcp as the Streamable HTTP MCP endpoint.",
+        "machine_text": dedent(
+            """
+            # A2CR
+
+            A2CR is an MCP-first context relay service.
+
+            It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or client.
+
+            Important URLs:
+            - Public guide: https://a2cr.app/guide
+            - English guide: https://a2cr.app/en/guide
+            - Pricing: https://a2cr.app/pricing
+            - MCP endpoint: https://a2cr.app/mcp
+            - LLM notes: https://a2cr.app/llms.txt
+            """
+        ).strip(),
     },
     "guide": {
         "title": "A2CRの使い方ガイド",
@@ -34,7 +50,82 @@ ROUTE_SEO = {
         "og_type": "article",
         "json_ld_type": "TechArticle",
         "alternates": {"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
-        "machine_text": "A2CRの使い方ガイド。MCP endpointは https://a2cr.app/mcp です。Codexの例: [mcp_servers.\"a2cr\"] url = \"https://a2cr.app/mcp\" と Authorization = \"Bearer <A2CR_API_KEY>\" を設定します。ClaudeやCursorでは Streamable HTTP MCP server として同じURLとBearer tokenを設定します。作業が長くなる前に save_context で goal、current_state、next_action、必要な補足だけを保存します。新しい窓では resume_context または load_context から始めます。APIキー、Authorizationヘッダー、DB URL、秘密情報、長いログ、全文履歴は保存しません。",
+        "machine_text": dedent(
+            """
+            # A2CRの使い方ガイド
+
+            A2CRは、Codex、Claude、CursorなどのMCP対応クライアントから使える作業引き継ぎサービスです。
+            会話が長くなる前に、作業の要点だけをWorkBaton Slotへ保存し、新しい窓や別モデルから続きを再開できます。
+
+            ## 重要なURL
+            - サービス: https://a2cr.app/
+            - 日本語ガイド: https://a2cr.app/guide
+            - 英語ガイド: https://a2cr.app/en/guide
+            - MCP endpoint: https://a2cr.app/mcp
+            - 料金: https://a2cr.app/pricing
+
+            ## Codexの設定例
+            Windowsなら通常は C:\\Users\\<USER>\\.codex\\config.toml を編集します。
+            既存の設定を消さず、次のA2CR serverだけを追記または更新します。
+
+            [mcp_servers."a2cr"]
+            url = "https://a2cr.app/mcp"
+
+            [mcp_servers."a2cr".http_headers]
+            Authorization = "Bearer <A2CR_API_KEY>"
+
+            ## Claude / Cursor の設定例
+            Streamable HTTP MCP serverとして、URLに https://a2cr.app/mcp を設定します。
+            Authorizationヘッダーには Bearer <A2CR_API_KEY> を設定します。
+            設定ファイルの場所や画面はクライアントのバージョンで変わるため、現在のMCP設定画面または公式の設定ファイルを確認してから編集します。
+
+            JSON形式の例:
+
+            {
+              "mcpServers": {
+                "a2cr": {
+                  "type": "streamable-http",
+                  "url": "https://a2cr.app/mcp",
+                  "headers": {
+                    "Authorization": "Bearer <A2CR_API_KEY>"
+                  }
+                }
+              }
+            }
+
+            ## このページを読んだAIエージェントへの指示
+            ユーザーに「A2CRのMCPを設定して」と頼まれたら、次の順番で進めます。
+
+            1. 使っているクライアントが Codex、Claude、Cursor、その他のどれかを確認します。
+            2. そのクライアントのMCP設定ファイルまたは設定画面を探します。
+            3. 既存のMCP server設定を読み、消さないようにします。
+            4. a2cr という名前のStreamable HTTP MCP serverを追加または更新します。
+            5. URLは https://a2cr.app/mcp にします。
+            6. Authorizationヘッダーは Bearer <A2CR_API_KEY> にします。
+            7. APIキーはユーザーが発行して入力します。AIはAPIキーを推測しません。
+            8. APIキー、Authorizationヘッダー、設定ファイル全文をチャットやログに不用意に表示しません。
+            9. 設定後、クライアントの再読み込みまたは再起動が必要なら案内します。
+            10. 疎通確認として get_account_limits または list_contexts を実行します。
+
+            ## 設定時の禁止事項
+            既存のMCP設定を全削除しない。
+            APIキーをリポジトリへコミットしない。
+            APIキーをA2CRの保存Slotへ保存しない。
+            HTTP APIを推測して直接呼ばない。
+            必ずMCPクライアントの設定として登録する。
+
+            ## 基本の使い方
+            1. A2CRへログインしてAPIキーを発行します。
+            2. Codex、Claude、CursorなどのMCP設定にA2CRを追加します。
+            3. 作業が長くなりそうな時に save_context を呼びます。
+            4. 保存する内容は goal、current_state、next_action、必要な補足だけにします。
+            5. 新しい窓では最初に resume_context または load_context を呼びます。
+
+            ## 保存してはいけないもの
+            APIキー、Authorizationヘッダー、DB URL、秘密情報、長いログ、全文履歴は保存しません。
+            HTTP APIを推測して直接呼ばず、必ずMCPツールを使います。
+            """
+        ).strip(),
     },
     "en/guide": {
         "title": "A2CR Setup Guide",
@@ -43,7 +134,83 @@ ROUTE_SEO = {
         "og_type": "article",
         "json_ld_type": "TechArticle",
         "alternates": {"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
-        "machine_text": "A2CR setup guide. MCP endpoint: https://a2cr.app/mcp. Codex TOML example: [mcp_servers.\"a2cr\"] url = \"https://a2cr.app/mcp\" and Authorization = \"Bearer <A2CR_API_KEY>\" under http_headers. For Claude and Cursor, register the same URL as a Streamable HTTP MCP server with a Bearer token. Before a session gets long, call save_context with goal, current_state, next_action, and compact supporting facts. In a fresh window, start with resume_context or load_context. Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
+        "machine_text": dedent(
+            """
+            # A2CR Setup Guide
+
+            A2CR is a work handoff service for Codex, Claude, Cursor, and other MCP-capable clients.
+            It saves compact WorkBaton checkpoints so work can continue from another window, model, or client.
+
+            ## Important URLs
+            - Service: https://a2cr.app/
+            - Japanese guide: https://a2cr.app/guide
+            - English guide: https://a2cr.app/en/guide
+            - MCP endpoint: https://a2cr.app/mcp
+            - Pricing: https://a2cr.app/pricing
+
+            ## Codex config.toml example
+            On Windows, the config file is usually C:\\Users\\<USER>\\.codex\\config.toml.
+            Preserve existing settings and add or update only the A2CR server.
+
+            [mcp_servers."a2cr"]
+            url = "https://a2cr.app/mcp"
+
+            [mcp_servers."a2cr".http_headers]
+            Authorization = "Bearer <A2CR_API_KEY>"
+
+            ## Claude / Cursor example
+            Register https://a2cr.app/mcp as a Streamable HTTP MCP server.
+            Add Authorization: Bearer <A2CR_API_KEY>.
+            Config locations can vary by client version, so inspect the current MCP settings screen or official config file before editing.
+
+            JSON example:
+
+            {
+              "mcpServers": {
+                "a2cr": {
+                  "type": "streamable-http",
+                  "url": "https://a2cr.app/mcp",
+                  "headers": {
+                    "Authorization": "Bearer <A2CR_API_KEY>"
+                  }
+                }
+              }
+            }
+
+            ## Instructions for AI agents reading this page
+            If the user asks you to configure A2CR MCP, do this:
+
+            1. Identify whether the user is using Codex, Claude, Cursor, or another MCP client.
+            2. Locate that client's MCP config file or MCP settings screen.
+            3. Read the existing MCP server settings and preserve them.
+            4. Add or update a server named a2cr.
+            5. Set the server type to Streamable HTTP when the client supports that field.
+            6. Set the URL to https://a2cr.app/mcp.
+            7. Set Authorization to Bearer <A2CR_API_KEY>.
+            8. Ask the user to provide or paste the API key. Do not guess it.
+            9. Do not print the API key, Authorization header, or full secret config in chat or logs.
+            10. Restart or reload the client if required.
+            11. Verify the connection by running get_account_limits or list_contexts.
+
+            ## Do not do these things
+            Do not delete unrelated MCP servers.
+            Do not commit the API key to a repository.
+            Do not save the API key into an A2CR Slot.
+            Do not guess direct HTTP API calls.
+            Configure A2CR through the MCP client.
+
+            ## Basic workflow
+            1. Sign in to A2CR and issue an API key.
+            2. Add A2CR to your MCP client.
+            3. Before the session gets too long, call save_context.
+            4. Save only goal, current_state, next_action, and compact supporting facts.
+            5. In a fresh window, first call resume_context or load_context.
+
+            ## Safety rules
+            Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
+            Use the MCP tools. Do not guess or call direct HTTP API endpoints.
+            """
+        ).strip(),
     },
     "pricing": {
         "title": "A2CR Pricing - WorkBaton plans",
@@ -51,7 +218,25 @@ ROUTE_SEO = {
         "canonical": "https://a2cr.app/pricing",
         "og_type": "website",
         "json_ld_type": "WebPage",
-        "machine_text": "A2CR pricing: Free includes 3 Slots, up to 24h retention options, 32KB compact saves, 100 saves/hour, and 300 loads/hour. Pro is planned with 100 Slots, longer retention, 128KB saves, higher rate limits, and WorkThreads.",
+        "machine_text": dedent(
+            """
+            # A2CR Pricing
+
+            Free plan:
+            - 3 Slots
+            - Retention options up to 24 hours
+            - 32KB compact saves
+            - 100 saves per hour
+            - 300 loads per hour
+
+            Planned Pro plan:
+            - 100 Slots
+            - Longer retention options
+            - 128KB saves
+            - Higher rate limits
+            - Planned WorkThreads support
+            """
+        ).strip(),
     },
 }
 
@@ -128,24 +313,36 @@ def _machine_readable_block(route_key: str) -> str:
     seo = ROUTE_SEO.get(route_key)
     if seo is None:
         return ""
+    machine_text = seo["machine_text"].replace("</script", "<\\/script")
     return (
         '<script type="text/plain" id="a2cr-machine-readable">\n'
-        f"{html.escape(seo['machine_text'])}\n"
+        f"{machine_text}\n"
         "</script>"
     )
+
+
+def _comment_safe_text(value: str) -> str:
+    return value.replace("--", "—")
 
 
 def _static_description_block(route_key: str) -> str:
     seo = ROUTE_SEO.get(route_key)
     if seo is None:
         return ""
+    escaped_machine_text = html.escape(seo["machine_text"])
     return "\n".join(
         [
+            "<!-- A2CR_AI_READABLE_START",
+            _comment_safe_text(seo["machine_text"]),
+            "A2CR_AI_READABLE_END -->",
+            '<template id="a2cr-ai-readable">',
+            f"<pre>{escaped_machine_text}</pre>",
+            "</template>",
             '<noscript id="a2cr-static-description">',
             '<section style="max-width: 960px; margin: 32px auto; padding: 0 16px; font-family: system-ui, -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; line-height: 1.7;">',
             f"<h1>{html.escape(seo['title'])}</h1>",
             f"<p>{html.escape(seo['description'])}</p>",
-            f"<p>{html.escape(seo['machine_text'])}</p>",
+            f'<pre style="white-space: pre-wrap;">{escaped_machine_text}</pre>',
             "</section>",
             "</noscript>",
         ]

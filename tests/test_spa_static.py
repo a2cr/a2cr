@@ -45,10 +45,14 @@ def test_public_guide_serves_static_ai_readable_html():
     assert response.headers["content-type"].startswith("text/html")
     assert '<link rel="canonical" href="https://a2cr.app/guide"' in response.text
     assert '<link rel="alternate" hreflang="en" href="https://a2cr.app/en/guide"' in response.text
+    assert "A2CR_AI_READABLE_START" in response.text
+    assert '<template id="a2cr-ai-readable">' in response.text
     assert '<script type="text/plain" id="a2cr-machine-readable">' in response.text
     assert '<noscript id="a2cr-static-description">' in response.text
     assert "https://a2cr.app/mcp" in response.text
     assert "save_context" in response.text
+    assert "get_account_limits" in response.text
+    assert "既存のMCP設定を全削除しない" in response.text
     assert '<div id="root"></div>' in response.text
 
 
@@ -61,10 +65,14 @@ def test_public_english_guide_serves_static_ai_readable_html():
     assert '<link rel="canonical" href="https://a2cr.app/en/guide"' in response.text
     assert '<link rel="alternate" hreflang="ja" href="https://a2cr.app/guide"' in response.text
     assert "A2CR setup guide" in response.text
+    assert "A2CR_AI_READABLE_START" in response.text
+    assert '<template id="a2cr-ai-readable">' in response.text
     assert '<script type="text/plain" id="a2cr-machine-readable">' in response.text
     assert '<noscript id="a2cr-static-description">' in response.text
     assert "https://a2cr.app/mcp" in response.text
     assert "save_context" in response.text
+    assert "get_account_limits" in response.text
+    assert "Do not delete unrelated MCP servers" in response.text
     assert '<div id="root"></div>' in response.text
 
 
