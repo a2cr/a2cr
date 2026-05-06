@@ -56,6 +56,10 @@ def test_public_guide_serves_static_ai_readable_html():
     assert "設定ファイルをテキストエディタで開き" in response.text
     assert "クライアントまたはエージェントセッションを再起動" in response.text
     assert "既存のMCP設定を全削除しない" in response.text
+    assert "Token節約" in response.text
+    assert "出力安定" in response.text
+    assert "WorkThreads" in response.text
+    assert "Protocol的な土台" in response.text
     assert '<div id="root"></div>' in response.text
 
 
@@ -79,6 +83,10 @@ def test_public_english_guide_serves_static_ai_readable_html():
     assert "Open the config file in a text editor" in response.text
     assert "restart or reload the MCP client" in response.text
     assert "Do not delete unrelated MCP servers" in response.text
+    assert "external working memory" in response.text
+    assert "token savings" in response.text
+    assert "WorkThreads" in response.text
+    assert "protocol-like foundation" in response.text
     assert '<div id="root"></div>' in response.text
 
 
@@ -96,3 +104,5 @@ def test_public_seo_support_files_are_served():
     assert llms.status_code == 200
     assert "Public guide (English): https://a2cr.app/en/guide" in llms.text
     assert "MCP endpoint: https://a2cr.app/mcp" in llms.text
+    assert "external working memory" in llms.text
+    assert "protocol-like handoff layer" in llms.text

@@ -73,7 +73,26 @@ const copy = {
     pricing: "Pricing",
     whatTitle: "What A2CR does",
     whatBody:
-      "A2CR combines a dashboard for keys, slots, limits, and access logs with MCP tools for saving and resuming compact checkpoints without inventing HTTP calls.",
+      "A2CR is not just a place to store notes. It is an MCP-first work-continuation layer that lets agents carry only the state they actually need into the next session.",
+    impactEyebrow: "Impact",
+    cleanContextTitle: "Clean context",
+    valueTitle: "Why it matters",
+    valueBody:
+      "Long conversations make agents spend context on old noise. A2CR turns the current goal, state, and next action into a compact WorkBaton, so each new session starts clean.",
+    valuePoints: [
+      "Clean context reduces token waste and helps keep outputs stable.",
+      "Lower token use can matter directly for subscription-based AI services and usage limits.",
+      "Agents avoid dragging old assumptions, duplicate logs, and full chat history into every next step.",
+      "The same WorkBaton can be resumed from another window, model, or MCP client."
+    ],
+    protocolTitle: "From WorkBaton to WorkThreads",
+    protocolBody:
+      "WorkBaton hands one compact state to the next agent. Planned Pro WorkThreads expand that idea into a shared work thread where multiple agents can coordinate progress.",
+    protocolPoints: [
+      "One agent can design, another can implement, and another can review from the same shared work state.",
+      "Different models or clients can cooperate without copying full transcripts between windows.",
+      "This makes A2CR closer to a protocol-like work layer for agent collaboration than a simple save box."
+    ],
     humanTitle: "Dashboard",
     agentTitle: "MCP tools",
     setupTitle: "MCP setup examples",
@@ -129,7 +148,26 @@ const copy = {
     pricing: "料金",
     whatTitle: "A2CR がすること",
     whatBody:
-      "A2CRは、APIキーやSlot、上限、アクセスログを管理するダッシュボードと、作業状態を保存・再開するMCPツールをまとめて提供します。",
+      "A2CRは、ただのメモ保存場所ではありません。AIエージェントが次の作業に必要な状態だけをMCP経由で受け渡すための、作業継続レイヤーです。",
+    impactEyebrow: "価値",
+    cleanContextTitle: "きれいなコンテキスト",
+    valueTitle: "なぜ効くのか",
+    valueBody:
+      "長くなった会話には、古い前提、重複したログ、もう使わない情報が混ざります。A2CRは goal、current_state、next_action をWorkBatonとして整理し、新しい窓をきれいな文脈から始められるようにします。",
+    valuePoints: [
+      "コンテキストを常に整理できるため、Token消費を抑え、出力を安定させやすくなります。",
+      "Tokenの節約は、サブスク型AIサービスの使用量や上限にも影響します。",
+      "古い前提や長い履歴に引っ張られにくく、次のAIが必要な作業へすぐ入れます。",
+      "同じWorkBatonを、別の窓、別モデル、別MCPクライアントから再開できます。"
+    ],
+    protocolTitle: "WorkBaton から WorkThreads へ",
+    protocolBody:
+      "WorkBatonは1つの作業状態を次へ渡す仕組みです。Proで予定しているWorkThreadsは、複数のAIエージェントが同じ作業スレッドで進捗を共有し、協業するための層です。",
+    protocolPoints: [
+      "設計担当、実装担当、レビュー担当のように、AIエージェント同士で役割分担しやすくなります。",
+      "別のモデルやクライアントでも、全文履歴を貼り直さずに同じ作業状態へ参加できます。",
+      "A2CRは単なる保存箱ではなく、AIエージェントの作業継続と協業のためのProtocol的な土台になり得ます。"
+    ],
     humanTitle: "ダッシュボード",
     agentTitle: "MCPツール",
     setupTitle: "MCP 設定例",
@@ -343,6 +381,43 @@ export function GuidePage() {
                 ))}
               </ul>
             </article>
+          </div>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <SectionTitle eyebrow={text.impactEyebrow} title={text.valueTitle} body={text.valueBody} />
+            <div className="grid gap-3">
+              <article className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <TimerReset className="size-5 text-emerald-700" aria-hidden="true" />
+                  <h2 className="font-semibold">{text.cleanContextTitle}</h2>
+                </div>
+                <ul className="grid gap-2 text-sm leading-6 text-neutral-700">
+                  {text.valuePoints.map((point) => (
+                    <li key={point} className="flex gap-2">
+                      <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <article className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Bot className="size-5 text-emerald-700" aria-hidden="true" />
+                  <h2 className="font-semibold">{text.protocolTitle}</h2>
+                </div>
+                <p className="mb-3 text-sm leading-6 text-neutral-600">{text.protocolBody}</p>
+                <ul className="grid gap-2 text-sm leading-6 text-neutral-700">
+                  {text.protocolPoints.map((point) => (
+                    <li key={point} className="flex gap-2">
+                      <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </div>
           </div>
         </section>
 
