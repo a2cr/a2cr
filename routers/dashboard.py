@@ -105,6 +105,9 @@ def list_contexts(user: AuthenticatedUser = Depends(get_current_dashboard_user))
 
 @router.get("/workthreads")
 def list_workthreads(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> list[WorkThreadMetadataResponse]:
+    profile = dashboard_service.get_profile(user.user_id)
+    if profile.plan != "pro":
+        return []
     return [_workthread_response(item) for item in workthreads_service.list_workthreads(user_id=user.user_id)]
 
 

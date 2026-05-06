@@ -9,7 +9,9 @@ from main import app
 from routers.dashboard import get_current_dashboard_user
 from routers.web_context import get_current_api_user
 from services.auth import AuthenticatedUser
+from services.dashboard import DashboardProfile
 from services.workthreads import WorkThread, WorkThreadMessage, WorkThreadTask, WorkThreadUpdateCheck
+import services.dashboard as dashboard_service
 import services.workthreads as workthreads_service
 
 
@@ -50,6 +52,21 @@ def thread_item():
         task_status_counts={},
         agent_names=["codex"],
         last_activity_at=timestamp,
+        created_at=timestamp,
+        updated_at=timestamp,
+    )
+
+
+def profile_item(plan="pro"):
+    timestamp = now()
+    return DashboardProfile(
+        user_id=str(USER_ID),
+        plan=plan,
+        context_detail_level="compact",
+        default_retention_seconds=86400,
+        preferred_locale="ja",
+        response_language="ja",
+        timezone="Asia/Tokyo",
         created_at=timestamp,
         updated_at=timestamp,
     )
@@ -122,6 +139,7 @@ def test_api_read_workthread_returns_decrypted_messages(api_client, monkeypatch)
 
 
 def test_dashboard_workthreads_return_metadata_without_message_content(dashboard_client, monkeypatch):
+    monkeypatch.setattr(dashboard_service, "get_profile", lambda *_: profile_item(plan="pro"))
     monkeypatch.setattr(workthreads_service, "list_workthreads", lambda **_: [thread_item()])
 
     response = dashboard_client.get("/api/dashboard/workthreads")
@@ -132,6 +150,24 @@ def test_dashboard_workthreads_return_metadata_without_message_content(dashboard
     assert "content" not in body
     assert "messages" not in body
     assert "secret" not in str(body).lower()
+
+
+def test_free_dashboard_workthreads_returns_empty_without_pro_error(dashboard_client, monkeypatch):
+    called = False
+
+    def fail_if_called(**_):
+        nonlocal called
+        called = True
+        raise AssertionError("free dashboard should not call pro-only workthreads service")
+
+    monkeypatch.setattr(dashboard_service, "get_profile", lambda *_: profile_item(plan="free"))
+    monkeypatch.setattr(workthreads_service, "list_workthreads", fail_if_called)
+
+    response = dashboard_client.get("/api/dashboard/workthreads")
+
+    assert response.status_code == 200
+    assert response.json() == []
+    assert called is False
 
 
 def test_unread_and_update_routes_map_to_service(api_client, monkeypatch):
@@ -202,6 +238,7 @@ def test_loop_guard_warning_and_dashboard_metadata(api_client, dashboard_client,
             )
         ],
     )
+    monkeypatch.setattr(dashboard_service, "get_profile", lambda *_: profile_item(plan="pro"))
 
     posted = api_client.post(
         "/api/v1/workthreads/11111111-1111-1111-1111-111111111111/messages",
