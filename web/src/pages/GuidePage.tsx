@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   TimerReset
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { CopyButton } from "../components/CopyButton";
@@ -65,7 +65,7 @@ function agentPrompt(): string {
 const copy = {
   en: {
     navGuide: "Guide",
-    heroTitle: "A public guide for humans and AI agents",
+    heroTitle: "A2CR setup guide",
     heroBody:
       "A2CR gives MCP-capable agents a small, durable WorkBaton: save the useful state of work now, then resume it from another window, model, or client later.",
     openDashboard: "Open dashboard",
@@ -73,14 +73,14 @@ const copy = {
     pricing: "Pricing",
     whatTitle: "What A2CR does",
     whatBody:
-      "Humans get a dashboard with slots, limits, API keys, and access logs. AI agents get MCP tools that can save and resume compact checkpoints without inventing HTTP calls.",
-    humanTitle: "For humans",
-    agentTitle: "For AI agents",
+      "A2CR combines a dashboard for keys, slots, limits, and access logs with MCP tools for saving and resuming compact checkpoints without inventing HTTP calls.",
+    humanTitle: "Dashboard",
+    agentTitle: "MCP tools",
     setupTitle: "MCP setup examples",
     setupNote:
       "Create an API key after signing in, then put it in your MCP client as a Bearer token. Client config locations vary; use your client's current MCP settings screen or config file.",
     usageTitle: "Basic workflow",
-    agentContractTitle: "Agent quick contract",
+    agentContractTitle: "Quick prompt",
     copyConfig: "Copy config",
     copyPrompt: "Copy agent prompt",
     clients: {
@@ -105,10 +105,10 @@ const copy = {
       "Do not save secrets or long logs."
     ],
     workflow: [
-      "Human signs in and issues an A2CR API key.",
-      "Human adds A2CR to Codex, Claude, Cursor, or another MCP-capable client.",
-      "Agent saves a WorkBaton checkpoint before the window gets crowded.",
-      "A later agent resumes that Slot and continues the task."
+      "Sign in and issue an A2CR API key.",
+      "Add A2CR to Codex, Claude, Cursor, or another MCP-capable client.",
+      "Save a WorkBaton checkpoint before the window gets crowded.",
+      "Open a fresh window, resume that Slot, and continue the task."
     ],
     wow: [
       "The handoff is tool-native: agents call MCP instead of scraping chat history.",
@@ -119,22 +119,22 @@ const copy = {
   },
   ja: {
     navGuide: "ガイド",
-    heroTitle: "人間とAIエージェントのための公開ガイド",
+    heroTitle: "A2CRの使い方ガイド",
     heroBody:
-      "A2CR は、MCP 対応エージェントに小さく丈夫な WorkBaton を渡します。今の作業状態を保存し、別の窓・モデル・クライアントから再開できます。",
+      "A2CRは、Codex、Claude、CursorなどからMCPで使える作業引き継ぎサービスです。会話が長くなる前に要点だけをWorkBaton Slotへ保存して、別の窓やモデルから続きを再開できます。",
     openDashboard: "ダッシュボードを開く",
     signIn: "ログイン",
     pricing: "料金",
     whatTitle: "A2CR がすること",
     whatBody:
-      "人間にはスロット、上限、APIキー、アクセスログを確認できるダッシュボードを。AIエージェントには、HTTPを推測せずに保存・再開できるMCPツールを提供します。",
-    humanTitle: "人間向け",
-    agentTitle: "AIエージェント向け",
+      "A2CRは、APIキーやSlot、上限、アクセスログを管理するダッシュボードと、作業状態を保存・再開するMCPツールをまとめて提供します。",
+    humanTitle: "ダッシュボード",
+    agentTitle: "MCPツール",
     setupTitle: "MCP 設定例",
     setupNote:
       "ログイン後にAPIキーを発行し、MCPクライアントへBearer tokenとして設定します。設定ファイルの場所はクライアントごとに変わるため、各クライアントの現在のMCP設定画面または設定ファイルを使ってください。",
     usageTitle: "基本の使い方",
-    agentContractTitle: "AIエージェント向けクイック契約",
+    agentContractTitle: "短い指示",
     copyConfig: "設定をコピー",
     copyPrompt: "エージェント指示をコピー",
     clients: {
@@ -159,16 +159,16 @@ const copy = {
       "秘密情報や長いログは保存しません。"
     ],
     workflow: [
-      "人間がログインしてA2CR APIキーを発行します。",
+      "A2CRにログインしてAPIキーを発行します。",
       "Codex、Claude、CursorなどのMCP対応クライアントへA2CRを追加します。",
-      "AIエージェントが、窓が混む前にWorkBatonチェックポイントを保存します。",
-      "次のAIエージェントがそのSlotを読み込み、作業を続けます。"
+      "作業が長くなりそうな時に、要点だけをWorkBaton Slotに保存します。",
+      "新しい窓でSlotを読み込み、続きを開始します。"
     ],
     wow: [
       "引き継ぎがMCPツール前提なので、チャット履歴を無理に読ませる必要がありません。",
       "保存内容にnext_actionが入るため、次のエージェントが何をすべきか分かります。",
       "スロットは短命が標準なので、古い文脈が溜まりにくい設計です。",
-      "通常の人間向け画面では本文を表示せず、メタデータだけを確認できます。"
+      "通常の画面では本文を表示せず、メタデータだけを確認できます。"
     ]
   }
 };
@@ -176,7 +176,9 @@ const copy = {
 function PublicHeader() {
   const { i18n } = useTranslation();
   const { session } = useAuth();
-  const text = i18n.language.startsWith("ja") ? copy.ja : copy.en;
+  const location = useLocation();
+  const isEnglishRoute = location.pathname.startsWith("/en/");
+  const text = isEnglishRoute ? copy.en : i18n.language.startsWith("ja") ? copy.ja : copy.en;
 
   return (
     <header className="border-b border-neutral-200 bg-white">
@@ -186,8 +188,17 @@ function PublicHeader() {
           <span className="sr-only">A2CR</span>
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Link to="/guide" className="rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-900">
+          <Link
+            to={isEnglishRoute ? "/en/guide" : "/guide"}
+            className="rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-900"
+          >
             {text.navGuide}
+          </Link>
+          <Link
+            to={isEnglishRoute ? "/guide" : "/en/guide"}
+            className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+          >
+            {isEnglishRoute ? "JA" : "EN"}
           </Link>
           <Link
             to="/pricing"
@@ -239,7 +250,9 @@ function SectionTitle({
 export function GuidePage() {
   const { i18n } = useTranslation();
   const { session } = useAuth();
-  const text = i18n.language.startsWith("ja") ? copy.ja : copy.en;
+  const location = useLocation();
+  const isEnglishRoute = location.pathname.startsWith("/en/");
+  const text = isEnglishRoute ? copy.en : i18n.language.startsWith("ja") ? copy.ja : copy.en;
   const primaryTo = session ? "/dashboard" : "/login";
   const PrimaryIcon = session ? LayoutDashboard : LogIn;
 

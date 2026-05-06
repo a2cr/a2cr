@@ -3,7 +3,8 @@
 A2CR is an MCP-first context relay service for AI agents.
 
 Primary site: https://a2cr.app/
-Public guide: https://a2cr.app/guide
+Public guide (Japanese): https://a2cr.app/guide
+Public guide (English): https://a2cr.app/en/guide
 Pricing: https://a2cr.app/pricing
 MCP endpoint: https://a2cr.app/mcp
 
