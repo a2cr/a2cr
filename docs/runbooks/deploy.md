@@ -15,9 +15,13 @@ Completed:
   - Project ref: `pemqlmrochfnwthslxco`
   - Region: Northeast Asia (Tokyo)
   - Current plan for testing: Free / Nano
-- Supabase migrations applied through SQL Editor:
+- Supabase migrations applied through SQL Editor at the initial setup:
   - `supabase/migrations/001_base_schema.sql`
   - `supabase/migrations/002_workthreads.sql`
+- Current app code also requires these later migrations before dashboard/context smoke tests:
+  - `supabase/migrations/003_contexts_user_scoped_unique_repair.sql`
+  - `supabase/migrations/004_contexts_encryption_mode.sql`
+  - `supabase/migrations/005_contexts_client_encrypted_only.sql`
 - RLS verification passed for 9 public tables:
   - `access_logs`
   - `api_keys`
@@ -46,6 +50,7 @@ Still pending:
 - Railway deployment
 - Cloudflare DNS pointing `a2cr.app` to Railway
 - Supabase Auth URL configuration for the deployed site
+- Confirm/apply Supabase migrations `003` through `005` in the production project
 - Hosted smoke tests for `/api/v1/health`, `/dashboard`, `/mcp`, Google login, API key issue, MCP save/resume, and WorkThreads
 - Stripe setup
 - Supabase Pro upgrade before real beta/production
@@ -155,13 +160,23 @@ npm ci
 npm run build
 ```
 
-2. Create a Railway service from the GitHub repository.
+2. Apply all Supabase migrations in order before deploying app code that depends on them:
 
-3. Confirm Railway uses `Dockerfile` and `railway.json`.
+```text
+supabase/migrations/001_base_schema.sql
+supabase/migrations/002_workthreads.sql
+supabase/migrations/003_contexts_user_scoped_unique_repair.sql
+supabase/migrations/004_contexts_encryption_mode.sql
+supabase/migrations/005_contexts_client_encrypted_only.sql
+```
 
-4. Add the variables above.
+3. Create a Railway service from the GitHub repository.
 
-5. Deploy. The Dockerfile builds React first, installs Python dependencies, copies `web/dist`, then starts:
+4. Confirm Railway uses `Dockerfile` and `railway.json`.
+
+5. Add the variables above.
+
+6. Deploy. The Dockerfile builds React first, installs Python dependencies, copies `web/dist`, then starts:
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
@@ -205,6 +220,21 @@ Expected:
 - Dashboard can issue an API key once
 - MCP `resume_context` works from a fresh AI window
 - Dashboard context and WorkThreads responses are metadata-only
+
+## Troubleshooting Dashboard Request Failed
+
+If `/dashboard` loads the profile/header but shows a red `Request failed` banner,
+check Railway logs for `/api/dashboard/contexts` or `/api/dashboard/stats`.
+After the WorkBaton client-encryption update, those endpoints require
+`public.contexts.encryption_mode`. Apply these migrations if the column or
+constraint is missing:
+
+```text
+supabase/migrations/004_contexts_encryption_mode.sql
+supabase/migrations/005_contexts_client_encrypted_only.sql
+```
+
+This is a Supabase schema migration, not a Railway/Vite variable change.
 
 ## Troubleshooting New Slot Saves
 

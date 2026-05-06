@@ -65,15 +65,19 @@ export async function dashboardFetch<T>(
 }
 
 export async function loadDashboardData(token: string): Promise<DashboardData> {
-  const [profile, contexts, stats] = await Promise.all([
-    dashboardFetch<DashboardProfile>("/api/dashboard/profile", token),
-    dashboardFetch<DashboardContext[]>("/api/dashboard/contexts", token),
-    dashboardFetch<DashboardStats>("/api/dashboard/stats", token)
+  const profile = await dashboardFetch<DashboardProfile>("/api/dashboard/profile", token);
+  const [contexts, stats, accessLogs] = await Promise.all([
+    dashboardFetch<DashboardContext[]>("/api/dashboard/contexts", token).catch(() => []),
+    dashboardFetch<DashboardStats>("/api/dashboard/stats", token).catch(() => ({
+      total_saves: 0,
+      total_loads: 0,
+      total_deletes: 0,
+      total_tokens_saved: 0,
+      active_slots: 0
+    })),
+    dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token).catch(() => [])
   ]);
 
-  const accessLogs = await dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token).catch(
-    () => []
-  );
   const workthreads =
     profile.plan === "pro"
       ? await dashboardFetch<DashboardWorkThread[]>("/api/dashboard/workthreads", token).catch(() => [])
