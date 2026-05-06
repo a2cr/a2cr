@@ -59,7 +59,7 @@ ROUTE_SEO = {
         It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
 
         Important URLs:
-        - Human guide: https://a2cr.app/en/guide
+        - Guide: https://a2cr.app/en/guide
         - AI agent guide: https://a2cr.app/en/agent-guide
         - Pricing: https://a2cr.app/pricing
         - MCP endpoint: https://a2cr.app/mcp
@@ -67,16 +67,20 @@ ROUTE_SEO = {
         """,
     ),
     "guide": _seo(
-        title="A2CR 人間向けガイド",
-        description="A2CRの人間向けガイド。WorkBaton、MCP設定、暗号化方式、local client keyの重要事項を説明します。",
+        title="A2CR ガイド",
+        description="A2CRのガイド。WorkBaton、MCP設定、暗号化方式、local client keyの重要事項を説明します。",
         canonical="https://a2cr.app/guide",
         alternates={"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
         machine_text="""
-        # A2CR 人間向けガイド
+        # A2CR ガイド
 
         A2CRは、AI作業の状態をWorkBatonとして保存し、別のAI窓、別モデル、MCP対応クライアントから再開するためのサービスです。
 
         A2CRはAIではありません。AI同士が作業を受け渡すためのバトンです。
+
+        読むより、AIに読ませる:
+        - AI向けガイドを、ふだん使っているAIエージェントに見せて「このアプリを説明して」と頼んでください。
+        - A2CRが何を渡し、何を保存しないのかまで、あなた向けにかみ砕いて説明できます。
 
         重要事項:
         - WorkBatonにはserver-encryptedとclient-encryptedの保存方式があります。
@@ -90,19 +94,40 @@ ROUTE_SEO = {
         - AIエージェント向けガイド: https://a2cr.app/agent-guide
         - English guide: https://a2cr.app/en/guide
         - MCP endpoint: https://a2cr.app/mcp
+
+        圧縮・要約機能との違い:
+        - 圧縮・要約機能の目的は長い会話を短くすることです。
+        - A2CR / WorkBatonの目的は、次のAIが作業再開できる状態を渡すことです。
+        - 圧縮・要約機能の対象はそのチャット内の履歴です。
+        - A2CR / WorkBatonの対象は別チャット、別AI、別ツールです。
+        - 圧縮・要約機能の出力は要約文です。
+        - A2CR / WorkBatonの出力はgoal、current_state、next_action、blockersなどの作業状態です。
+        - 圧縮機能は、ざっくり言えば「会話ログのダイエット」です。A2CRは「作業状態のバトン」です。
+
+        サブエージェントとの違い:
+        - サブエージェントの主な用途は同じ環境内で分業することです。
+        - A2CRの主な用途は環境をまたいで引き継ぐことです。
+        - サブエージェントの有効範囲はそのチャット、その親エージェント内です。
+        - A2CRはChatGPT、Claude、Codex、Cursor、Roo、ローカルLLMなどを横断できます。
+        - サブエージェントの状態共有は親エージェントの文脈に依存します。
+        - A2CRは外部の一時リレーDBに保存し、TTLで消えます。
         """,
     ),
     "en/guide": _seo(
-        title="A2CR Human Guide",
-        description="Human guide for A2CR. Learn WorkBaton, MCP setup, storage modes, and local client key responsibilities.",
+        title="A2CR Guide",
+        description="Guide for A2CR. Learn WorkBaton, MCP setup, storage modes, and local client key responsibilities.",
         canonical="https://a2cr.app/en/guide",
         alternates={"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
         machine_text="""
-        # A2CR Human Guide
+        # A2CR Guide
 
         A2CR saves AI work state as a WorkBaton so another AI window, model, or MCP-capable client can resume the work.
 
         A2CR is not an AI. It is the baton that lets AI agents hand work to one another.
+
+        Let your AI read it:
+        - Show the AI agent guide to the AI agent you already use and ask it to explain A2CR.
+        - The guide is written for agents, so it can turn the app's role, limits, and setup into plain guidance for your situation.
 
         Important points:
         - WorkBaton supports server-encrypted and client-encrypted storage modes.
@@ -116,6 +141,23 @@ ROUTE_SEO = {
         - AI agent guide: https://a2cr.app/en/agent-guide
         - Japanese guide: https://a2cr.app/guide
         - MCP endpoint: https://a2cr.app/mcp
+
+        Compression / summarization vs A2CR / WorkBaton:
+        - Compression and summarization shorten a long conversation.
+        - A2CR / WorkBaton passes a state that lets the next AI resume work.
+        - Compression and summarization target history inside that chat.
+        - A2CR / WorkBaton targets another chat, another AI, or another tool.
+        - Compression and summarization output summary text.
+        - A2CR / WorkBaton outputs work state such as goal, current_state, next_action, and blockers.
+        - Compression is a diet for a conversation log. A2CR is a baton for work state.
+
+        Sub-agents vs A2CR:
+        - Sub-agents divide work inside the same environment.
+        - A2CR carries the environment itself forward.
+        - Sub-agents are effective inside that chat and its parent agent.
+        - A2CR can work across ChatGPT, Claude, Codex, Cursor, Roo, and local LLMs.
+        - Sub-agent state sharing depends on the parent agent's context.
+        - A2CR stores state in an external temporary relay DB and expires it by TTL.
         """,
     ),
     "agent-guide": _seo(

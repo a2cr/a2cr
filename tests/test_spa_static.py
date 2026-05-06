@@ -46,12 +46,18 @@ def test_public_human_guide_serves_static_html():
     assert '<link rel="canonical" href="https://a2cr.app/guide"' in response.text
     assert '<link rel="alternate" hreflang="en" href="https://a2cr.app/en/guide"' in response.text
     assert '<noscript id="a2cr-static-description">' in response.text
-    assert "A2CR 人間向けガイド" in response.text
+    assert "A2CR ガイド" in response.text
+    assert "読むより、AIに読ませる" in response.text
+    assert "このアプリを説明して" in response.text
     assert "https://a2cr.app/mcp" in response.text
     assert "local client keyは利用者側が管理します" in response.text
     assert "client-encrypted" in response.text
     assert "server-encrypted" in response.text
     assert "ゼロ知識相当と言えるのはclient-encrypted WorkBaton Slotに限ります" in response.text
+    assert "圧縮・要約機能との違い" in response.text
+    assert "会話ログのダイエット" in response.text
+    assert "サブエージェントとの違い" in response.text
+    assert "環境をまたいで引き継ぐ" in response.text
     assert "AIエージェント向けガイド: https://a2cr.app/agent-guide" in response.text
     assert '<div id="root"></div>' in response.text
 
@@ -65,12 +71,18 @@ def test_public_english_human_guide_serves_static_html():
     assert '<link rel="canonical" href="https://a2cr.app/en/guide"' in response.text
     assert '<link rel="alternate" hreflang="ja" href="https://a2cr.app/guide"' in response.text
     assert '<noscript id="a2cr-static-description">' in response.text
-    assert "A2CR Human Guide" in response.text
+    assert "A2CR Guide" in response.text
+    assert "Let your AI read it" in response.text
+    assert "ask it to explain A2CR" in response.text
     assert "A2CR is not an AI" in response.text
     assert "local client key is managed by the user" in response.text
     assert "client-encrypted" in response.text
     assert "server-encrypted" in response.text
     assert "Only client-encrypted WorkBaton slots should be described that way" in response.text
+    assert "Compression / summarization vs A2CR / WorkBaton" in response.text
+    assert "diet for a conversation log" in response.text
+    assert "Sub-agents vs A2CR" in response.text
+    assert "carries the environment itself forward" in response.text
     assert "AI agent guide: https://a2cr.app/en/agent-guide" in response.text
     assert '<div id="root"></div>' in response.text
 

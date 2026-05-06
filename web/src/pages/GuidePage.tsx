@@ -1,4 +1,4 @@
-import { Bot, CheckCircle2, KeyRound, LayoutDashboard, LogIn, PlugZap, ShieldCheck } from "lucide-react";
+import { Bot, CheckCircle2, LayoutDashboard, LogIn, PlugZap, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -76,12 +76,12 @@ function agentPrompt(language: Language): string {
 
 const text = {
   en: {
-    navHuman: "Human guide",
+    navHuman: "Guide",
     navAgent: "AI agent guide",
     pricing: "Pricing",
     signIn: "Sign in",
     dashboard: "Open dashboard",
-    humanTitle: "A2CR guide for people",
+    humanTitle: "A2CR guide",
     humanBody:
       "Use A2CR to hand compact WorkBaton checkpoints from one AI session to the next without carrying the whole chat history forward.",
     agentTitle: "A2CR guide for AI agents",
@@ -93,6 +93,37 @@ const text = {
       "Lets another AI window, model, or MCP-capable client resume the work.",
       "Keeps dashboards focused on metadata rather than saved body content.",
       "Does not run LLM inference on the server."
+    ],
+    comparisonTitle: "What A2CR is different from",
+    comparisonBody:
+      "A2CR is not a chat summarizer or a sub-agent feature. It is a WorkBaton for handing useful work state across sessions, models, and tools.",
+    agentTeaserTitle: "Let your AI read it",
+    agentTeaserBody:
+      "Show the AI agent guide to the AI agent you already use and ask it to explain A2CR. The guide is written for agents, so it can turn the app's role, limits, and setup into plain guidance for your situation.",
+    agentTeaserLink: "Open AI agent guide",
+    compressionCompareTitle: "Compression / summarization vs A2CR / WorkBaton",
+    compressionCompareHeaders: ["Comparison", "Compression / summarization", "A2CR / WorkBaton"],
+    compressionCompareRows: [
+      ["Purpose", "Shorten a long conversation", "Pass a state that lets the next AI resume work"],
+      ["Scope", "History inside that chat", "Another chat, another AI, or another tool"],
+      ["Output", "Summary text", "Work state such as goal / current_state / next_action / blockers"],
+      ["Risk", "Can keep old assumptions and noise", "Intentionally keeps only the state needed for the work"],
+      ["Storage", "Chat-dependent", "External temporary relay DB"],
+      ["Sharing", "Usually inside that AI service", "Shared between MCP-capable agents"],
+      ["Deletion", "Depends on the service", "Explicitly expires by TTL"]
+    ],
+    compressionCompareNote:
+      "Compression is a diet for a conversation log. A2CR is a baton for work state.",
+    subagentCompareTitle: "Sub-agents vs A2CR",
+    subagentCompareHeaders: ["Comparison", "Sub-agent", "A2CR"],
+    subagentCompareRows: [
+      ["Main use", "Divide work inside the same environment", "Carry the environment itself forward"],
+      ["Effective scope", "That chat and its parent agent", "Across ChatGPT / Claude / Codex / Cursor / Roo / local LLMs"],
+      ["State sharing", "Depends on the parent agent's context", "Stored in an external temporary relay DB"],
+      ["Session movement", "Weak", "Strong"],
+      ["External service integration", "Usually weak", "Possible when the tool supports MCP"],
+      ["Time limit", "Usually none", "Expires by TTL"],
+      ["Neutrality", "Tied to a specific tool", "Aims to be tool-independent"]
     ],
     keyTitle: "Important: local client key",
     keyBody:
@@ -133,12 +164,12 @@ const text = {
     copyPrompt: "Copy prompt"
   },
   ja: {
-    navHuman: "人間向けガイド",
+    navHuman: "ガイド",
     navAgent: "AI向けガイド",
     pricing: "料金",
     signIn: "ログイン",
     dashboard: "ダッシュボード",
-    humanTitle: "A2CR 人間向けガイド",
+    humanTitle: "A2CR ガイド",
     humanBody:
       "A2CRは、長いチャット履歴をそのまま引きずらず、必要な作業状態だけをWorkBatonとして次のAIセッションへ渡すためのサービスです。",
     agentTitle: "A2CR AIエージェント向けガイド",
@@ -150,6 +181,37 @@ const text = {
       "別のAI窓、別モデル、MCP対応クライアントから作業を再開できます。",
       "ダッシュボードは本文ではなくメタデータ中心に表示します。",
       "A2CRサーバー自体はLLM推論を実行しません。"
+    ],
+    comparisonTitle: "A2CRが何と違うか",
+    comparisonBody:
+      "A2CRは、チャット要約機能でもサブエージェント機能でもありません。別チャット、別AI、別ツールへ作業状態を渡すためのWorkBatonです。",
+    agentTeaserTitle: "読むより、AIに読ませる",
+    agentTeaserBody:
+      "AI向けガイドを、ふだん使っているAIエージェントに見せて「このアプリを説明して」と頼んでください。A2CRが何を渡し、何を保存しないのかまで、あなた向けにかみ砕いて説明できます。",
+    agentTeaserLink: "AI向けガイドを見る",
+    compressionCompareTitle: "圧縮・要約機能との違い",
+    compressionCompareHeaders: ["比較", "圧縮・要約機能", "A2CR / WorkBaton"],
+    compressionCompareRows: [
+      ["目的", "長い会話を短くする", "次のAIが作業再開できる状態を渡す"],
+      ["対象", "そのチャット内の履歴", "別チャット・別AI・別ツール"],
+      ["出力", "要約文", "goal / current_state / next_action / blockers などの作業状態"],
+      ["問題点", "古い前提やノイズを拾うことがある", "必要な作業状態だけを意図的に残す"],
+      ["保存", "チャット依存", "外部の一時リレーDB"],
+      ["共有", "基本そのAI/そのサービス内", "MCP対応エージェント間で共有"],
+      ["消去", "サービス側仕様次第", "TTLで明示的に消える"]
+    ],
+    compressionCompareNote:
+      "圧縮機能は、ざっくり言えば「会話ログのダイエット」です。A2CRは「作業状態のバトン」です。",
+    subagentCompareTitle: "サブエージェントとの違い",
+    subagentCompareHeaders: ["比較", "サブエージェント", "A2CR"],
+    subagentCompareRows: [
+      ["主な用途", "同じ環境内で分業する", "環境をまたいで引き継ぐ"],
+      ["有効範囲", "そのチャット・その親エージェント内", "ChatGPT / Claude / Codex / Cursor / Roo / ローカルLLMなど横断"],
+      ["状態共有", "親エージェントの文脈に依存", "外部の一時リレーDBに保存"],
+      ["セッション移動", "弱い", "強い"],
+      ["別サービス連携", "基本弱い", "MCP対応なら可能"],
+      ["時間削除", "基本なし", "TTLで消える"],
+      ["中立性", "特定ツール依存", "ツール非依存を狙える"]
     ],
     keyTitle: "重要: local client key",
     keyBody:
@@ -266,6 +328,80 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
+function ComparisonTable({
+  title,
+  headers,
+  rows,
+  note
+}: {
+  title: string;
+  headers: string[];
+  rows: string[][];
+  note?: string;
+}) {
+  return (
+    <article className="rounded-md border border-neutral-200 bg-white">
+      <div className="border-b border-neutral-200 px-4 py-3">
+        <h3 className="font-semibold text-neutral-950">{title}</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="bg-neutral-50 text-neutral-950">
+            <tr>
+              {headers.map((header) => (
+                <th key={header} className="border-b border-neutral-200 px-4 py-3 font-semibold">
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([label, first, second]) => (
+              <tr key={label} className="border-b border-neutral-100 last:border-b-0">
+                <th className="w-36 px-4 py-3 align-top font-semibold text-neutral-950">{label}</th>
+                <td className="px-4 py-3 align-top leading-6 text-neutral-700">{first}</td>
+                <td className="px-4 py-3 align-top leading-6 text-neutral-700">{second}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {note && <p className="border-t border-neutral-100 px-4 py-3 text-sm font-semibold leading-6 text-neutral-800">{note}</p>}
+    </article>
+  );
+}
+
+function PlainSection({
+  eyebrow,
+  title,
+  body,
+  children
+}: {
+  eyebrow: string;
+  title: string;
+  body?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="border-t border-neutral-200 py-8">
+      <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">{eyebrow}</div>
+      <h2 className="mt-2 text-xl font-semibold tracking-normal text-neutral-950">{title}</h2>
+      {body && <p className="mt-3 text-sm leading-6 text-neutral-700">{body}</p>}
+      {children && <div className="mt-4">{children}</div>}
+    </section>
+  );
+}
+
+function PlainBulletList({ items }: { items: string[] }) {
+  return (
+    <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-neutral-700">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
 export function GuidePage() {
   const { i18n } = useTranslation();
   const { session } = useAuth();
@@ -276,6 +412,57 @@ export function GuidePage() {
   const title = kind === "agent" ? t.agentTitle : t.humanTitle;
   const body = kind === "agent" ? t.agentBody : t.humanBody;
   const prompt = agentPrompt(language);
+
+  if (kind === "agent") {
+    return (
+      <div className="min-h-screen bg-white text-neutral-950">
+        <PublicHeader language={language} kind={kind} />
+        <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+          <div className="pb-8">
+            <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
+            <p className="mt-4 max-w-3xl text-sm leading-6 text-neutral-700">{body}</p>
+          </div>
+
+          <PlainSection eyebrow="A2CR" title={t.whatTitle}>
+            <PlainBulletList items={t.whatPoints} />
+          </PlainSection>
+
+          <PlainSection eyebrow="Security" title={t.keyTitle} body={t.keyBody}>
+            <PlainBulletList items={t.keyPoints} />
+          </PlainSection>
+
+          <PlainSection eyebrow="Encryption" title={t.encryptionTitle} body={t.noOverclaim}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <tbody>
+                  {t.storageRows.map(([mode, description]) => (
+                    <tr key={mode} className="border-t border-neutral-200 first:border-t-0">
+                      <th className="w-48 py-3 pr-4 font-semibold text-neutral-950">{mode}</th>
+                      <td className="py-3 leading-6 text-neutral-700">{description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </PlainSection>
+
+          <PlainSection eyebrow="Agent" title={t.agentRulesTitle}>
+            <PlainBulletList items={t.agentRules} />
+          </PlainSection>
+
+          <PlainSection eyebrow="Prompt" title="Semi-automation prompt">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold">A2CR MCP</div>
+              <CopyButton value={prompt} label={t.copyPrompt} compact />
+            </div>
+            <pre className="max-h-96 overflow-auto whitespace-pre-wrap border border-neutral-200 bg-neutral-50 p-3 text-xs leading-5 text-neutral-800">
+              {prompt}
+            </pre>
+          </PlainSection>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-950">
@@ -296,21 +483,21 @@ export function GuidePage() {
                   {session ? t.dashboard : t.signIn}
                 </Link>
                 <Link
-                  to={kind === "agent" ? (language === "ja" ? "/guide" : "/en/guide") : language === "ja" ? "/agent-guide" : "/en/agent-guide"}
+                  to={language === "ja" ? "/agent-guide" : "/en/agent-guide"}
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-100"
                 >
                   <Bot className="size-4" aria-hidden="true" />
-                  {kind === "agent" ? t.navHuman : t.navAgent}
+                  {t.navAgent}
                 </Link>
               </div>
             </div>
             <div className="grid gap-3">
-              <article className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <article className="rounded-md border border-red-200 bg-red-50 p-4">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-1 size-5 shrink-0 text-emerald-800" aria-hidden="true" />
+                  <ShieldCheck className="mt-1 size-5 shrink-0 text-red-700" aria-hidden="true" />
                   <div>
-                    <h2 className="font-semibold text-emerald-950">{t.keyTitle}</h2>
-                    <p className="mt-2 text-sm leading-6 text-emerald-900">{t.keyBody}</p>
+                    <h2 className="font-semibold text-red-950">{t.keyTitle}</h2>
+                    <p className="mt-2 text-sm leading-6 text-red-900">{t.keyBody}</p>
                   </div>
                 </div>
               </article>
@@ -320,6 +507,21 @@ export function GuidePage() {
                   <p className="text-sm leading-6 text-neutral-700">{t.noOverclaim}</p>
                 </div>
               </article>
+              <article className="rounded-md border border-neutral-200 bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <Bot className="mt-1 size-5 shrink-0 text-neutral-700" aria-hidden="true" />
+                  <div>
+                    <h2 className="font-semibold text-neutral-950">{t.agentTeaserTitle}</h2>
+                    <p className="mt-2 text-sm leading-6 text-neutral-700">{t.agentTeaserBody}</p>
+                    <Link
+                      to={language === "ja" ? "/agent-guide" : "/en/agent-guide"}
+                      className="mt-3 inline-flex text-sm font-semibold text-emerald-800 hover:text-emerald-900"
+                    >
+                      {t.agentTeaserLink}
+                    </Link>
+                  </div>
+                </div>
+              </article>
             </div>
           </div>
         </section>
@@ -327,6 +529,20 @@ export function GuidePage() {
         <Section eyebrow="A2CR" title={t.whatTitle}>
           <BulletList items={t.whatPoints} />
         </Section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="Compare" title={t.comparisonTitle} body={t.comparisonBody}>
+            <div className="grid gap-4">
+              <ComparisonTable
+                title={t.compressionCompareTitle}
+                headers={t.compressionCompareHeaders}
+                rows={t.compressionCompareRows}
+                note={t.compressionCompareNote}
+              />
+              <ComparisonTable title={t.subagentCompareTitle} headers={t.subagentCompareHeaders} rows={t.subagentCompareRows} />
+            </div>
+          </Section>
+        </section>
 
         <section className="border-y border-neutral-200 bg-white">
           <Section eyebrow="Security" title={t.keyTitle} body={t.keyBody}>
@@ -349,53 +565,27 @@ export function GuidePage() {
           </div>
         </Section>
 
-        {kind === "human" ? (
-          <>
-            <section className="border-y border-neutral-200 bg-white">
-              <Section eyebrow="MCP" title={t.setupTitle} body={t.setupBody}>
-                <div className="grid gap-4">
-                  {(Object.keys(clientLabels) as ClientKey[]).map((client) => {
-                    const snippet = mcpConfigSnippet(client);
-                    return (
-                      <article key={client} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                          <h3 className="font-semibold">{clientLabels[client]}</h3>
-                          <CopyButton value={snippet} label={t.copyConfig} compact />
-                        </div>
-                        <pre className="max-h-72 overflow-auto rounded-md bg-neutral-950 p-3 text-xs text-neutral-50">{snippet}</pre>
-                      </article>
-                    );
-                  })}
-                </div>
-              </Section>
-            </section>
-            <Section eyebrow="Workflow" title={t.workflowTitle}>
-              <BulletList items={t.workflow} />
-            </Section>
-          </>
-        ) : (
-          <>
-            <section className="border-y border-neutral-200 bg-white">
-              <Section eyebrow="Agent" title={t.agentRulesTitle}>
-                <BulletList items={t.agentRules} />
-              </Section>
-            </section>
-            <Section eyebrow="Prompt" title="Semi-automation prompt">
-              <div className="rounded-md border border-neutral-200 bg-white p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <KeyRound className="size-4 text-emerald-700" aria-hidden="true" />
-                    A2CR MCP
-                  </div>
-                  <CopyButton value={prompt} label={t.copyPrompt} compact />
-                </div>
-                <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50">
-                  {prompt}
-                </pre>
-              </div>
-            </Section>
-          </>
-        )}
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="MCP" title={t.setupTitle} body={t.setupBody}>
+            <div className="grid gap-4">
+              {(Object.keys(clientLabels) as ClientKey[]).map((client) => {
+                const snippet = mcpConfigSnippet(client);
+                return (
+                  <article key={client} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="font-semibold">{clientLabels[client]}</h3>
+                      <CopyButton value={snippet} label={t.copyConfig} compact />
+                    </div>
+                    <pre className="max-h-72 overflow-auto rounded-md bg-neutral-950 p-3 text-xs text-neutral-50">{snippet}</pre>
+                  </article>
+                );
+              })}
+            </div>
+          </Section>
+        </section>
+        <Section eyebrow="Workflow" title={t.workflowTitle}>
+          <BulletList items={t.workflow} />
+        </Section>
       </main>
     </div>
   );
