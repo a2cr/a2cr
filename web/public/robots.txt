@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /mcp
+Disallow: /mcp/
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /login
+
+Sitemap: https://a2cr.app/sitemap.xml

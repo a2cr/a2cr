@@ -12,9 +12,21 @@ from services.exceptions import AppError
 from routers import health, context, web_context, dashboard, workthreads, mcp_http
 
 WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
+WEB_PUBLIC_DIR = Path(__file__).resolve().parent / "web" / "public"
 WEB_INDEX_FILE = WEB_DIST_DIR / "index.html"
-WEB_GUIDE_FILE = WEB_DIST_DIR / "guide.html"
-WEB_PUBLIC_GUIDE_FILE = Path(__file__).resolve().parent / "web" / "public" / "guide.html"
+PUBLIC_HTML_ROUTES = {
+    "": "home.html",
+    "guide": "guide.html",
+    "pricing": "pricing.html",
+}
+
+
+def _public_file(filename: str) -> Path | None:
+    for root in (WEB_PUBLIC_DIR, WEB_DIST_DIR):
+        candidate = root / filename
+        if candidate.exists():
+            return candidate
+    return None
 
 
 async def _cleanup_loop():
@@ -129,13 +141,12 @@ def serve_spa(full_path: str = ""):
         raise HTTPException(status_code=404)
     if any(part.startswith(".") for part in Path(full_path).parts):
         raise HTTPException(status_code=404)
-    if full_path.rstrip("/") == "guide":
-        guide_file = WEB_GUIDE_FILE if WEB_GUIDE_FILE.exists() else WEB_PUBLIC_GUIDE_FILE
-        if not guide_file.exists():
+    normalized_path = full_path.rstrip("/")
+    if normalized_path in PUBLIC_HTML_ROUTES:
+        html_file = _public_file(PUBLIC_HTML_ROUTES[normalized_path])
+        if html_file is None:
             raise HTTPException(status_code=404)
-        return FileResponse(guide_file, media_type="text/html; charset=utf-8")
-    if not WEB_INDEX_FILE.exists():
-        raise HTTPException(status_code=404)
+        return FileResponse(html_file, media_type="text/html; charset=utf-8")
 
     candidate = (WEB_DIST_DIR / full_path).resolve()
     try:
@@ -144,4 +155,13 @@ def serve_spa(full_path: str = ""):
         raise HTTPException(status_code=404) from exc
     if candidate.is_file():
         return FileResponse(candidate)
+    public_candidate = (WEB_PUBLIC_DIR / full_path).resolve()
+    try:
+        public_candidate.relative_to(WEB_PUBLIC_DIR.resolve())
+    except ValueError as exc:
+        raise HTTPException(status_code=404) from exc
+    if public_candidate.is_file():
+        return FileResponse(public_candidate)
+    if not WEB_INDEX_FILE.exists():
+        raise HTTPException(status_code=404)
     return FileResponse(WEB_INDEX_FILE)

@@ -1,0 +1,47 @@
+# A2CR
+
+A2CR is an MCP-first context relay service for AI agents.
+
+Primary site: https://a2cr.app/
+Public guide: https://a2cr.app/guide
+Pricing: https://a2cr.app/pricing
+MCP endpoint: https://a2cr.app/mcp
+
+Use case:
+- Save compact WorkBaton checkpoints before an AI agent conversation gets too long.
+- Resume a saved slot from another window, model, or MCP-capable client.
+- Use MCP tools instead of guessing direct HTTP API endpoints.
+
+MCP setup:
+
+Codex TOML example:
+
+```toml
+[mcp_servers."a2cr"]
+url = "https://a2cr.app/mcp"
+
+[mcp_servers."a2cr".http_headers]
+Authorization = "Bearer <A2CR_API_KEY>"
+```
+
+Generic Streamable HTTP JSON example:
+
+```json
+{
+  "mcpServers": {
+    "a2cr": {
+      "type": "streamable-http",
+      "url": "https://a2cr.app/mcp",
+      "headers": {
+        "Authorization": "Bearer <A2CR_API_KEY>"
+      }
+    }
+  }
+}
+```
+
+Agent rules:
+- Do not save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
+- Save goal, current_state, next_action, and compact supporting facts.
+- In a new window, first call resume_context(slot_name="...") or resume_context(slot_number=N).
+- If candidates are returned, choose from the candidates instead of guessing.
