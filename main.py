@@ -96,16 +96,30 @@ ROUTE_SEO = {
             ## このページを読んだAIエージェントへの指示
             ユーザーに「A2CRのMCPを設定して」と頼まれたら、次の順番で進めます。
 
-            1. 使っているクライアントが Codex、Claude、Cursor、その他のどれかを確認します。
-            2. そのクライアントのMCP設定ファイルまたは設定画面を探します。
-            3. 既存のMCP server設定を読み、消さないようにします。
-            4. a2cr という名前のStreamable HTTP MCP serverを追加または更新します。
-            5. URLは https://a2cr.app/mcp にします。
-            6. Authorizationヘッダーは Bearer <A2CR_API_KEY> にします。
-            7. APIキーはユーザーが発行して入力します。AIはAPIキーを推測しません。
-            8. APIキー、Authorizationヘッダー、設定ファイル全文をチャットやログに不用意に表示しません。
-            9. 設定後、クライアントの再読み込みまたは再起動が必要なら案内します。
-            10. 疎通確認として get_account_limits または list_contexts を実行します。
+            1. このページの内容を読み、A2CR MCP endpoint が https://a2cr.app/mcp であることを確認します。
+            2. 使っているクライアントが Codex、Claude、Cursor、その他のどれかを確認します。
+            3. ユーザーにA2CRへログインしてAPIキーを発行してもらいます。APIキーはAIが推測しません。
+            4. そのクライアントのMCP設定ファイルまたは設定画面を探します。
+            5. 既存のMCP server設定を読み、消さないようにします。
+            6. a2cr という名前のStreamable HTTP MCP serverを追加または更新します。
+            7. URLは https://a2cr.app/mcp にします。
+            8. Authorizationヘッダーは一旦 Bearer PASTE_A2CR_API_KEY_HERE のようなプレースホルダーにします。
+            9. 設定ファイルをテキストエディタで開き、ユーザーにAPIキーだけを貼り付けて保存してもらいます。
+            10. WindowsのCodexなら、例として notepad C:\\Users\\<USER>\\.codex\\config.toml を開きます。
+            11. ClaudeやCursorでは、現在のMCP設定ファイルまたは設定画面を開きます。
+            12. APIキー、Authorizationヘッダー、設定ファイル全文をチャットやログに不用意に表示しません。
+            13. 保存後、クライアントまたはエージェントセッションを再起動・再読み込みするよう案内します。
+            14. 再起動後、疎通確認として get_account_limits または list_contexts を実行します。
+            15. 疎通確認に成功したら、A2CR MCPが利用可能になったことをユーザーへ伝えます。
+
+            ## 推奨する導線
+            1. ユーザーがAIエージェントにこのページを読ませます。
+            2. AIエージェントがMCP設定ファイルを特定し、A2CR設定のひな形を入れます。
+            3. ユーザーがA2CRのダッシュボードでAPIキーを取得します。
+            4. AIエージェントが設定ファイルをテキストエディタで開きます。
+            5. ユーザーがプレースホルダーをAPIキーに置き換えて保存します。
+            6. AIエージェントまたはユーザーがクライアントを再起動します。
+            7. AIエージェントが get_account_limits または list_contexts で接続確認します。
 
             ## 設定時の禁止事項
             既存のMCP設定を全削除しない。
@@ -180,17 +194,31 @@ ROUTE_SEO = {
             ## Instructions for AI agents reading this page
             If the user asks you to configure A2CR MCP, do this:
 
-            1. Identify whether the user is using Codex, Claude, Cursor, or another MCP client.
-            2. Locate that client's MCP config file or MCP settings screen.
-            3. Read the existing MCP server settings and preserve them.
-            4. Add or update a server named a2cr.
-            5. Set the server type to Streamable HTTP when the client supports that field.
-            6. Set the URL to https://a2cr.app/mcp.
-            7. Set Authorization to Bearer <A2CR_API_KEY>.
-            8. Ask the user to provide or paste the API key. Do not guess it.
-            9. Do not print the API key, Authorization header, or full secret config in chat or logs.
-            10. Restart or reload the client if required.
-            11. Verify the connection by running get_account_limits or list_contexts.
+            1. Read this page and confirm that the A2CR MCP endpoint is https://a2cr.app/mcp.
+            2. Identify whether the user is using Codex, Claude, Cursor, or another MCP client.
+            3. Ask the user to sign in to A2CR and issue an API key. Do not guess the key.
+            4. Locate that client's MCP config file or MCP settings screen.
+            5. Read the existing MCP server settings and preserve them.
+            6. Add or update a server named a2cr.
+            7. Set the server type to Streamable HTTP when the client supports that field.
+            8. Set the URL to https://a2cr.app/mcp.
+            9. Set Authorization to a placeholder such as Bearer PASTE_A2CR_API_KEY_HERE.
+            10. Open the config file in a text editor and ask the user to replace only the placeholder with their API key, then save.
+            11. For Codex on Windows, opening notepad C:\\Users\\<USER>\\.codex\\config.toml is usually appropriate.
+            12. For Claude or Cursor, open the current MCP settings file or MCP settings screen.
+            13. Do not print the API key, Authorization header, or full secret config in chat or logs.
+            14. After saving, tell the user to restart or reload the MCP client or AI agent session.
+            15. After restart, verify the connection by running get_account_limits or list_contexts.
+            16. If verification succeeds, tell the user that A2CR MCP is ready.
+
+            ## Recommended setup flow
+            1. The user asks an AI agent to read this page.
+            2. The AI agent locates the MCP config and writes the A2CR placeholder config.
+            3. The user obtains an API key from the A2CR dashboard.
+            4. The AI agent opens the config file in a text editor.
+            5. The user replaces the placeholder with the API key and saves the file.
+            6. The AI agent or user restarts the client.
+            7. The AI agent verifies the connection with get_account_limits or list_contexts.
 
             ## Do not do these things
             Do not delete unrelated MCP servers.

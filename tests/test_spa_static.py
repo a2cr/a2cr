@@ -52,6 +52,9 @@ def test_public_guide_serves_static_ai_readable_html():
     assert "https://a2cr.app/mcp" in response.text
     assert "save_context" in response.text
     assert "get_account_limits" in response.text
+    assert "PASTE_A2CR_API_KEY_HERE" in response.text
+    assert "設定ファイルをテキストエディタで開き" in response.text
+    assert "クライアントまたはエージェントセッションを再起動" in response.text
     assert "既存のMCP設定を全削除しない" in response.text
     assert '<div id="root"></div>' in response.text
 
@@ -72,6 +75,9 @@ def test_public_english_guide_serves_static_ai_readable_html():
     assert "https://a2cr.app/mcp" in response.text
     assert "save_context" in response.text
     assert "get_account_limits" in response.text
+    assert "PASTE_A2CR_API_KEY_HERE" in response.text
+    assert "Open the config file in a text editor" in response.text
+    assert "restart or reload the MCP client" in response.text
     assert "Do not delete unrelated MCP servers" in response.text
     assert '<div id="root"></div>' in response.text
 

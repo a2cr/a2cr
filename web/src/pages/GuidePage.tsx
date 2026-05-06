@@ -105,10 +105,12 @@ const copy = {
       "Do not save secrets or long logs."
     ],
     workflow: [
-      "Sign in and issue an A2CR API key.",
-      "Add A2CR to Codex, Claude, Cursor, or another MCP-capable client.",
-      "Save a WorkBaton checkpoint before the window gets crowded.",
-      "Open a fresh window, resume that Slot, and continue the task."
+      "Ask your AI agent to read this guide and find your MCP config.",
+      "Sign in to A2CR and issue an API key.",
+      "Let the agent add the A2CR placeholder config and open the config file in a text editor.",
+      "Paste the API key into the placeholder yourself, then save.",
+      "Restart or reload the AI client.",
+      "Ask the agent to verify A2CR with get_account_limits or list_contexts."
     ],
     wow: [
       "The handoff is tool-native: agents call MCP instead of scraping chat history.",
@@ -159,10 +161,12 @@ const copy = {
       "秘密情報や長いログは保存しません。"
     ],
     workflow: [
+      "AIエージェントにこのガイドを読ませ、MCP設定ファイルを探してもらいます。",
       "A2CRにログインしてAPIキーを発行します。",
-      "Codex、Claude、CursorなどのMCP対応クライアントへA2CRを追加します。",
-      "作業が長くなりそうな時に、要点だけをWorkBaton Slotに保存します。",
-      "新しい窓でSlotを読み込み、続きを開始します。"
+      "AIエージェントにA2CR設定のひな形を追加してもらい、設定ファイルをテキストエディタで開いてもらいます。",
+      "APIキーの貼り付けだけは人間が行い、保存します。",
+      "AIクライアントまたはエージェントを再起動します。",
+      "get_account_limits または list_contexts で接続確認してもらいます。"
     ],
     wow: [
       "引き継ぎがMCPツール前提なので、チャット履歴を無理に読ませる必要がありません。",
