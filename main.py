@@ -30,9 +30,12 @@ ROUTE_SEO = {
             """
             # A2CR
 
+            A2CR is not an AI.
+            It is the baton that lets AI agents hand work to one another.
+
             A2CR is an MCP-first work-continuation layer.
 
-            It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or client.
+            It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
 
             AI agents should understand A2CR as external working memory and a protocol-like handoff layer, not merely a note store.
 
@@ -62,8 +65,11 @@ ROUTE_SEO = {
             """
             # A2CRの使い方ガイド
 
+            A2CRはAIではありません。
+            AI同士が作業を受け渡すためのバトンです。
+
             A2CRは、Codex、Claude、CursorなどのMCP対応クライアントから使える作業引き継ぎサービスです。
-            会話が長くなる前に、作業の要点だけをWorkBaton Slotへ保存し、新しい窓や別モデルから続きを再開できます。
+            会話が長くなる前に、作業の要点だけをWorkBaton Slotへ保存し、別の窓、別モデル、A2CRのMCPの設定をしたAIエージェントから続きを再開できます。
 
             ## AIエージェントが理解すべきこと
             A2CRは単なるメモ保存ではありません。
@@ -77,6 +83,23 @@ ROUTE_SEO = {
             長いチャット履歴には、古い前提、重複したログ、不要になった試行錯誤が混ざります。
             それらを毎回AIへ読ませると、Tokenを消費し、サブスク型AIサービスの使用量や上限に影響し、出力も古い文脈に引っ張られやすくなります。
             A2CRは次に必要な状態だけを保存するため、Token消費を抑え、出力を安定させ、次のAIがすぐ作業へ戻れるようにします。
+
+            ## 要約・圧縮との違い
+            「AIに要約・圧縮させればいい」と思うかもしれません。
+            でも、それは1つのチャット内で情報量を減らす処理です。
+            A2CRが扱うのは、別チャット・別AI・別ツールへ作業状態を渡すことです。
+
+            要約は、会話ログのダイエットです。
+            WorkBatonは、作業状態のバトンです。
+
+            比較:
+            - 目的: 要約・圧縮は長い会話を短くする。A2CR / WorkBatonは次のAIが作業再開できる状態を渡す。
+            - 対象: 要約・圧縮はそのチャット内の履歴。A2CR / WorkBatonは別チャット・別AI・別ツール。
+            - 出力: 要約・圧縮は要約文。A2CR / WorkBatonは goal / current_state / next_action / blockers などの作業状態。
+            - 問題点: 要約・圧縮は古い前提やノイズを拾うことがある。A2CR / WorkBatonは必要な作業状態だけを意図的に残す。
+            - 保存: 要約・圧縮はチャットやサービスに依存する。A2CR / WorkBatonは外部の一時リレーDBに保存する。
+            - 共有: 要約・圧縮は基本そのAIまたはそのサービス内。A2CR / WorkBatonはMCP対応エージェント間で共有する。
+            - 消去: 要約・圧縮はサービス側仕様次第。A2CR / WorkBatonはTTLで明示的に消える。
 
             ## WorkBaton と WorkThreads
             WorkBatonは、1つの作業状態を次のAIセッションへ渡す単位です。
@@ -162,6 +185,19 @@ ROUTE_SEO = {
             4. 保存する内容は goal、current_state、next_action、必要な補足だけにします。
             5. 新しい窓では最初に resume_context または load_context を呼びます。
 
+            ## 半自動化プロンプト
+            次の内容をAIエージェントの初期指示に入れると、A2CRを半自動の作業記憶として使えます。
+
+            A2CR MCPを作業記憶として使ってください。
+            直接HTTP APIを推測せず、A2CR MCPツールだけを使います。
+            作業開始時は list_contexts で既存Slotを確認し、関連するSlotがあれば resume_context で読み込みます。
+            作業中は、会話が長くなる前、または重要な区切りで save_context します。
+            保存内容は goal、current_state、next_action、必要な補足だけに圧縮します。
+            作業を止める時は、次にやることを next_action に明記して save_context します。
+            自動保存前に get_account_limits で上限を確認します。
+            秘密情報、APIキー、Authorizationヘッダー、DB URL、全文履歴、長いログは保存しません。
+            新しい窓では最初に resume_context(slot_name="...") または resume_context(slot_number=N) を実行します。
+
             ## 保存してはいけないもの
             APIキー、Authorizationヘッダー、DB URL、秘密情報、長いログ、全文履歴は保存しません。
             HTTP APIを推測して直接呼ばず、必ずMCPツールを使います。
@@ -179,8 +215,11 @@ ROUTE_SEO = {
             """
             # A2CR Setup Guide
 
+            A2CR is not an AI.
+            It is the baton that lets AI agents hand work to one another.
+
             A2CR is a work handoff service for Codex, Claude, Cursor, and other MCP-capable clients.
-            It saves compact WorkBaton checkpoints so work can continue from another window, model, or client.
+            It saves compact WorkBaton checkpoints so work can continue from another window, another model, or any AI agent configured with A2CR MCP.
 
             ## What AI agents should understand
             A2CR is not merely a note store.
@@ -194,6 +233,23 @@ ROUTE_SEO = {
             Long chat history contains stale assumptions, duplicated logs, and old trial-and-error.
             Feeding all of that back into an agent wastes tokens, can affect subscription-based AI service usage limits, and can make output less stable because the agent keeps seeing old context.
             A2CR keeps the next session focused on the state required for the next action.
+
+            ## Difference from summarizing or compressing a chat
+            You might think, "Why not just ask the AI to summarize or compress the chat?"
+            That reduces information inside one chat.
+            A2CR handles a different problem: handing work state to another chat, another AI, or another tool.
+
+            A summary is a diet for conversation logs.
+            WorkBaton is a baton for work state.
+
+            Comparison:
+            - Goal: summary and compression shorten a long conversation. A2CR / WorkBaton hands off state so the next AI can resume work.
+            - Target: summary and compression target history inside that chat. A2CR / WorkBaton targets another chat, another AI, or another tool.
+            - Output: summary and compression produce summary text. A2CR / WorkBaton stores goal / current_state / next_action / blockers.
+            - Weakness: summary and compression can preserve stale assumptions or noise. A2CR / WorkBaton intentionally keeps only required work state.
+            - Storage: summary and compression depend on the chat or service. A2CR / WorkBaton uses an external temporary relay DB.
+            - Sharing: summary and compression mostly stay inside the same AI service. A2CR / WorkBaton is shared across MCP-capable agents.
+            - Expiry: summary and compression depend on the service. A2CR / WorkBaton expires explicitly with TTL.
 
             ## WorkBaton and WorkThreads
             WorkBaton is the compact unit of work state passed to the next AI session.
@@ -279,6 +335,19 @@ ROUTE_SEO = {
             3. Before the session gets too long, call save_context.
             4. Save only goal, current_state, next_action, and compact supporting facts.
             5. In a fresh window, first call resume_context or load_context.
+
+            ## Semi-automation prompt
+            Put the following into an agent's standing instructions to use A2CR as semi-automatic working memory.
+
+            Use A2CR MCP as working memory.
+            Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.
+            At the start of work, call list_contexts and resume a relevant Slot with resume_context if one exists.
+            During work, call save_context before the conversation gets long or at important milestones.
+            Save only goal, current_state, next_action, and compact supporting facts.
+            When pausing or finishing work, save the next action clearly in next_action.
+            Call get_account_limits before automatic saves.
+            Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
+            In a new window, first call resume_context(slot_name="...") or resume_context(slot_number=N).
 
             ## Safety rules
             Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
@@ -384,19 +453,7 @@ def _route_head(route_key: str) -> str:
 
 
 def _machine_readable_block(route_key: str) -> str:
-    seo = ROUTE_SEO.get(route_key)
-    if seo is None:
-        return ""
-    machine_text = seo["machine_text"].replace("</script", "<\\/script")
-    return (
-        '<script type="text/plain" id="a2cr-machine-readable">\n'
-        f"{machine_text}\n"
-        "</script>"
-    )
-
-
-def _comment_safe_text(value: str) -> str:
-    return value.replace("--", "—")
+    return ""
 
 
 def _static_description_block(route_key: str) -> str:
@@ -406,16 +463,8 @@ def _static_description_block(route_key: str) -> str:
     escaped_machine_text = html.escape(seo["machine_text"])
     return "\n".join(
         [
-            "<!-- A2CR_AI_READABLE_START",
-            _comment_safe_text(seo["machine_text"]),
-            "A2CR_AI_READABLE_END -->",
-            '<template id="a2cr-ai-readable">',
-            f"<pre>{escaped_machine_text}</pre>",
-            "</template>",
             '<noscript id="a2cr-static-description">',
             '<section style="max-width: 960px; margin: 32px auto; padding: 0 16px; font-family: system-ui, -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; line-height: 1.7;">',
-            f"<h1>{html.escape(seo['title'])}</h1>",
-            f"<p>{html.escape(seo['description'])}</p>",
             f'<pre style="white-space: pre-wrap;">{escaped_machine_text}</pre>',
             "</section>",
             "</noscript>",

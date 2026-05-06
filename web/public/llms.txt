@@ -2,10 +2,17 @@
 
 A2CR is an MCP-first work-continuation layer for AI agents.
 
+A2CR is not an AI.
+It is the baton that lets AI agents hand work to one another.
+
 AI agents should understand A2CR as external working memory and a protocol-like handoff layer, not merely a note store.
 It reduces context waste by saving only the useful work state, such as goal, current_state, and next_action, instead of carrying an entire long conversation forward.
 Clean context reduces token waste, can affect subscription-based AI service usage limits, and helps stabilize output.
 Planned Pro WorkThreads extend this into multi-agent collaboration over shared work state.
+
+Summary and compression shorten one chat.
+A2CR / WorkBaton hands work state to another chat, another AI, or another tool.
+A summary is a diet for conversation logs. WorkBaton is a baton for work state.
 
 Primary site: https://a2cr.app/
 Public guide (Japanese): https://a2cr.app/guide
@@ -15,7 +22,7 @@ MCP endpoint: https://a2cr.app/mcp
 
 Use case:
 - Save compact WorkBaton checkpoints before an AI agent conversation gets too long.
-- Resume a saved slot from another window, model, or MCP-capable client.
+- Resume a saved slot from another window, another model, or any AI agent configured with A2CR MCP.
 - Use MCP tools instead of guessing direct HTTP API endpoints.
 - Keep future sessions focused on the next action instead of old chat history.
 
@@ -48,6 +55,10 @@ Generic Streamable HTTP JSON example:
 ```
 
 Agent rules:
+- At the start of work, call list_contexts and resume a relevant Slot if one exists.
+- During work, call save_context before the conversation gets long or at important milestones.
+- When pausing or finishing work, save the next action clearly in next_action.
+- Call get_account_limits before automatic saves.
 - Do not save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
 - Save goal, current_state, next_action, and compact supporting facts.
 - In a new window, first call resume_context(slot_name="...") or resume_context(slot_number=N).

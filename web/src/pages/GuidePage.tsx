@@ -51,11 +51,30 @@ function mcpConfigSnippet(client: ClientKey): string {
   );
 }
 
-function agentPrompt(): string {
+function agentPrompt(language: "en" | "ja"): string {
+  if (language === "ja") {
+    return [
+      "A2CR MCPを作業記憶として使ってください。",
+      `A2CR service: ${serviceUrl()}`,
+      "直接HTTP APIを推測せず、A2CR MCPツールだけを使います。",
+      "作業開始時: list_contextsで既存Slotを確認し、関連するSlotがあればresume_contextで読み込みます。",
+      "作業中: 会話が長くなる前、または重要な区切りでsave_contextします。",
+      "保存内容はgoal、current_state、next_action、必要な補足だけに圧縮します。",
+      "作業を止める時: 次にやることをnext_actionに明記してsave_contextします。",
+      "自動保存前にget_account_limitsで上限を確認します。",
+      "秘密情報、APIキー、Authorizationヘッダー、DB URL、全文履歴、長いログは保存しません。",
+      "新しい窓では最初にresume_context(slot_name=\"...\")またはresume_context(slot_number=N)を実行します。"
+    ].join("\n");
+  }
+
   return [
     `A2CR service: ${serviceUrl()}`,
     "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints.",
-    "Before the conversation gets long, call save_context with goal, current_state, and next_action.",
+    "At the start of work, call list_contexts and resume a relevant Slot if one exists.",
+    "During work, call save_context before the conversation gets long or at important milestones.",
+    "Save only goal, current_state, next_action, and compact supporting facts.",
+    "When pausing or finishing work, save the next action clearly in next_action.",
+    "Call get_account_limits before automatic saves.",
     "Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
     "In a new window, first call resume_context(slot_name=\"...\") or resume_context(slot_number=N).",
     "After loading, continue in the language of the current user message."
@@ -66,8 +85,14 @@ const copy = {
   en: {
     navGuide: "Guide",
     heroTitle: "A2CR setup guide",
+    conceptTitle: "A2CR is not an AI.",
+    conceptBody: "It is the baton that lets AI agents hand work to one another.",
     heroBody:
       "A2CR gives MCP-capable agents a small, durable WorkBaton: save the useful state of work now, then resume it from another window, model, or client later.",
+    humanHookTitle:
+      "Do you find yourself explaining the same work again every time a long AI session moves to a new chat?",
+    humanHookBody:
+      "A2CR saves only the current work state and hands it off safely to the next AI.",
     openDashboard: "Open dashboard",
     signIn: "Sign in",
     pricing: "Pricing",
@@ -83,7 +108,22 @@ const copy = {
       "Clean context reduces token waste and helps keep outputs stable.",
       "Lower token use can matter directly for subscription-based AI services and usage limits.",
       "Agents avoid dragging old assumptions, duplicate logs, and full chat history into every next step.",
-      "The same WorkBaton can be resumed from another window, model, or MCP client."
+      "The same WorkBaton can be resumed from another window, another model, or any AI agent configured with A2CR MCP."
+    ],
+    compareTitle: "Not the same as summarizing a chat",
+    compareBody:
+      "Summary and compression are useful, but they solve a different problem. They shorten one chat. A2CR passes a usable work state to another AI.",
+    compareLead:
+      "A summary is a diet for conversation logs. WorkBaton is a baton for work state.",
+    compareHeaders: ["Comparison", "Summary / Compression", "A2CR / WorkBaton"],
+    compareRows: [
+      ["Goal", "Shorten a long conversation", "Hand off state so the next AI can resume work"],
+      ["Target", "History inside that chat", "Another chat, another AI, or another tool"],
+      ["Output", "Summary text", "goal / current_state / next_action / blockers"],
+      ["Weakness", "Can preserve stale assumptions or noise", "Intentionally keeps only required work state"],
+      ["Storage", "Depends on the chat or service", "External temporary relay DB"],
+      ["Sharing", "Mostly inside the same AI service", "Shared across MCP-capable agents"],
+      ["Expiry", "Depends on the service", "Explicit TTL"]
     ],
     protocolTitle: "From WorkBaton to WorkThreads",
     protocolBody:
@@ -99,9 +139,11 @@ const copy = {
     setupNote:
       "Create an API key after signing in, then put it in your MCP client as a Bearer token. Client config locations vary; use your client's current MCP settings screen or config file.",
     usageTitle: "Basic workflow",
-    agentContractTitle: "Quick prompt",
+    agentContractTitle: "Semi-automation prompt",
+    agentContractBody:
+      "Put this into an agent's standing instructions so it can use A2CR at the start of work, during long sessions, and when pausing.",
     copyConfig: "Copy config",
-    copyPrompt: "Copy agent prompt",
+    copyPrompt: "Copy prompt",
     clients: {
       codex:
         "Use the A2CR Streamable HTTP server from Codex config. Keep the API key out of repositories and shared logs.",
@@ -141,8 +183,14 @@ const copy = {
   ja: {
     navGuide: "ガイド",
     heroTitle: "A2CRの使い方ガイド",
+    conceptTitle: "A2CRはAIではありません。",
+    conceptBody: "AI同士が作業を受け渡すためのバトンです。",
     heroBody:
       "A2CRは、Codex、Claude、CursorなどからMCPで使える作業引き継ぎサービスです。会話が長くなる前に要点だけをWorkBaton Slotへ保存して、別の窓やモデルから続きを再開できます。",
+    humanHookTitle:
+      "AIとの作業が長くなって、別のチャットに移るたびに説明し直していませんか？",
+    humanHookBody:
+      "A2CRは、今の作業状態だけを保存して、次のAIへ安全に引き継ぐサービスです。",
     openDashboard: "ダッシュボードを開く",
     signIn: "ログイン",
     pricing: "料金",
@@ -158,7 +206,22 @@ const copy = {
       "コンテキストを常に整理できるため、Token消費を抑え、出力を安定させやすくなります。",
       "Tokenの節約は、サブスク型AIサービスの使用量や上限にも影響します。",
       "古い前提や長い履歴に引っ張られにくく、次のAIが必要な作業へすぐ入れます。",
-      "同じWorkBatonを、別の窓、別モデル、別MCPクライアントから再開できます。"
+      "同じWorkBatonを、別の窓、別モデル、A2CRのMCPの設定をしたAIエージェントから再開できます。"
+    ],
+    compareTitle: "要約・圧縮とは違います",
+    compareBody:
+      "「AIに要約・圧縮させればいい」と思うかもしれません。でも、それは1つのチャット内で情報量を減らす処理です。A2CRが扱うのは、別チャット・別AI・別ツールへ作業状態を渡すことです。",
+    compareLead:
+      "要約は、会話ログのダイエット。WorkBatonは、作業状態のバトンです。",
+    compareHeaders: ["比較", "要約・圧縮", "A2CR / WorkBaton"],
+    compareRows: [
+      ["目的", "長い会話を短くする", "次のAIが作業再開できる状態を渡す"],
+      ["対象", "そのチャット内の履歴", "別チャット・別AI・別ツール"],
+      ["出力", "要約文", "goal / current_state / next_action / blockers"],
+      ["弱点", "古い前提やノイズを拾うことがある", "必要な作業状態だけを意図的に残す"],
+      ["保存", "チャットやサービスに依存", "外部の一時リレーDB"],
+      ["共有", "基本そのAI/そのサービス内", "MCP対応エージェント間で共有"],
+      ["消去", "サービス側仕様次第", "TTLで明示的に消える"]
     ],
     protocolTitle: "WorkBaton から WorkThreads へ",
     protocolBody:
@@ -174,9 +237,11 @@ const copy = {
     setupNote:
       "ログイン後にAPIキーを発行し、MCPクライアントへBearer tokenとして設定します。設定ファイルの場所はクライアントごとに変わるため、各クライアントの現在のMCP設定画面または設定ファイルを使ってください。",
     usageTitle: "基本の使い方",
-    agentContractTitle: "短い指示",
+    agentContractTitle: "半自動化プロンプト",
+    agentContractBody:
+      "このプロンプトをAIエージェントの初期指示に入れると、作業開始時・作業中・終了時にA2CRを作業記憶として使いやすくなります。",
     copyConfig: "設定をコピー",
-    copyPrompt: "エージェント指示をコピー",
+    copyPrompt: "プロンプトをコピー",
     clients: {
       codex:
         "Codex の設定から A2CR の Streamable HTTP サーバーを使います。APIキーはリポジトリや共有ログに入れないでください。",
@@ -237,12 +302,6 @@ function PublicHeader() {
             {text.navGuide}
           </Link>
           <Link
-            to={isEnglishRoute ? "/guide" : "/en/guide"}
-            className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-          >
-            {isEnglishRoute ? "JA" : "EN"}
-          </Link>
-          <Link
             to="/pricing"
             className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
           >
@@ -297,6 +356,8 @@ export function GuidePage() {
   const text = isEnglishRoute ? copy.en : i18n.language.startsWith("ja") ? copy.ja : copy.en;
   const primaryTo = session ? "/dashboard" : "/login";
   const PrimaryIcon = session ? LayoutDashboard : LogIn;
+  const promptLanguage = isEnglishRoute ? "en" : i18n.language.startsWith("ja") ? "ja" : "en";
+  const prompt = agentPrompt(promptLanguage);
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-950">
@@ -309,7 +370,15 @@ export function GuidePage() {
               <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">
                 {text.heroTitle}
               </h1>
+              <div className="mt-5 max-w-2xl">
+                <p className="text-2xl font-semibold leading-8 text-neutral-950">{text.conceptTitle}</p>
+                <p className="mt-2 text-xl font-semibold leading-8 text-emerald-800">{text.conceptBody}</p>
+              </div>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{text.heroBody}</p>
+              <div className="mt-5 max-w-2xl rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-base font-semibold leading-7 text-emerald-950">{text.humanHookTitle}</p>
+                <p className="mt-2 text-sm leading-6 text-emerald-900">{text.humanHookBody}</p>
+              </div>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   to={primaryTo}
@@ -421,6 +490,44 @@ export function GuidePage() {
           </div>
         </section>
 
+        <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <SectionTitle eyebrow="WorkBaton" title={text.compareTitle} body={text.compareBody} />
+          <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
+            <div className="border-b border-neutral-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold leading-6 text-emerald-950">{text.compareLead}</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-[720px] w-full border-collapse text-left text-sm">
+                <thead className="bg-neutral-50 text-neutral-950">
+                  <tr>
+                    {text.compareHeaders.map((header) => (
+                      <th key={header} className="border-b border-neutral-200 px-4 py-3 font-semibold">
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {text.compareRows.map((row) => (
+                    <tr key={row[0]} className="border-b border-neutral-100 last:border-0">
+                      {row.map((cell, index) => (
+                        <td
+                          key={cell}
+                          className={`px-4 py-3 align-top leading-6 ${
+                            index === 0 ? "font-semibold text-neutral-950" : "text-neutral-700"
+                          }`}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section className="border-y border-neutral-200 bg-white">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
             <SectionTitle eyebrow="MCP" title={text.setupTitle} body={text.setupNote} />
@@ -465,17 +572,17 @@ export function GuidePage() {
 
         <section className="bg-neutral-950 text-white">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
-            <SectionTitle eyebrow="Agent" title={text.agentContractTitle} body={text.wow[2]} inverse />
+            <SectionTitle eyebrow="Agent" title={text.agentContractTitle} body={text.agentContractBody} inverse />
             <div className="rounded-md border border-white/15 bg-white/[0.06] p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <KeyRound className="size-4 text-emerald-300" aria-hidden="true" />
                   A2CR MCP
                 </div>
-                <CopyButton value={agentPrompt()} label={text.copyPrompt} compact />
+                <CopyButton value={prompt} label={text.copyPrompt} compact />
               </div>
               <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-black p-3 text-xs leading-5 text-neutral-100">
-                {agentPrompt()}
+                {prompt}
               </pre>
             </div>
           </div>
