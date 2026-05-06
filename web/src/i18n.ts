@@ -19,6 +19,34 @@ const resources = {
         missingConfigBody: "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for the React dashboard.",
         signingIn: "Opening Google sign-in"
       },
+      top: {
+        heroBody:
+          "A2CR keeps AI work moving across windows, models, and MCP clients with compact, inspectable WorkBaton checkpoints.",
+        ctaDashboard: "Open dashboard",
+        ctaPricing: "View pricing",
+        points: {
+          checkpoints: {
+            title: "WorkBaton checkpoints",
+            body: "Save the state of an AI task before a window fills up, then resume it from another client."
+          },
+          mcp: {
+            title: "MCP-first handoff",
+            body: "Codex, Claude, Cursor, and other MCP-capable clients can call the same shared context layer."
+          },
+          inspection: {
+            title: "Built for inspection",
+            body: "The dashboard shows slots, usage, limits, and access logs without exposing saved bodies."
+          }
+        },
+        originTitle: "One origin for the MVP",
+        originBody:
+          "The hosted app serves the dashboard, authenticated APIs, and Streamable HTTP MCP endpoint from the same A2CR origin.",
+        surfaces: {
+          dashboard: "Slots, profile, keys, limits, and access log visibility.",
+          api: "Authenticated WorkBaton save, load, resume, and delete paths.",
+          mcp: "Shared tools for AI clients that support Streamable HTTP MCP."
+        }
+      },
       common: {
         loading: "Loading",
         refresh: "Refresh",
@@ -124,6 +152,34 @@ const resources = {
         missingConfig: "Supabase の公開設定が未設定です。",
         missingConfigBody: "React ダッシュボード用に VITE_SUPABASE_URL と VITE_SUPABASE_ANON_KEY を設定してください。",
         signingIn: "Google ログインを開いています"
+      },
+      top: {
+        heroBody:
+          "A2CR は、AI 作業の文脈を別の窓・モデル・MCP クライアントへ引き継ぐための、コンパクトで確認しやすい WorkBaton チェックポイントを提供します。",
+        ctaDashboard: "ダッシュボードを開く",
+        ctaPricing: "料金を見る",
+        points: {
+          checkpoints: {
+            title: "WorkBaton チェックポイント",
+            body: "AI 作業の状態を、コンテキストが詰まる前に保存し、別のクライアントから再開できます。"
+          },
+          mcp: {
+            title: "MCP 前提の引き継ぎ",
+            body: "Codex、Claude、Cursor などの MCP 対応クライアントが、同じ共有コンテキスト層を呼び出せます。"
+          },
+          inspection: {
+            title: "確認しやすい設計",
+            body: "ダッシュボードでは、保存本文を表示せずに、スロット、利用状況、上限、アクセスログを確認できます。"
+          }
+        },
+        originTitle: "MVP は 1 つの origin で",
+        originBody:
+          "ホスト版アプリは、ダッシュボード、認証済み API、Streamable HTTP MCP エンドポイントを同じ A2CR origin から提供します。",
+        surfaces: {
+          dashboard: "スロット、プロフィール、キー、上限、アクセスログを確認できます。",
+          api: "認証済みの WorkBaton 保存、読込、再開、削除 API を提供します。",
+          mcp: "Streamable HTTP MCP 対応 AI クライアント向けの共有ツール群です。"
+        }
       },
       common: {
         loading: "読み込み中",
