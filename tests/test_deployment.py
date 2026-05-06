@@ -111,3 +111,11 @@ def test_web_context_save_expires_old_rows_before_slot_capacity_check():
 
     assert expire_call < capacity_check
     assert expire_call < next_slot
+
+
+def test_web_context_id_based_context_queries_remain_user_scoped():
+    service = (ROOT / "services" / "web_context.py").read_text(encoding="utf-8")
+
+    assert "SELECT slot_number FROM public.contexts WHERE id = :id AND user_id = :user_id" in service
+    assert "WHERE id = :existing_id\n                      AND user_id = :user_id" in service
+    assert "WHERE id = :id\n                  AND user_id = :user_id" in service

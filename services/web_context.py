@@ -250,8 +250,8 @@ def save_context(
         )
         assigned_slot_number = slot_number or (
             session.execute(
-                text("SELECT slot_number FROM public.contexts WHERE id = :id"),
-                {"id": existing_id},
+                text("SELECT slot_number FROM public.contexts WHERE id = :id AND user_id = :user_id"),
+                {"id": existing_id, "user_id": str(user_id)},
             ).scalar_one()
             if existing_id is not None
             else _next_slot_number(session, user_id=user_id, active_slots=limits.active_slots)
@@ -306,6 +306,7 @@ def save_context(
                         saved_tokens = :saved_tokens,
                         model_source = :model_source
                     WHERE id = :existing_id
+                      AND user_id = :user_id
                     RETURNING slot_name, slot_number, expires_at
                     """
                 ),
@@ -387,8 +388,16 @@ def load_context(
             raise SlotNotFound()
 
         load_count = session.execute(
-            text("UPDATE public.contexts SET load_count = load_count + 1 WHERE id = :id RETURNING load_count"),
-            {"id": row["id"]},
+            text(
+                """
+                UPDATE public.contexts
+                SET load_count = load_count + 1
+                WHERE id = :id
+                  AND user_id = :user_id
+                RETURNING load_count
+                """
+            ),
+            {"id": row["id"], "user_id": str(user_id)},
         ).scalar_one()
         session.execute(text("SELECT app.record_context_load(:user_id)"), {"user_id": str(user_id)})
         write_access_log(

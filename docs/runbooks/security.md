@@ -44,6 +44,20 @@ Production is same-origin by default. React, FastAPI, and `/mcp` are served from
 
 Unexpected browser `Origin` values are rejected with 403 and no `Access-Control-Allow-Origin` header. MCP/API clients that do not send `Origin` are unaffected.
 
+## Tenant Isolation
+
+Every Web SaaS request must resolve exactly one authenticated `user_id` before reading or writing product data.
+
+Isolation layers:
+
+- FastAPI services pass `user_id` into every product-data operation.
+- `web_transaction(user_id)` opens a fresh SQLAlchemy session and sets `app.user_id` with `set_config(..., true)`, making the setting transaction-local so pooled connections do not retain the previous request's user context.
+- Supabase RLS policies restrict user tables to `user_id = app.current_user_id()`.
+- Application SQL keeps `user_id` predicates on account-owned rows, including id-based follow-up updates.
+- Unique constraints for WorkBaton slots are scoped by `(user_id, slot_name)` and `(user_id, slot_number)`, not global slot names or numbers.
+
+Encryption is a second line of defense, not the tenant-isolation boundary. Do not describe A2CR as zero-knowledge.
+
 ## Logging Rules
 
 Access logs may contain:
@@ -116,6 +130,20 @@ Initial alert paths:
 ## CORS / same-origin
 
 本番は同一origin前提です。想定外の `Origin` は403で拒否します。通常のMCP/APIクライアントのように `Origin` を送らない通信は影響を受けません。
+
+## テナント分離
+
+Web SaaSの各リクエストは、product dataを読む前に必ず1つの認証済み `user_id` に解決します。
+
+分離レイヤー:
+
+- FastAPI serviceはproduct data操作ごとに `user_id` を渡します。
+- `web_transaction(user_id)` は新しいSQLAlchemy sessionを開き、`set_config(..., true)` で `app.user_id` をtransaction-localに設定します。接続プールでコネクションが再利用されても、前リクエストのユーザー文脈を残しません。
+- Supabase RLS policyはuser tableを `user_id = app.current_user_id()` に制限します。
+- アプリケーションSQLでもaccount-owned rowに `user_id` 条件を付けます。id指定の後続UPDATEも同様です。
+- WorkBaton slotの一意制約はglobalなslot名/番号ではなく、`(user_id, slot_name)` と `(user_id, slot_number)` です。
+
+暗号化は二重防御であり、テナント分離そのものではありません。A2CRをゼロ知識とは表現しません。
 
 ## 監視
 

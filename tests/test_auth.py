@@ -359,7 +359,7 @@ def test_set_rls_user_context_uses_set_local():
     set_rls_user_context(session, USER_ID)
 
     statement, params = session.executed[0]
-    assert "set_config('app.user_id'" in statement
+    assert statement == "SELECT set_config('app.user_id', :user_id, true)"
     assert params == {"user_id": str(USER_ID)}
 
 
