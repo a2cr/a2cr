@@ -194,6 +194,7 @@ export function DashboardPage() {
     if (!autoReload) {
       return;
     }
+    void refresh();
     const id = window.setInterval(() => void refresh(), 30000);
     return () => window.clearInterval(id);
   }, [autoReload, refresh]);

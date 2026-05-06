@@ -49,6 +49,7 @@ export async function dashboardFetch<T>(
 ): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     ...options,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
