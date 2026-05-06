@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Request
 
 from models.schemas import (
     DashboardAccessLogItem,
@@ -14,7 +14,9 @@ from models.schemas import (
 )
 from services.auth import AuthenticatedUser, extract_bearer_token, verify_supabase_jwt
 import services.dashboard as dashboard_service
+import services.web_context as web_context_service
 import services.workthreads as workthreads_service
+from services.web_context import RequestMeta
 
 router = APIRouter(prefix="/api/dashboard")
 
@@ -24,6 +26,25 @@ def get_current_dashboard_user(
 ) -> AuthenticatedUser:
     token = extract_bearer_token(authorization)
     return verify_supabase_jwt(token)
+
+
+def _request_ip(request: Request) -> str | None:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",", 1)[0].strip()
+    return request.client.host if request.client else None
+
+
+def request_meta(
+    request: Request,
+    x_request_id: str | None = Header(default=None, alias="X-Request-ID"),
+) -> RequestMeta:
+    return RequestMeta(
+        client_type="dashboard",
+        request_id=x_request_id,
+        ip=_request_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
 
 
 def _profile_response(profile) -> DashboardProfileResponse:
@@ -102,6 +123,16 @@ def update_profile(
 @router.get("/contexts")
 def list_contexts(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> list[DashboardContextItem]:
     return [_context_response(item) for item in dashboard_service.list_contexts(user.user_id)]
+
+
+@router.delete("/contexts/{slot_name}")
+def delete_context(
+    slot_name: str,
+    user: AuthenticatedUser = Depends(get_current_dashboard_user),
+    meta: RequestMeta = Depends(request_meta),
+) -> dict:
+    web_context_service.delete_context(user_id=user.user_id, slot_name=slot_name, meta=meta)
+    return {"message": "deleted"}
 
 
 @router.get("/workthreads")

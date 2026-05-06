@@ -8,7 +8,8 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
-  TimerReset
+  TimerReset,
+  Trash2
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
@@ -16,7 +17,7 @@ import { useTranslation } from "react-i18next";
 
 import { CopyButton } from "../components/CopyButton";
 import { Notice } from "../components/Notice";
-import { ApiError, loadDashboardData } from "../lib/api";
+import { ApiError, deleteDashboardContext, loadDashboardData } from "../lib/api";
 import { buildSavePrompt } from "../lib/prompts";
 import type { DashboardContext, DashboardData, DashboardWorkThread } from "../lib/types";
 import { formatBytes, formatDateTime, formatNumber } from "../lib/format";
@@ -42,9 +43,22 @@ function Stat({
   );
 }
 
-function SlotCard({ item, timezone, isNewest }: { item: DashboardContext; timezone: string; isNewest: boolean }) {
+function SlotCard({
+  item,
+  timezone,
+  isNewest,
+  deleting,
+  onDelete
+}: {
+  item: DashboardContext;
+  timezone: string;
+  isNewest: boolean;
+  deleting: boolean;
+  onDelete: (slotName: string) => void;
+}) {
   const { t } = useTranslation();
   const encryptionLabel = "Client-encrypted";
+  const deleteLabel = t("dashboard.deleteSlot");
   return (
     <article className="rounded-md border border-neutral-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -70,6 +84,20 @@ function SlotCard({ item, timezone, isNewest }: { item: DashboardContext; timezo
         <div className="flex shrink-0 gap-2">
           <CopyButton value={item.resume_context_call} label={t("dashboard.copyResumeCall")} compact />
           <CopyButton value={item.resume_prompt} label={t("dashboard.copyResumePrompt")} compact />
+          <button
+            type="button"
+            title={deleteLabel}
+            aria-label={deleteLabel}
+            disabled={deleting}
+            onClick={() => onDelete(item.slot_name)}
+            className="inline-flex size-9 items-center justify-center rounded-md border border-rose-200 bg-white text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {deleting ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 className="size-4" aria-hidden="true" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -172,6 +200,7 @@ export function DashboardPage() {
   const [autoReload, setAutoReload] = useState(false);
   const [slotsOpen, setSlotsOpen] = useState(true);
   const [accessLogsOpen, setAccessLogsOpen] = useState(true);
+  const [deletingSlotName, setDeletingSlotName] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!session?.access_token) {
@@ -212,6 +241,33 @@ export function DashboardPage() {
     const id = window.setInterval(() => void refresh(), 30000);
     return () => window.clearInterval(id);
   }, [autoReload, refresh]);
+
+  const deleteSlot = useCallback(
+    async (slotName: string) => {
+      if (!session?.access_token) {
+        setError(t("errors.unauthenticated"));
+        return;
+      }
+      if (!window.confirm(t("dashboard.confirmDeleteSlot", { slot: slotName }))) {
+        return;
+      }
+      setDeletingSlotName(slotName);
+      setError(null);
+      try {
+        await deleteDashboardContext(session.access_token, slotName);
+        await refresh();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          setError(t("errors.unauthenticated"));
+        } else {
+          setError(err instanceof Error ? err.message : t("errors.generic"));
+        }
+      } finally {
+        setDeletingSlotName(null);
+      }
+    },
+    [refresh, session?.access_token, t]
+  );
 
   const timezone = data?.profile.timezone || "UTC";
   const savePrompt = useMemo(() => buildSavePrompt(data?.contexts || []), [data?.contexts]);
@@ -304,6 +360,8 @@ export function DashboardPage() {
                   item={item}
                   timezone={timezone}
                   isNewest={index === 0}
+                  deleting={deletingSlotName === item.slot_name}
+                  onDelete={deleteSlot}
                 />
               ))}
             </div>

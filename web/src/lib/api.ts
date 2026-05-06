@@ -105,3 +105,9 @@ export function revokeApiKey(token: string) {
     method: "DELETE"
   });
 }
+
+export function deleteDashboardContext(token: string, slotName: string) {
+  return dashboardFetch<{ message: string }>(`/api/dashboard/contexts/${encodeURIComponent(slotName)}`, token, {
+    method: "DELETE"
+  });
+}

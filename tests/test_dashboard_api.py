@@ -16,6 +16,7 @@ from services.dashboard import (
     DashboardStats,
 )
 import services.dashboard as dashboard_service
+import services.web_context as web_context_service
 
 
 USER_ID = UUID("00000000-0000-0000-0000-0000000000a1")
@@ -110,6 +111,24 @@ def test_contexts_return_metadata_without_content(client, monkeypatch):
     assert item["encryption_mode"] == "client"
     assert "content" not in item
     assert "private" not in str(item).lower()
+
+
+def test_delete_context_uses_dashboard_auth_without_returning_content(client, monkeypatch):
+    captured = {}
+
+    def fake_delete_context(**kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(web_context_service, "delete_context", fake_delete_context)
+
+    response = client.delete("/api/dashboard/contexts/slot-a")
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "deleted"}
+    assert captured["user_id"] == USER_ID
+    assert captured["slot_name"] == "slot-a"
+    assert captured["meta"].client_type == "dashboard"
+    assert "content" not in response.json()
 
 
 def test_stats_return_no_content(client, monkeypatch):
