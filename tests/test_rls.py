@@ -3,6 +3,12 @@ import re
 
 
 MIGRATION = Path(__file__).resolve().parents[1] / "supabase" / "migrations" / "001_base_schema.sql"
+REPAIR_MIGRATION = (
+    Path(__file__).resolve().parents[1]
+    / "supabase"
+    / "migrations"
+    / "003_contexts_user_scoped_unique_repair.sql"
+)
 
 
 def sql() -> str:
@@ -96,3 +102,14 @@ def test_migration_does_not_reference_runtime_service_role_or_log_secret_fields(
     )
     for term in forbidden:
         assert term not in text
+
+
+def test_context_unique_repair_migration_drops_legacy_global_slot_uniqueness():
+    text = re.sub(r"\s+", " ", REPAIR_MIGRATION.read_text(encoding="utf-8").lower())
+
+    assert "unique (slot_name)" in text
+    assert "unique (slot_number)" in text
+    assert "drop constraint" in text
+    assert "drop index if exists" in text
+    assert "unique (user_id, slot_name)" in text
+    assert "unique (user_id, slot_number)" in text

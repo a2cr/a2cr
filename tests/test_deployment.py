@@ -99,3 +99,15 @@ def test_expire_web_contexts_uses_only_db_expiration_function(monkeypatch):
 
     assert maintenance.expire_web_contexts() == 4
     assert executed == ["SELECT app.expire_contexts()"]
+
+
+def test_web_context_save_expires_old_rows_before_slot_capacity_check():
+    service = (ROOT / "services" / "web_context.py").read_text(encoding="utf-8")
+    save_start = service.index("def save_context(")
+
+    expire_call = service.index('session.execute(text("SELECT app.expire_contexts()"))', save_start)
+    capacity_check = service.index("ensure_active_slot_capacity(", save_start)
+    next_slot = service.index("_next_slot_number(", save_start)
+
+    assert expire_call < capacity_check
+    assert expire_call < next_slot

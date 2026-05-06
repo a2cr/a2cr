@@ -196,6 +196,7 @@ def test_mcp_save_context_returns_resume_prompt_without_content_or_key(monkeypat
         slot_name="slot-a",
         slot_number=1,
         content=CONTENT,
+        model_source="codex",
         retention_seconds=86400,
         detail_level="compact",
     )
@@ -206,6 +207,7 @@ def test_mcp_save_context_returns_resume_prompt_without_content_or_key(monkeypat
     assert "ship http mcp" not in result["resume_prompt"]
     assert "sk-test-secret" not in result["resume_prompt"]
     assert captured["user_id"] == USER_ID
+    assert captured["model_source"] == "codex"
     assert captured["meta"].client_type == "mcp"
 
 

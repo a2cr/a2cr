@@ -216,6 +216,7 @@ def save_context(
     saved_tokens = (original_tokens - compressed_tokens) if original_tokens is not None else None
 
     with web_transaction(user_id) as session:
+        session.execute(text("SELECT app.expire_contexts()"))
         plan, default_retention = _get_profile(session, user_id)
         limits = get_plan_limits(plan)
         if retention_seconds is None:

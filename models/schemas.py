@@ -5,6 +5,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, field_validator
 
+ModelSource = Literal["claude", "gpt", "gemini", "codex", "other"]
+
 
 class ContentSchema(BaseModel):
     goal: str
@@ -25,7 +27,7 @@ class SaveRequest(BaseModel):
     slot_number: Optional[int] = None
     content: ContentSchema
     original_length: Optional[int] = None
-    model_source: Optional[Literal["claude", "gpt", "gemini", "other"]] = None
+    model_source: Optional[ModelSource] = None
 
     @field_validator("slot_name")
     @classmethod
@@ -95,7 +97,7 @@ class WebContextSaveRequest(BaseModel):
     slot_number: Optional[int] = None
     content: ContentSchema
     original_length: Optional[int] = None
-    model_source: Optional[Literal["claude", "gpt", "gemini", "other"]] = None
+    model_source: Optional[ModelSource] = None
     retention_seconds: Optional[int] = None
     detail_level: Optional[Literal["compact", "detailed"]] = "compact"
 
@@ -351,7 +353,7 @@ class WorkThreadResultSaveRequest(BaseModel):
     slot_name: str
     content: ContentSchema
     original_length: Optional[int] = None
-    model_source: Optional[Literal["claude", "gpt", "gemini", "other"]] = None
+    model_source: Optional[ModelSource] = None
     slot_number: Optional[int] = None
     retention_seconds: Optional[int] = None
     detail_level: Optional[Literal["compact", "detailed"]] = "compact"

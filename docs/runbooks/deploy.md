@@ -206,6 +206,41 @@ Expected:
 - MCP `resume_context` works from a fresh AI window
 - Dashboard context and WorkThreads responses are metadata-only
 
+## Troubleshooting New Slot Saves
+
+If overwriting an existing WorkBaton Slot works but saving a new Slot returns 500,
+first ensure the app version calls `SELECT app.expire_contexts()` before slot
+capacity checks. This prevents expired rows from blocking new inserts while the
+scheduled cleanup job is delayed.
+
+Then check whether an older global unique constraint remains on
+`contexts.slot_name` or `contexts.slot_number`:
+
+```sql
+SELECT conname, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'public.contexts'::regclass
+  AND contype = 'u'
+ORDER BY conname;
+
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND tablename = 'contexts'
+  AND indexdef ILIKE '%UNIQUE%'
+ORDER BY indexname;
+```
+
+Expected uniqueness is per user:
+
+```text
+UNIQUE (user_id, slot_name)
+UNIQUE (user_id, slot_number)
+```
+
+If `UNIQUE (slot_name)` or `UNIQUE (slot_number)` appears, apply
+`supabase/migrations/003_contexts_user_scoped_unique_repair.sql`.
+
 ## Cleanup Job
 
 Create a protected Railway job using the same image and variables:

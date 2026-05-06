@@ -166,7 +166,7 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 | `slot_name` | string | ✅ | スロット名。`[a-zA-Z0-9_-]{1,64}` |
 | `content` | object | ✅ | コンテキスト内容（下記参照） |
 | `original_length` | int | - | 元のトークン数換算のための文字数（節約トークン計算に使用） |
-| `model_source` | string | - | `"claude"` / `"gpt"` / `"gemini"` / `"other"` |
+| `model_source` | string | - | `"claude"` / `"gpt"` / `"gemini"` / `"codex"` / `"other"` |
 
 **`content` オブジェクト：**
 
