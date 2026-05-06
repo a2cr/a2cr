@@ -35,6 +35,9 @@ def test_dockerfile_builds_react_before_python_runtime():
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
     assert "FROM node:22-slim AS web-build" in dockerfile
+    assert "ARG VITE_SUPABASE_ANON_KEY" in dockerfile
+    assert 'VITE_SUPABASE_ANON_KEY="$VITE_SUPABASE_ANON_KEY"' in dockerfile
+    assert "PUBLIC_SUPABASE_ANON" not in dockerfile
     assert "RUN npm ci" in dockerfile
     assert "npm run build" in dockerfile
     assert "FROM python:3.13-slim AS runtime" in dockerfile

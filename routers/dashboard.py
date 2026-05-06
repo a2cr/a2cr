@@ -10,9 +10,11 @@ from models.schemas import (
     DashboardProfileResponse,
     DashboardProfileUpdateRequest,
     DashboardStatsResponse,
+    WorkThreadMetadataResponse,
 )
 from services.auth import AuthenticatedUser, extract_bearer_token, verify_supabase_jwt
 import services.dashboard as dashboard_service
+import services.workthreads as workthreads_service
 
 router = APIRouter(prefix="/api/dashboard")
 
@@ -56,6 +58,24 @@ def _context_response(item) -> DashboardContextItem:
     )
 
 
+def _workthread_response(item) -> WorkThreadMetadataResponse:
+    return WorkThreadMetadataResponse(
+        thread_id=item.thread_id,
+        title=item.title,
+        purpose=item.purpose,
+        status=item.status,
+        loop_status=item.loop_status,
+        final_slot_name=item.final_slot_name,
+        message_count=item.message_count,
+        task_count=item.task_count,
+        task_status_counts=item.task_status_counts,
+        agent_names=item.agent_names,
+        last_activity_at=item.last_activity_at,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
+
+
 @router.get("/profile")
 def get_profile(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> DashboardProfileResponse:
     return _profile_response(dashboard_service.get_profile(user.user_id))
@@ -81,6 +101,11 @@ def update_profile(
 @router.get("/contexts")
 def list_contexts(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> list[DashboardContextItem]:
     return [_context_response(item) for item in dashboard_service.list_contexts(user.user_id)]
+
+
+@router.get("/workthreads")
+def list_workthreads(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> list[WorkThreadMetadataResponse]:
+    return [_workthread_response(item) for item in workthreads_service.list_workthreads(user_id=user.user_id)]
 
 
 @router.get("/stats")

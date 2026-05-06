@@ -241,3 +241,124 @@ class DashboardApiKeyCreateResponse(BaseModel):
     api_key: str
     key_prefix: str
     created_at: datetime
+
+
+class WorkThreadCreateRequest(BaseModel):
+    title: str
+    purpose: Optional[str] = None
+    initial_message: Optional[dict] = None
+    agent_name: Optional[str] = None
+    idempotency_key: Optional[str] = None
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        if not v or len(v) > 120:
+            raise ValueError("title must be 1-120 characters")
+        return v
+
+
+class WorkThreadMetadataResponse(BaseModel):
+    thread_id: str
+    title: str
+    purpose: Optional[str] = None
+    status: str
+    loop_status: str
+    final_slot_name: Optional[str] = None
+    message_count: int
+    task_count: int
+    task_status_counts: dict[str, int]
+    agent_names: list[str]
+    last_activity_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+
+class WorkThreadMessageRequest(BaseModel):
+    content: dict
+    message_type: Literal["note", "question", "answer", "decision", "handoff", "blocked", "result"] = "note"
+    parent_message_id: Optional[str] = None
+    consultation_id: Optional[str] = None
+    requires_response: bool = False
+    target_agent_name: Optional[str] = None
+    response_deadline: Optional[datetime] = None
+    idempotency_key: Optional[str] = None
+    agent_name: Optional[str] = None
+
+
+class WorkThreadMessageResponse(BaseModel):
+    message_id: str
+    thread_id: str
+    message_type: str
+    content: dict
+    consultation_id: Optional[str] = None
+    requires_response: bool
+    target_agent_name: Optional[str] = None
+    agent_name: Optional[str] = None
+    created_at: datetime
+    loop_warning: Optional[str] = None
+
+
+class WorkThreadUpdateCheckResponse(BaseModel):
+    thread_id: str
+    has_updates: bool
+    message_count: int
+    latest_message_at: Optional[datetime] = None
+
+
+class WorkThreadTaskCreateRequest(BaseModel):
+    title: str
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        if not v or len(v) > 200:
+            raise ValueError("title must be 1-200 characters")
+        return v
+
+
+class WorkThreadTaskClaimRequest(BaseModel):
+    lease_owner: str
+    thread_id: Optional[str] = None
+    lease_seconds: int = 300
+
+    @field_validator("lease_owner")
+    @classmethod
+    def validate_lease_owner(cls, v: str) -> str:
+        if not v or len(v) > 120:
+            raise ValueError("lease_owner must be 1-120 characters")
+        return v
+
+
+class WorkThreadTaskCompleteRequest(BaseModel):
+    lease_owner: str
+    result_message_id: Optional[str] = None
+
+
+class WorkThreadTaskResponse(BaseModel):
+    task_id: str
+    thread_id: str
+    title: str
+    status: str
+    lease_owner: Optional[str] = None
+    lease_expires_at: Optional[datetime] = None
+    result_message_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class WorkThreadResultSaveRequest(BaseModel):
+    slot_name: str
+    content: ContentSchema
+    original_length: Optional[int] = None
+    model_source: Optional[Literal["claude", "gpt", "gemini", "other"]] = None
+    slot_number: Optional[int] = None
+    retention_seconds: Optional[int] = None
+    detail_level: Optional[Literal["compact", "detailed"]] = "compact"
+
+
+class WorkThreadResultSaveResponse(BaseModel):
+    thread_id: str
+    final_slot_name: str
+    resume_context_call: str
+    resume_prompt: str

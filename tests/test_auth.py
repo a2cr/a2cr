@@ -7,6 +7,9 @@ from uuid import UUID
 
 import pytest
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+from cryptography.hazmat.primitives.hashes import SHA256
 
 from services.auth import (
     AuthError,
@@ -38,6 +41,23 @@ def web_config() -> WebConfig:
     )
 
 
+def jwks_config() -> WebConfig:
+    config = web_config()
+    return WebConfig(
+        database_url=config.database_url,
+        fernet_key=config.fernet_key,
+        api_key_hash_secret=config.api_key_hash_secret,
+        supabase_jwt_secret=None,
+        supabase_jwks_url="https://project.supabase.co/auth/v1/.well-known/jwks.json",
+        supabase_jwt_audience=config.supabase_jwt_audience,
+        supabase_jwt_issuer=config.supabase_jwt_issuer,
+        a2cr_service_url=config.a2cr_service_url,
+        app_env=config.app_env,
+        audit_hash_secret=config.audit_hash_secret,
+        public_api_key_prefix=config.public_api_key_prefix,
+    )
+
+
 def b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
 
@@ -49,6 +69,30 @@ def make_hs256_token(payload: dict, secret: str = "jwt-secret", header: dict | N
     signed = f"{encoded_header}.{encoded_payload}".encode("ascii")
     signature = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).digest()
     return f"{encoded_header}.{encoded_payload}.{b64url(signature)}"
+
+
+def make_es256_token(payload: dict, private_key, kid: str = "test-key") -> str:
+    header = {"alg": "ES256", "typ": "JWT", "kid": kid}
+    encoded_header = b64url(json.dumps(header, separators=(",", ":")).encode("utf-8"))
+    encoded_payload = b64url(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    signed = f"{encoded_header}.{encoded_payload}".encode("ascii")
+    der_signature = private_key.sign(signed, ec.ECDSA(SHA256()))
+    r, s = decode_dss_signature(der_signature)
+    raw_signature = r.to_bytes(32, "big") + s.to_bytes(32, "big")
+    return f"{encoded_header}.{encoded_payload}.{b64url(raw_signature)}"
+
+
+def public_jwk(private_key, kid: str = "test-key") -> dict:
+    public_numbers = private_key.public_key().public_numbers()
+    return {
+        "kty": "EC",
+        "crv": "P-256",
+        "kid": kid,
+        "alg": "ES256",
+        "use": "sig",
+        "x": b64url(public_numbers.x.to_bytes(32, "big")),
+        "y": b64url(public_numbers.y.to_bytes(32, "big")),
+    }
 
 
 def valid_payload() -> dict:
@@ -68,6 +112,15 @@ def set_required_web_env(monkeypatch):
     monkeypatch.setenv("API_KEY_HASH_SECRET", "api-hash-secret")
     monkeypatch.setenv("A2CR_SERVICE_URL", "https://a2cr.example")
     monkeypatch.setenv("SUPABASE_JWT_SECRET", "jwt-secret")
+
+
+def set_required_web_env_with_jwks(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://a2cr_app:test@localhost:5432/a2cr")
+    monkeypatch.setenv("FERNET_KEY", Fernet.generate_key().decode())
+    monkeypatch.setenv("API_KEY_HASH_SECRET", "api-hash-secret")
+    monkeypatch.setenv("A2CR_SERVICE_URL", "https://a2cr.example")
+    monkeypatch.setenv("SUPABASE_JWKS_URL", "https://project.supabase.co/auth/v1/.well-known/jwks.json")
 
 
 def set_required_production_env(monkeypatch):
@@ -90,6 +143,17 @@ def test_web_config_requires_database_url(monkeypatch):
 
     with pytest.raises(RuntimeError, match="DATABASE_URL is required"):
         get_web_config()
+
+
+def test_web_config_accepts_jwks_url_without_legacy_secret(monkeypatch):
+    set_required_web_env_with_jwks(monkeypatch)
+    monkeypatch.delenv("SUPABASE_JWT_SECRET", raising=False)
+    reset_config()
+
+    config = get_web_config()
+
+    assert config.supabase_jwt_secret is None
+    assert config.supabase_jwks_url == "https://project.supabase.co/auth/v1/.well-known/jwks.json"
 
 
 def test_web_config_rejects_service_role_in_runtime(monkeypatch):
@@ -174,6 +238,45 @@ def test_verify_supabase_jwt_accepts_valid_token():
 
     assert user.user_id == USER_ID
     assert user.auth_method == "jwt"
+
+
+def test_verify_supabase_jwt_accepts_valid_es256_token(monkeypatch):
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    token = make_es256_token(valid_payload(), private_key)
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"keys": [public_jwk(private_key)]}
+
+    monkeypatch.setattr("services.auth._jwks_cache", {})
+    monkeypatch.setattr("httpx.get", lambda url, timeout=5: FakeResponse())
+
+    user = verify_supabase_jwt(token, config=jwks_config())
+
+    assert user.user_id == USER_ID
+    assert user.auth_method == "jwt"
+
+
+def test_verify_supabase_jwt_rejects_wrong_es256_signature(monkeypatch):
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    wrong_key = ec.generate_private_key(ec.SECP256R1())
+    token = make_es256_token(valid_payload(), private_key)
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"keys": [public_jwk(wrong_key)]}
+
+    monkeypatch.setattr("services.auth._jwks_cache", {})
+    monkeypatch.setattr("httpx.get", lambda url, timeout=5: FakeResponse())
+
+    with pytest.raises(AuthError):
+        verify_supabase_jwt(token, config=jwks_config())
 
 
 def test_verify_supabase_jwt_rejects_expired_token():

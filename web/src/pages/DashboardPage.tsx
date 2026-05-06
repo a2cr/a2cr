@@ -16,7 +16,7 @@ import { CopyButton } from "../components/CopyButton";
 import { Notice } from "../components/Notice";
 import { ApiError, loadDashboardData } from "../lib/api";
 import { buildSavePrompt } from "../lib/prompts";
-import type { DashboardContext, DashboardData } from "../lib/types";
+import type { DashboardContext, DashboardData, DashboardWorkThread } from "../lib/types";
 import { formatBytes, formatDateTime, formatNumber } from "../lib/format";
 import { useAuth } from "../providers/AuthProvider";
 
@@ -86,6 +86,60 @@ function SlotCard({ item, timezone }: { item: DashboardContext; timezone: string
         <div>
           <dt className="text-neutral-500">{t("dashboard.source")}</dt>
           <dd className="mt-1 font-medium">{item.model_source || t("common.none")}</dd>
+        </div>
+      </dl>
+    </article>
+  );
+}
+
+function WorkThreadCard({ item, timezone }: { item: DashboardWorkThread; timezone: string }) {
+  const taskStatus = Object.entries(item.task_status_counts)
+    .map(([status, count]) => `${status}: ${count}`)
+    .join(", ");
+
+  return (
+    <article className="rounded-md border border-neutral-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-900">
+              {item.status}
+            </span>
+            {item.loop_status !== "ok" && (
+              <span className="rounded bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-900">
+                {item.loop_status}
+              </span>
+            )}
+          </div>
+          <h2 className="mt-3 truncate text-lg font-semibold">{item.title}</h2>
+          {item.purpose && <div className="mt-1 truncate text-sm text-neutral-500">{item.purpose}</div>}
+        </div>
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div>
+          <dt className="text-neutral-500">Messages</dt>
+          <dd className="mt-1 font-medium">{formatNumber(item.message_count)}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-500">Tasks</dt>
+          <dd className="mt-1 font-medium">{formatNumber(item.task_count)}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-500">Agents</dt>
+          <dd className="mt-1 truncate font-medium">{item.agent_names.join(", ") || "-"}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-500">Task status</dt>
+          <dd className="mt-1 truncate font-medium">{taskStatus || "-"}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-500">Last activity</dt>
+          <dd className="mt-1 font-medium">{formatDateTime(item.last_activity_at, timezone)}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-500">Result Slot</dt>
+          <dd className="mt-1 truncate font-medium">{item.final_slot_name || "-"}</dd>
         </div>
       </dl>
     </article>
@@ -202,6 +256,24 @@ export function DashboardPage() {
           </div>
         )}
       </section>
+
+      {data && data.profile.plan === "pro" && (
+        <section className="grid gap-3">
+          <h2 className="text-base font-semibold">WorkThreads</h2>
+          {data.workthreads.length > 0 ? (
+            <div className="grid gap-3 xl:grid-cols-2">
+              {data.workthreads.map((item) => (
+                <WorkThreadCard key={item.thread_id} item={item} timezone={timezone} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-md border border-dashed border-neutral-300 bg-white p-6">
+              <div className="text-lg font-semibold">No active WorkThreads</div>
+              <div className="mt-1 text-sm text-neutral-500">Durable handoff threads will appear here.</div>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="grid gap-3">
         <h2 className="text-base font-semibold">{t("dashboard.accessLogs")}</h2>

@@ -26,6 +26,7 @@ from services.web_context import (
 )
 import services.dashboard as dashboard_service
 import services.web_context as web_context_service
+import services.workthreads as workthreads_service
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +88,32 @@ GET_LIMITS_DESCRIPTION = (
     "Return the current account plan, retention choices, body limits, detail level, language, timezone, "
     "and hourly save/load limits. Use this before automatic saves so the checkpoint matches the user's plan."
     " Use this MCP tool; do not guess direct HTTP API endpoints."
+)
+
+CREATE_WORKTHREAD_DESCRIPTION = (
+    "Create a durable WorkThread for cross-window or cross-agent handoff. "
+    "WorkThreads are Pro-only and store encrypted append-only work notes. "
+    "Use this MCP tool; do not guess direct HTTP API endpoints."
+)
+
+POST_WORKTHREAD_MESSAGE_DESCRIPTION = (
+    "Append a message to an existing WorkThread. Messages are append-only and encrypted at rest. "
+    "Use idempotency_key to avoid accidental duplicate posts. Use this MCP tool; do not guess direct HTTP API endpoints."
+)
+
+READ_WORKTHREAD_DESCRIPTION = (
+    "Read decrypted WorkThread messages for the authenticated API/MCP agent. "
+    "Dashboard routes expose only metadata, not message content. Use this MCP tool; do not guess direct HTTP API endpoints."
+)
+
+WORKTHREAD_UNREAD_DESCRIPTION = (
+    "Return WorkThread messages that require a response, optionally filtered by target_agent_name. "
+    "Use this MCP tool; do not guess direct HTTP API endpoints."
+)
+
+WORKTHREAD_UPDATES_DESCRIPTION = (
+    "Check or wait for WorkThread updates since an optional timestamp. "
+    "Use this MCP tool; do not guess direct HTTP API endpoints."
 )
 
 
@@ -187,6 +214,62 @@ def _resume_result(result: WebResumeResult) -> dict[str, Any]:
         "mode": result.mode,
         "context": _load_result(result.context) if result.context else None,
         "candidates": [_metadata_result(item) for item in (result.candidates or [])],
+    }
+
+
+def _workthread_result(result) -> dict[str, Any]:
+    return {
+        "thread_id": result.thread_id,
+        "title": result.title,
+        "purpose": result.purpose,
+        "status": result.status,
+        "loop_status": result.loop_status,
+        "final_slot_name": result.final_slot_name,
+        "message_count": result.message_count,
+        "task_count": result.task_count,
+        "task_status_counts": result.task_status_counts,
+        "agent_names": result.agent_names,
+        "last_activity_at": _iso(result.last_activity_at),
+        "created_at": _iso(result.created_at),
+        "updated_at": _iso(result.updated_at),
+    }
+
+
+def _workthread_message_result(result) -> dict[str, Any]:
+    return {
+        "message_id": result.message_id,
+        "thread_id": result.thread_id,
+        "message_type": result.message_type,
+        "content": result.content,
+        "consultation_id": result.consultation_id,
+        "requires_response": result.requires_response,
+        "target_agent_name": result.target_agent_name,
+        "agent_name": result.agent_name,
+        "created_at": _iso(result.created_at),
+        "loop_warning": result.loop_warning,
+    }
+
+
+def _workthread_update_result(result) -> dict[str, Any]:
+    return {
+        "thread_id": result.thread_id,
+        "has_updates": result.has_updates,
+        "message_count": result.message_count,
+        "latest_message_at": _iso(result.latest_message_at) if result.latest_message_at else None,
+    }
+
+
+def _workthread_task_result(result) -> dict[str, Any]:
+    return {
+        "task_id": result.task_id,
+        "thread_id": result.thread_id,
+        "title": result.title,
+        "status": result.status,
+        "lease_owner": result.lease_owner,
+        "lease_expires_at": _iso(result.lease_expires_at) if result.lease_expires_at else None,
+        "result_message_id": result.result_message_id,
+        "created_at": _iso(result.created_at),
+        "updated_at": _iso(result.updated_at),
     }
 
 
@@ -314,6 +397,192 @@ def get_account_limits() -> dict:
         "preferred_locale": profile.preferred_locale,
         "response_language": profile.response_language,
         "timezone": profile.timezone,
+    }
+
+
+@web_mcp.tool(name="create_workthread", description=CREATE_WORKTHREAD_DESCRIPTION)
+def create_workthread(
+    title: str,
+    purpose: str | None = None,
+    initial_message: dict | None = None,
+    agent_name: str | None = None,
+    idempotency_key: str | None = None,
+) -> dict:
+    user, _ = _current_auth_context()
+    result = workthreads_service.create_workthread(
+        user_id=user.user_id,
+        title=title,
+        purpose=purpose,
+        initial_message=initial_message,
+        agent_name=agent_name,
+        idempotency_key=idempotency_key,
+    )
+    return _workthread_result(result)
+
+
+@web_mcp.tool(name="list_workthreads", description="List WorkThread progress metadata only. This never returns message content.")
+def list_workthreads() -> list:
+    user, _ = _current_auth_context()
+    return [_workthread_result(item) for item in workthreads_service.list_workthreads(user_id=user.user_id)]
+
+
+@web_mcp.tool(name="post_workthread_message", description=POST_WORKTHREAD_MESSAGE_DESCRIPTION)
+def post_workthread_message(
+    thread_id: str,
+    content: dict,
+    message_type: str = "note",
+    parent_message_id: str | None = None,
+    consultation_id: str | None = None,
+    requires_response: bool = False,
+    target_agent_name: str | None = None,
+    response_deadline: str | None = None,
+    idempotency_key: str | None = None,
+    agent_name: str | None = None,
+) -> dict:
+    user, _ = _current_auth_context()
+    result = workthreads_service.post_workthread_message(
+        user_id=user.user_id,
+        thread_id=thread_id,
+        content_dict=content,
+        message_type=message_type,
+        parent_message_id=parent_message_id,
+        consultation_id=consultation_id,
+        requires_response=requires_response,
+        target_agent_name=target_agent_name,
+        response_deadline=datetime.fromisoformat(response_deadline) if response_deadline else None,
+        idempotency_key=idempotency_key,
+        agent_name=agent_name,
+    )
+    return _workthread_message_result(result)
+
+
+@web_mcp.tool(name="read_workthread", description=READ_WORKTHREAD_DESCRIPTION)
+def read_workthread(thread_id: str, limit: int = 100) -> list:
+    user, _ = _current_auth_context()
+    return [
+        _workthread_message_result(item)
+        for item in workthreads_service.read_workthread(user_id=user.user_id, thread_id=thread_id, limit=limit)
+    ]
+
+
+@web_mcp.tool(name="unread_workthread", description=WORKTHREAD_UNREAD_DESCRIPTION)
+def unread_workthread(thread_id: str, target_agent_name: str | None = None) -> list:
+    user, _ = _current_auth_context()
+    return [
+        _workthread_message_result(item)
+        for item in workthreads_service.unread_workthread_messages(
+            user_id=user.user_id,
+            thread_id=thread_id,
+            target_agent_name=target_agent_name,
+        )
+    ]
+
+
+@web_mcp.tool(name="check_workthread_updates", description=WORKTHREAD_UPDATES_DESCRIPTION)
+def check_workthread_updates(thread_id: str, since: str | None = None) -> dict:
+    user, _ = _current_auth_context()
+    parsed_since = datetime.fromisoformat(since) if since else None
+    return _workthread_update_result(
+        workthreads_service.check_workthread_updates(user_id=user.user_id, thread_id=thread_id, since=parsed_since)
+    )
+
+
+@web_mcp.tool(name="wait_workthread_updates", description=WORKTHREAD_UPDATES_DESCRIPTION)
+def wait_workthread_updates(
+    thread_id: str,
+    since: str | None = None,
+    timeout_seconds: int = 30,
+) -> dict:
+    user, _ = _current_auth_context()
+    parsed_since = datetime.fromisoformat(since) if since else None
+    return _workthread_update_result(
+        workthreads_service.wait_workthread_updates(
+            user_id=user.user_id,
+            thread_id=thread_id,
+            since=parsed_since,
+            timeout_seconds=timeout_seconds,
+        )
+    )
+
+
+@web_mcp.tool(name="create_workthread_task", description="Create a pending WorkThread task for later claim by an agent.")
+def create_workthread_task(thread_id: str, title: str) -> dict:
+    user, _ = _current_auth_context()
+    return _workthread_task_result(
+        workthreads_service.create_workthread_task(user_id=user.user_id, thread_id=thread_id, title=title)
+    )
+
+
+@web_mcp.tool(
+    name="claim_workthread_task",
+    description="Claim one pending or expired WorkThread task using a short lease. Uses database SKIP LOCKED semantics.",
+)
+def claim_workthread_task(
+    lease_owner: str,
+    thread_id: str | None = None,
+    lease_seconds: int = 300,
+) -> dict | None:
+    user, _ = _current_auth_context()
+    task = workthreads_service.claim_workthread_task(
+        user_id=user.user_id,
+        lease_owner=lease_owner,
+        thread_id=thread_id,
+        lease_seconds=lease_seconds,
+    )
+    return _workthread_task_result(task) if task else None
+
+
+@web_mcp.tool(
+    name="complete_workthread_task",
+    description="Complete a claimed WorkThread task. The lease_owner must match the active lease.",
+)
+def complete_workthread_task(
+    task_id: str,
+    lease_owner: str,
+    result_message_id: str | None = None,
+) -> dict:
+    user, _ = _current_auth_context()
+    return _workthread_task_result(
+        workthreads_service.complete_workthread_task(
+            user_id=user.user_id,
+            task_id=task_id,
+            lease_owner=lease_owner,
+            result_message_id=result_message_id,
+        )
+    )
+
+
+@web_mcp.tool(
+    name="save_workthread_result",
+    description="Save a WorkThread final result into a normal A2CR WorkBaton Slot and link that slot to the thread.",
+)
+def save_workthread_result(
+    thread_id: str,
+    slot_name: str,
+    content: dict,
+    original_length: int | None = None,
+    model_source: str | None = None,
+    slot_number: int | None = None,
+    retention_seconds: int | None = None,
+    detail_level: str | None = "compact",
+) -> dict:
+    user, _ = _current_auth_context()
+    result = workthreads_service.save_workthread_result(
+        user_id=user.user_id,
+        thread_id=thread_id,
+        slot_name=slot_name,
+        content_dict=content,
+        original_length=original_length,
+        model_source=model_source,
+        slot_number=slot_number,
+        retention_seconds=retention_seconds,
+        detail_level=detail_level,
+    )
+    return {
+        "thread_id": result.thread_id,
+        "final_slot_name": result.final_slot_name,
+        "resume_context_call": result.resume_context_call,
+        "resume_prompt": result.resume_prompt,
     }
 
 

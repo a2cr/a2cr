@@ -9,7 +9,7 @@ from services.db import init_db
 from services.context import cleanup_expired
 from services.config import is_request_origin_allowed, is_web_runtime, validate_runtime_environment
 from services.exceptions import AppError
-from routers import health, context, web_context, dashboard, mcp_http
+from routers import health, context, web_context, dashboard, workthreads, mcp_http
 
 WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
 WEB_INDEX_FILE = WEB_DIST_DIR / "index.html"
@@ -72,6 +72,7 @@ app.include_router(health.router)
 app.include_router(context.router)
 app.include_router(web_context.router)
 app.include_router(dashboard.router)
+app.include_router(workthreads.router)
 app.mount("/mcp", mcp_http.mcp_app)
 
 

@@ -55,6 +55,22 @@ export type DashboardApiKey = {
   revoked_at: string | null;
 };
 
+export type DashboardWorkThread = {
+  thread_id: string;
+  title: string;
+  purpose: string | null;
+  status: string;
+  loop_status: string;
+  final_slot_name: string | null;
+  message_count: number;
+  task_count: number;
+  task_status_counts: Record<string, number>;
+  agent_names: string[];
+  last_activity_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CreatedApiKey = {
   api_key: string;
   key_prefix: string;
@@ -67,6 +83,7 @@ export type DashboardData = {
   stats: DashboardStats;
   accessLogs: DashboardAccessLog[];
   apiKey: DashboardApiKey | null;
+  workthreads: DashboardWorkThread[];
 };
 
 export type ProfilePatch = Partial<{

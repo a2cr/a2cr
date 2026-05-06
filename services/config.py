@@ -158,8 +158,10 @@ def get_web_config() -> WebConfig:
 
     _reject_runtime_service_role_key()
 
-    jwt_secret = _required_env("SUPABASE_JWT_SECRET")
+    jwt_secret = os.environ.get("SUPABASE_JWT_SECRET")
     jwks_url = os.environ.get("SUPABASE_JWKS_URL")
+    if not jwt_secret and not jwks_url:
+        raise RuntimeError("SUPABASE_JWT_SECRET or SUPABASE_JWKS_URL is required")
 
     api_key_hash_secret = _required_env("API_KEY_HASH_SECRET")
     _web_config = WebConfig(

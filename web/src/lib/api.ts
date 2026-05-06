@@ -6,6 +6,7 @@ import type {
   DashboardData,
   DashboardProfile,
   DashboardStats,
+  DashboardWorkThread,
   ProfilePatch
 } from "./types";
 
@@ -64,14 +65,15 @@ export async function dashboardFetch<T>(
 }
 
 export async function loadDashboardData(token: string): Promise<DashboardData> {
-  const [profile, contexts, stats, accessLogs, apiKey] = await Promise.all([
+  const [profile, contexts, stats, accessLogs, apiKey, workthreads] = await Promise.all([
     dashboardFetch<DashboardProfile>("/api/dashboard/profile", token),
     dashboardFetch<DashboardContext[]>("/api/dashboard/contexts", token),
     dashboardFetch<DashboardStats>("/api/dashboard/stats", token),
     dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token),
-    dashboardFetch<DashboardApiKey | null>("/api/dashboard/api-key", token)
+    dashboardFetch<DashboardApiKey | null>("/api/dashboard/api-key", token),
+    dashboardFetch<DashboardWorkThread[]>("/api/dashboard/workthreads", token)
   ]);
-  return { profile, contexts, stats, accessLogs, apiKey };
+  return { profile, contexts, stats, accessLogs, apiKey, workthreads };
 }
 
 export function updateProfile(token: string, patch: ProfilePatch) {
