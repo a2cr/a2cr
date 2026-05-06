@@ -26,12 +26,18 @@ export function TopPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
-      <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <header className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
           <img src="/brand/a2cr-logo.png" alt="A2CR" className="h-8 w-auto object-contain" />
           <span className="sr-only">A2CR</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link
+            to="/guide"
+            className="rounded-md px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-white/10"
+          >
+            {t("nav.guide")}
+          </Link>
           <Link
             to="/pricing"
             className="rounded-md px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-white/10"

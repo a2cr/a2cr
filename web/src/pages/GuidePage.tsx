@@ -1,0 +1,394 @@
+import {
+  ArrowRight,
+  Bot,
+  CheckCircle2,
+  ClipboardList,
+  KeyRound,
+  LayoutDashboard,
+  LogIn,
+  PlugZap,
+  ShieldCheck,
+  TimerReset
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
+import { CopyButton } from "../components/CopyButton";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { serviceUrl } from "../lib/format";
+import { useAuth } from "../providers/AuthProvider";
+
+type ClientKey = "codex" | "claude" | "cursor";
+
+const clientLabels: Record<ClientKey, string> = {
+  codex: "Codex",
+  claude: "Claude",
+  cursor: "Cursor"
+};
+
+function mcpConfigSnippet(client: ClientKey): string {
+  const url = serviceUrl();
+  if (client === "codex") {
+    return [
+      '[mcp_servers."a2cr"]',
+      `url = "${url}"`,
+      "",
+      '[mcp_servers."a2cr".http_headers]',
+      'Authorization = "Bearer <A2CR_API_KEY>"'
+    ].join("\n");
+  }
+  return JSON.stringify(
+    {
+      name: "a2cr",
+      type: "streamable-http",
+      url,
+      headers: {
+        Authorization: "Bearer <A2CR_API_KEY>"
+      }
+    },
+    null,
+    2
+  );
+}
+
+function agentPrompt(): string {
+  return [
+    `A2CR service: ${serviceUrl()}`,
+    "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints.",
+    "Before the conversation gets long, call save_context with goal, current_state, and next_action.",
+    "Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
+    "In a new window, first call resume_context(slot_name=\"...\") or resume_context(slot_number=N).",
+    "After loading, continue in the language of the current user message."
+  ].join("\n");
+}
+
+const copy = {
+  en: {
+    navGuide: "Guide",
+    heroTitle: "A public guide for humans and AI agents",
+    heroBody:
+      "A2CR gives MCP-capable agents a small, durable WorkBaton: save the useful state of work now, then resume it from another window, model, or client later.",
+    openDashboard: "Open dashboard",
+    signIn: "Sign in",
+    pricing: "Pricing",
+    whatTitle: "What A2CR does",
+    whatBody:
+      "Humans get a dashboard with slots, limits, API keys, and access logs. AI agents get MCP tools that can save and resume compact checkpoints without inventing HTTP calls.",
+    humanTitle: "For humans",
+    agentTitle: "For AI agents",
+    setupTitle: "MCP setup examples",
+    setupNote:
+      "Create an API key after signing in, then put it in your MCP client as a Bearer token. Client config locations vary; use your client's current MCP settings screen or config file.",
+    usageTitle: "Basic workflow",
+    agentContractTitle: "Agent quick contract",
+    copyConfig: "Copy config",
+    copyPrompt: "Copy agent prompt",
+    clients: {
+      codex:
+        "Use the A2CR Streamable HTTP server from Codex config. Keep the API key out of repositories and shared logs.",
+      claude:
+        "Add A2CR as a Streamable HTTP MCP server in Claude's MCP configuration, then ask Claude to use the A2CR tools.",
+      cursor:
+        "Add the same Streamable HTTP server in Cursor's MCP settings, then let Cursor save and resume WorkBaton slots."
+    },
+    humanPoints: [
+      "Issue or revoke an API key from the dashboard.",
+      "See active WorkBaton slots without exposing saved bodies.",
+      "Copy save and resume prompts for another AI window.",
+      "Use fixed Slot numbers when you want predictable handoff targets."
+    ],
+    agentPoints: [
+      "Call get_account_limits before automatic saves.",
+      "Save only goal, current_state, next_action, and compact supporting facts.",
+      "Use resume_context first in a fresh window.",
+      "Respect returned candidates instead of guessing the right Slot.",
+      "Do not save secrets or long logs."
+    ],
+    workflow: [
+      "Human signs in and issues an A2CR API key.",
+      "Human adds A2CR to Codex, Claude, Cursor, or another MCP-capable client.",
+      "Agent saves a WorkBaton checkpoint before the window gets crowded.",
+      "A later agent resumes that Slot and continues the task."
+    ],
+    wow: [
+      "The handoff is tool-native: agents call MCP instead of scraping chat history.",
+      "Saved content includes next_action, so the next agent knows what to do next.",
+      "Slots are short-lived by default, reducing stale context buildup.",
+      "Dashboard metadata stays visible while saved bodies remain off normal human views."
+    ]
+  },
+  ja: {
+    navGuide: "ガイド",
+    heroTitle: "人間とAIエージェントのための公開ガイド",
+    heroBody:
+      "A2CR は、MCP 対応エージェントに小さく丈夫な WorkBaton を渡します。今の作業状態を保存し、別の窓・モデル・クライアントから再開できます。",
+    openDashboard: "ダッシュボードを開く",
+    signIn: "ログイン",
+    pricing: "料金",
+    whatTitle: "A2CR がすること",
+    whatBody:
+      "人間にはスロット、上限、APIキー、アクセスログを確認できるダッシュボードを。AIエージェントには、HTTPを推測せずに保存・再開できるMCPツールを提供します。",
+    humanTitle: "人間向け",
+    agentTitle: "AIエージェント向け",
+    setupTitle: "MCP 設定例",
+    setupNote:
+      "ログイン後にAPIキーを発行し、MCPクライアントへBearer tokenとして設定します。設定ファイルの場所はクライアントごとに変わるため、各クライアントの現在のMCP設定画面または設定ファイルを使ってください。",
+    usageTitle: "基本の使い方",
+    agentContractTitle: "AIエージェント向けクイック契約",
+    copyConfig: "設定をコピー",
+    copyPrompt: "エージェント指示をコピー",
+    clients: {
+      codex:
+        "Codex の設定から A2CR の Streamable HTTP サーバーを使います。APIキーはリポジトリや共有ログに入れないでください。",
+      claude:
+        "Claude のMCP設定に A2CR を Streamable HTTP MCP サーバーとして追加し、A2CRツールを使うよう依頼します。",
+      cursor:
+        "Cursor のMCP設定に同じ Streamable HTTP サーバーを追加し、WorkBatonスロットの保存・再開に使います。"
+    },
+    humanPoints: [
+      "ダッシュボードでAPIキーを発行・失効できます。",
+      "保存本文を表示せずに、有効なWorkBatonスロットを確認できます。",
+      "別のAI窓へ渡す保存・再開プロンプトをコピーできます。",
+      "固定Slot番号を使うと、引き継ぎ先を予測しやすくできます。"
+    ],
+    agentPoints: [
+      "自動保存前に get_account_limits を呼びます。",
+      "goal、current_state、next_action と、必要な補足だけを簡潔に保存します。",
+      "新しい窓では最初に resume_context を使います。",
+      "候補が返ったら、正しいSlotを推測せず候補を提示します。",
+      "秘密情報や長いログは保存しません。"
+    ],
+    workflow: [
+      "人間がログインしてA2CR APIキーを発行します。",
+      "Codex、Claude、CursorなどのMCP対応クライアントへA2CRを追加します。",
+      "AIエージェントが、窓が混む前にWorkBatonチェックポイントを保存します。",
+      "次のAIエージェントがそのSlotを読み込み、作業を続けます。"
+    ],
+    wow: [
+      "引き継ぎがMCPツール前提なので、チャット履歴を無理に読ませる必要がありません。",
+      "保存内容にnext_actionが入るため、次のエージェントが何をすべきか分かります。",
+      "スロットは短命が標準なので、古い文脈が溜まりにくい設計です。",
+      "通常の人間向け画面では本文を表示せず、メタデータだけを確認できます。"
+    ]
+  }
+};
+
+function PublicHeader() {
+  const { i18n } = useTranslation();
+  const { session } = useAuth();
+  const text = i18n.language.startsWith("ja") ? copy.ja : copy.en;
+
+  return (
+    <header className="border-b border-neutral-200 bg-white">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/brand/a2cr-logo.png" alt="A2CR" className="h-8 w-auto object-contain" />
+          <span className="sr-only">A2CR</span>
+        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link to="/guide" className="rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-900">
+            {text.navGuide}
+          </Link>
+          <Link
+            to="/pricing"
+            className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+          >
+            {text.pricing}
+          </Link>
+          <Link
+            to={session ? "/dashboard" : "/login"}
+            className="rounded-md px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50"
+          >
+            {session ? text.openDashboard : text.signIn}
+          </Link>
+          <LanguageToggle />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function SectionTitle({
+  eyebrow,
+  title,
+  body,
+  inverse = false
+}: {
+  eyebrow: string;
+  title: string;
+  body?: string;
+  inverse?: boolean;
+}) {
+  return (
+    <div>
+      <div className={`text-xs font-semibold uppercase tracking-normal ${inverse ? "text-emerald-300" : "text-emerald-700"}`}>
+        {eyebrow}
+      </div>
+      <h2 className={`mt-2 text-2xl font-semibold tracking-normal ${inverse ? "text-white" : "text-neutral-950"}`}>
+        {title}
+      </h2>
+      {body && (
+        <p className={`mt-3 max-w-3xl text-sm leading-6 ${inverse ? "text-neutral-300" : "text-neutral-600"}`}>
+          {body}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function GuidePage() {
+  const { i18n } = useTranslation();
+  const { session } = useAuth();
+  const text = i18n.language.startsWith("ja") ? copy.ja : copy.en;
+  const primaryTo = session ? "/dashboard" : "/login";
+  const PrimaryIcon = session ? LayoutDashboard : LogIn;
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-950">
+      <PublicHeader />
+      <main>
+        <section className="border-b border-neutral-200 bg-white">
+          <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <img src="/brand/a2cr-logo.png" alt="A2CR" className="mb-6 w-full max-w-md object-contain" />
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">
+                {text.heroTitle}
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{text.heroBody}</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  to={primaryTo}
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800"
+                >
+                  <PrimaryIcon className="size-4" aria-hidden="true" />
+                  {session ? text.openDashboard : text.signIn}
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-100"
+                >
+                  {text.pricing}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {[
+                { icon: TimerReset, title: "WorkBaton", body: text.wow[0] },
+                { icon: Bot, title: "Agent-ready", body: text.wow[1] },
+                { icon: ShieldCheck, title: "Inspectable", body: text.wow[3] }
+              ].map(({ icon: Icon, title, body }) => (
+                <article key={title} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="grid size-9 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-800">
+                      <Icon className="size-4" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold">{title}</h2>
+                      <p className="mt-1 text-sm leading-6 text-neutral-600">{body}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <SectionTitle eyebrow="A2CR" title={text.whatTitle} body={text.whatBody} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <article className="rounded-md border border-neutral-200 bg-white p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <ClipboardList className="size-5 text-emerald-700" aria-hidden="true" />
+                <h2 className="font-semibold">{text.humanTitle}</h2>
+              </div>
+              <ul className="grid gap-2 text-sm leading-6 text-neutral-700">
+                {text.humanPoints.map((point) => (
+                  <li key={point} className="flex gap-2">
+                    <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <article className="rounded-md border border-neutral-200 bg-white p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Bot className="size-5 text-emerald-700" aria-hidden="true" />
+                <h2 className="font-semibold">{text.agentTitle}</h2>
+              </div>
+              <ul className="grid gap-2 text-sm leading-6 text-neutral-700">
+                {text.agentPoints.map((point) => (
+                  <li key={point} className="flex gap-2">
+                    <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <SectionTitle eyebrow="MCP" title={text.setupTitle} body={text.setupNote} />
+            <div className="grid gap-4">
+              {(Object.keys(clientLabels) as ClientKey[]).map((client) => {
+                const snippet = mcpConfigSnippet(client);
+                return (
+                  <article key={client} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <PlugZap className="size-5 text-emerald-700" aria-hidden="true" />
+                          <h3 className="font-semibold">{clientLabels[client]}</h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-neutral-600">{text.clients[client]}</p>
+                      </div>
+                      <CopyButton value={snippet} label={text.copyConfig} compact />
+                    </div>
+                    <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-neutral-950 p-3 text-xs text-neutral-50">
+                      {snippet}
+                    </pre>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <SectionTitle eyebrow="Workflow" title={text.usageTitle} />
+          <div className="grid gap-3">
+            {text.workflow.map((step, index) => (
+              <div key={step} className="flex gap-3 rounded-md border border-neutral-200 bg-white p-4">
+                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-neutral-900 text-sm font-semibold text-white">
+                  {index + 1}
+                </div>
+                <p className="pt-1 text-sm leading-6 text-neutral-700">{step}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-neutral-950 text-white">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <SectionTitle eyebrow="Agent" title={text.agentContractTitle} body={text.wow[2]} inverse />
+            <div className="rounded-md border border-white/15 bg-white/[0.06] p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <KeyRound className="size-4 text-emerald-300" aria-hidden="true" />
+                  A2CR MCP
+                </div>
+                <CopyButton value={agentPrompt()} label={text.copyPrompt} compact />
+              </div>
+              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-black p-3 text-xs leading-5 text-neutral-100">
+                {agentPrompt()}
+              </pre>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

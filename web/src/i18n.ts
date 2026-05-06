@@ -8,6 +8,7 @@ const resources = {
       appSubtitle: "Agent-to-Agent Context Relay",
       nav: {
         dashboard: "Dashboard",
+        guide: "Guide",
         settings: "Settings",
         pricing: "Pricing",
         signOut: "Sign out"
@@ -142,6 +143,7 @@ const resources = {
       appSubtitle: "Agent-to-Agent Context Relay",
       nav: {
         dashboard: "ダッシュボード",
+        guide: "ガイド",
         settings: "設定",
         pricing: "料金",
         signOut: "サインアウト"
