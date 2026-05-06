@@ -1,7 +1,6 @@
 import type {
   CreatedApiKey,
   DashboardAccessLog,
-  DashboardApiKey,
   DashboardContext,
   DashboardData,
   DashboardProfile,
@@ -66,14 +65,21 @@ export async function dashboardFetch<T>(
 }
 
 export async function loadDashboardData(token: string): Promise<DashboardData> {
-  const [profile, contexts, stats, accessLogs, apiKey, workthreads] = await Promise.all([
+  const [profile, contexts, stats] = await Promise.all([
     dashboardFetch<DashboardProfile>("/api/dashboard/profile", token),
     dashboardFetch<DashboardContext[]>("/api/dashboard/contexts", token),
-    dashboardFetch<DashboardStats>("/api/dashboard/stats", token),
-    dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token),
-    dashboardFetch<DashboardApiKey | null>("/api/dashboard/api-key", token),
-    dashboardFetch<DashboardWorkThread[]>("/api/dashboard/workthreads", token)
+    dashboardFetch<DashboardStats>("/api/dashboard/stats", token)
   ]);
+
+  const accessLogs = await dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token).catch(
+    () => []
+  );
+  const workthreads =
+    profile.plan === "pro"
+      ? await dashboardFetch<DashboardWorkThread[]>("/api/dashboard/workthreads", token).catch(() => [])
+      : [];
+
+  const apiKey = null;
   return { profile, contexts, stats, accessLogs, apiKey, workthreads };
 }
 
