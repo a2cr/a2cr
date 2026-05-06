@@ -148,6 +148,10 @@ function WorkThreadCard({ item, timezone }: { item: DashboardWorkThread; timezon
   );
 }
 
+function newestFirst(left: string, right: string) {
+  return Date.parse(right) - Date.parse(left);
+}
+
 export function DashboardPage() {
   const { t } = useTranslation();
   const { session } = useAuth();
@@ -191,6 +195,14 @@ export function DashboardPage() {
 
   const timezone = data?.profile.timezone || "UTC";
   const savePrompt = useMemo(() => buildSavePrompt(data?.contexts || []), [data?.contexts]);
+  const contextsByNewest = useMemo(
+    () => [...(data?.contexts || [])].sort((a, b) => newestFirst(a.updated_at, b.updated_at)),
+    [data?.contexts]
+  );
+  const accessLogsByNewest = useMemo(
+    () => [...(data?.accessLogs || [])].sort((a, b) => newestFirst(a.created_at, b.created_at)),
+    [data?.accessLogs]
+  );
 
   if (loading) {
     return (
@@ -262,9 +274,9 @@ export function DashboardPage() {
           </button>
         </h2>
         {slotsOpen &&
-          (data && data.contexts.length > 0 ? (
+          (contextsByNewest.length > 0 ? (
             <div className="grid gap-3 xl:grid-cols-2">
-              {data.contexts.map((item) => (
+              {contextsByNewest.map((item) => (
                 <SlotCard key={`${item.slot_number}-${item.slot_name}`} item={item} timezone={timezone} />
               ))}
             </div>
@@ -312,7 +324,7 @@ export function DashboardPage() {
         </h2>
         {accessLogsOpen && (
           <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
-            {data && data.accessLogs.length > 0 ? (
+            {accessLogsByNewest.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
                   <thead className="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500">
@@ -325,7 +337,7 @@ export function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {data.accessLogs.map((item) => (
+                    {accessLogsByNewest.map((item) => (
                       <tr key={`${item.created_at}-${item.action}-${item.request_id || ""}`}>
                         <td className="whitespace-nowrap px-3 py-2">{formatDateTime(item.created_at, timezone)}</td>
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{item.action}</td>
