@@ -34,13 +34,16 @@ class SaveResult:
     compressed_tokens: int
     saved_tokens: Optional[int]
     original_tokens: Optional[int]
+    encryption_mode: str = "server"
 
 
 @dataclass
 class LoadResult:
     slot_name: str
     slot_number: int | None
-    content: dict
+    content: dict | None
+    encrypted_content: dict | None
+    encryption_mode: str
     expires_at: datetime
     compressed_tokens: int
     model_source: Optional[str]
@@ -51,6 +54,7 @@ class LoadResult:
 class ListResult:
     slot_name: str
     slot_number: int | None
+    encryption_mode: str
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
@@ -102,18 +106,26 @@ def _next_free_slot_number(session: Session, now: datetime) -> int:
 
 def save_context(
     slot_name: str,
-    content_dict: dict,
+    content_dict: dict | None,
     original_length: Optional[int],
     model_source: Optional[str],
     slot_number: Optional[int] = None,
+    encrypted_content: dict | None = None,
 ) -> SaveResult:
     _validate_slot_number(slot_number)
-    content_json = json.dumps(content_dict, ensure_ascii=False)
+    if (content_dict is None) == (encrypted_content is None):
+        raise ValueError("Provide exactly one of content_dict or encrypted_content")
+
+    encryption_mode = "client" if encrypted_content is not None else "server"
+    content_json = json.dumps(
+        encrypted_content if encrypted_content is not None else content_dict,
+        ensure_ascii=False,
+    )
     content_bytes = content_json.encode("utf-8")
     if len(content_bytes) > _MAX_BYTES:
         raise ContentTooLarge()
 
-    encrypted = encrypt(content_json)
+    stored_content = content_json if encryption_mode == "client" else encrypt(content_json)
     compressed_tokens = count_tokens(content_json)
     original_tokens = original_tokens_from_length_optional(original_length)
     saved_tokens = (original_tokens - compressed_tokens) if original_tokens is not None else None
@@ -154,7 +166,7 @@ def save_context(
                 id=str(uuid4()),
                 slot_name=slot_name,
                 slot_number=assigned_slot_number,
-                content=encrypted,
+                content=stored_content,
                 created_at=now,
                 updated_at=now,
                 expires_at=expires_at,
@@ -163,18 +175,24 @@ def save_context(
                 compressed_tokens=compressed_tokens,
                 load_count=0,
                 model_source=model_source,
+                encryption_mode=encryption_mode,
+                encryption_version=1,
+                encryption_metadata=None,
             )
             session.add(ctx)
         else:
             existing.slot_name = slot_name
             existing.slot_number = assigned_slot_number
-            existing.content = encrypted
+            existing.content = stored_content
             existing.updated_at = now
             existing.expires_at = expires_at
             existing.size_bytes = len(content_bytes)
             existing.original_tokens = original_tokens
             existing.compressed_tokens = compressed_tokens
             existing.model_source = model_source
+            existing.encryption_mode = encryption_mode
+            existing.encryption_version = 1
+            existing.encryption_metadata = None
 
         stats = session.get(Stats, 1)
         stats.total_saves += 1
@@ -190,6 +208,7 @@ def save_context(
         compressed_tokens=compressed_tokens,
         saved_tokens=saved_tokens,
         original_tokens=original_tokens,
+        encryption_mode=encryption_mode,
     )
 
 
@@ -229,11 +248,19 @@ def load_context(slot_name: Optional[str] = None, slot_number: Optional[int] = N
         stats.total_loads += 1
         session.commit()
 
-        content_dict = json.loads(decrypt(ctx.content))
+        encryption_mode = getattr(ctx, "encryption_mode", "server") or "server"
+        if encryption_mode == "client":
+            content_dict = None
+            encrypted_content = json.loads(ctx.content)
+        else:
+            content_dict = json.loads(decrypt(ctx.content))
+            encrypted_content = None
         return LoadResult(
             slot_name=ctx.slot_name,
             slot_number=ctx.slot_number,
             content=content_dict,
+            encrypted_content=encrypted_content,
+            encryption_mode=encryption_mode,
             expires_at=ctx.expires_at,
             compressed_tokens=ctx.compressed_tokens,
             model_source=ctx.model_source,
@@ -263,6 +290,7 @@ def list_contexts() -> list[ListResult]:
             ListResult(
                 slot_name=r.slot_name,
                 slot_number=r.slot_number,
+                encryption_mode=getattr(r, "encryption_mode", "server") or "server",
                 expires_at=r.expires_at,
                 updated_at=r.updated_at,
                 size_bytes=r.size_bytes,

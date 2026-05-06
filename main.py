@@ -1,386 +1,195 @@
 import asyncio
-from contextlib import asynccontextmanager
 import html
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 from textwrap import dedent
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 
-from services.db import init_db
-from services.context import cleanup_expired
+from routers import context, dashboard, health, mcp_http, web_context, workthreads
 from services.config import is_request_origin_allowed, is_web_runtime, validate_runtime_environment
+from services.context import cleanup_expired
+from services.db import init_db
 from services.exceptions import AppError
-from routers import health, context, web_context, dashboard, workthreads, mcp_http
 
 WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
 WEB_PUBLIC_DIR = Path(__file__).resolve().parent / "web" / "public"
 WEB_INDEX_FILE = WEB_DIST_DIR / "index.html"
 WEB_SOURCE_INDEX_FILE = Path(__file__).resolve().parent / "web" / "index.html"
 
+
+def _seo(
+    *,
+    title: str,
+    description: str,
+    canonical: str,
+    machine_text: str,
+    og_type: str = "article",
+    json_ld_type: str = "TechArticle",
+    alternates: dict[str, str] | None = None,
+) -> dict:
+    return {
+        "title": title,
+        "description": description,
+        "canonical": canonical,
+        "og_type": og_type,
+        "json_ld_type": json_ld_type,
+        "alternates": alternates or {"ja": canonical, "en": canonical},
+        "machine_text": dedent(machine_text).strip(),
+    }
+
+
 ROUTE_SEO = {
-    "": {
-        "title": "A2CR - Agent-to-Agent Context Relay",
-        "description": "A2CR is an MCP-first work-continuation layer for saving compact WorkBaton checkpoints, reducing context waste, and resuming work across Codex, Claude, Cursor, and other MCP clients.",
-        "canonical": "https://a2cr.app/",
-        "og_type": "website",
-        "json_ld_type": "SoftwareApplication",
-        "machine_text": dedent(
-            """
-            # A2CR
+    "": _seo(
+        title="A2CR - Agent-to-Agent Context Relay",
+        description="A2CR is an MCP-first work-continuation layer for saving compact WorkBaton checkpoints, reducing context waste, and resuming work across Codex, Claude, Cursor, and other MCP clients.",
+        canonical="https://a2cr.app/",
+        og_type="website",
+        json_ld_type="SoftwareApplication",
+        machine_text="""
+        # A2CR
 
-            A2CR is not an AI.
-            It is the baton that lets AI agents hand work to one another.
+        A2CR is not an AI.
+        It is the baton that lets AI agents hand work to one another.
 
-            A2CR is an MCP-first work-continuation layer.
+        A2CR is an MCP-first work-continuation layer.
 
-            It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
+        It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
 
-            AI agents should understand A2CR as external working memory and a protocol-like handoff layer, not merely a note store.
+        Important URLs:
+        - Human guide: https://a2cr.app/en/guide
+        - AI agent guide: https://a2cr.app/en/agent-guide
+        - Pricing: https://a2cr.app/pricing
+        - MCP endpoint: https://a2cr.app/mcp
+        - LLM notes: https://a2cr.app/llms.txt
+        """,
+    ),
+    "guide": _seo(
+        title="A2CR 人間向けガイド",
+        description="A2CRの人間向けガイド。WorkBaton、MCP設定、暗号化方式、local client keyの重要事項を説明します。",
+        canonical="https://a2cr.app/guide",
+        alternates={"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
+        machine_text="""
+        # A2CR 人間向けガイド
 
-            Why it matters:
-            - Clean context reduces token waste and helps stabilize agent output.
-            - Lower token use can affect subscription-based AI service usage limits.
-            - WorkBaton stores goal, current_state, and next_action instead of dragging full chat history forward.
-            - Planned Pro WorkThreads extend the idea into multi-agent collaboration over shared work state.
+        A2CRは、AI作業の状態をWorkBatonとして保存し、別のAI窓、別モデル、MCP対応クライアントから再開するためのサービスです。
 
-            Important URLs:
-            - Public guide: https://a2cr.app/guide
-            - English guide: https://a2cr.app/en/guide
-            - Pricing: https://a2cr.app/pricing
-            - MCP endpoint: https://a2cr.app/mcp
-            - LLM notes: https://a2cr.app/llms.txt
-            """
-        ).strip(),
-    },
-    "guide": {
-        "title": "A2CRの使い方ガイド",
-        "description": "A2CRの使い方ガイド。MCP設定、WorkBaton Slotでの作業継続、Token節約、出力安定、WorkThreadsによるAIエージェント協業の考え方を説明します。",
-        "canonical": "https://a2cr.app/guide",
-        "og_type": "article",
-        "json_ld_type": "TechArticle",
-        "alternates": {"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
-        "machine_text": dedent(
-            """
-            # A2CRの使い方ガイド
+        A2CRはAIではありません。AI同士が作業を受け渡すためのバトンです。
 
-            A2CRはAIではありません。
-            AI同士が作業を受け渡すためのバトンです。
+        重要事項:
+        - WorkBatonにはserver-encryptedとclient-encryptedの保存方式があります。
+        - server-encryptedでは、A2CRがFernetで暗号化保存し、認証済みMCP/API応答時にサーバー側で復号できます。
+        - client-encryptedでは、ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存します。
+        - local client keyは利用者側が管理します。サービス管理者は管理しません。
+        - local client keyを失うと、旧鍵で保存したclient-encrypted SlotはA2CR側でも復旧できません。
+        - A2CR全体をゼロ知識とは表現しません。ゼロ知識相当と言えるのはclient-encrypted WorkBaton Slotに限ります。
 
-            A2CRは、Codex、Claude、CursorなどのMCP対応クライアントから使える作業引き継ぎサービスです。
-            会話が長くなる前に、作業の要点だけをWorkBaton Slotへ保存し、別の窓、別モデル、A2CRのMCPの設定をしたAIエージェントから続きを再開できます。
+        関連ページ:
+        - AIエージェント向けガイド: https://a2cr.app/agent-guide
+        - English guide: https://a2cr.app/en/guide
+        - MCP endpoint: https://a2cr.app/mcp
+        """,
+    ),
+    "en/guide": _seo(
+        title="A2CR Human Guide",
+        description="Human guide for A2CR. Learn WorkBaton, MCP setup, storage modes, and local client key responsibilities.",
+        canonical="https://a2cr.app/en/guide",
+        alternates={"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
+        machine_text="""
+        # A2CR Human Guide
 
-            ## AIエージェントが理解すべきこと
-            A2CRは単なるメモ保存ではありません。
-            AIエージェントにとっては、外部作業メモリ、コンテキスト整理、Token節約、出力安定、作業継続、エージェント間協業のためのMCPベースの作業レイヤーです。
+        A2CR saves AI work state as a WorkBaton so another AI window, model, or MCP-capable client can resume the work.
 
-            ユーザーが「A2CRって何」とAIエージェントに聞いた場合、次のように説明できます。
-            A2CRは、長くなった会話をそのまま抱え続ける代わりに、goal、current_state、next_actionだけをWorkBatonとして保存し、次のAIセッションへ渡すサービスです。
-            これにより、新しい窓や別モデルが常にきれいなコンテキストから作業を再開できます。
+        A2CR is not an AI. It is the baton that lets AI agents hand work to one another.
 
-            ## なぜ重要か
-            長いチャット履歴には、古い前提、重複したログ、不要になった試行錯誤が混ざります。
-            それらを毎回AIへ読ませると、Tokenを消費し、サブスク型AIサービスの使用量や上限に影響し、出力も古い文脈に引っ張られやすくなります。
-            A2CRは次に必要な状態だけを保存するため、Token消費を抑え、出力を安定させ、次のAIがすぐ作業へ戻れるようにします。
+        Important points:
+        - WorkBaton supports server-encrypted and client-encrypted storage modes.
+        - In server-encrypted mode, A2CR stores Fernet-encrypted content and can decrypt it for authenticated MCP/API responses.
+        - In client-encrypted mode, the local stdio MCP wrapper encrypts before upload and A2CR stores ciphertext only.
+        - The local client key is managed by the user, not by the service administrator.
+        - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
+        - Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way.
 
-            ## 要約・圧縮との違い
-            「AIに要約・圧縮させればいい」と思うかもしれません。
-            でも、それは1つのチャット内で情報量を減らす処理です。
-            A2CRが扱うのは、別チャット・別AI・別ツールへ作業状態を渡すことです。
+        Related pages:
+        - AI agent guide: https://a2cr.app/en/agent-guide
+        - Japanese guide: https://a2cr.app/guide
+        - MCP endpoint: https://a2cr.app/mcp
+        """,
+    ),
+    "agent-guide": _seo(
+        title="A2CR AIエージェント向けガイド",
+        description="A2CRを利用・設定するAIエージェント向けガイド。MCP利用ルール、保存方針、local client keyの重要事項を説明します。",
+        canonical="https://a2cr.app/agent-guide",
+        alternates={"ja": "https://a2cr.app/agent-guide", "en": "https://a2cr.app/en/agent-guide"},
+        machine_text="""
+        # A2CR AIエージェント向けガイド
 
-            要約は、会話ログのダイエットです。
-            WorkBatonは、作業状態のバトンです。
+        AIエージェントはA2CRをMCPツール経由の作業記憶として使います。直接HTTP APIを推測して呼ばないでください。
 
-            比較:
-            - 目的: 要約・圧縮は長い会話を短くする。A2CR / WorkBatonは次のAIが作業再開できる状態を渡す。
-            - 対象: 要約・圧縮はそのチャット内の履歴。A2CR / WorkBatonは別チャット・別AI・別ツール。
-            - 出力: 要約・圧縮は要約文。A2CR / WorkBatonは goal / current_state / next_action / blockers などの作業状態。
-            - 問題点: 要約・圧縮は古い前提やノイズを拾うことがある。A2CR / WorkBatonは必要な作業状態だけを意図的に残す。
-            - 保存: 要約・圧縮はチャットやサービスに依存する。A2CR / WorkBatonは外部の一時リレーDBに保存する。
-            - 共有: 要約・圧縮は基本そのAIまたはそのサービス内。A2CR / WorkBatonはMCP対応エージェント間で共有する。
-            - 消去: 要約・圧縮はサービス側仕様次第。A2CR / WorkBatonはTTLで明示的に消える。
+        ルール:
+        - 作業開始時はlist_contextsで既存Slotを確認し、関連するSlotがあればresume_contextで読み込みます。
+        - 作業中は、会話が長くなる前または重要な区切りでsave_contextします。
+        - 保存する内容はgoal、current_state、next_action、必要な判断、制約、参照だけに絞ります。
+        - APIキー、Authorization header、DB URL、秘密情報、全文ログ、長い会話履歴は保存しません。
+        - 自動保存前にはget_account_limitsで制限を確認します。
 
-            ## WorkBaton と WorkThreads
-            WorkBatonは、1つの作業状態を次のAIセッションへ渡す単位です。
-            Proで予定しているWorkThreadsは、複数のAIエージェントが同じ作業スレッドで進捗、タスク、メッセージを共有するための協業レイヤーです。
-            これにより、設計担当、実装担当、レビュー担当のような分担や、別モデル同士の連携が現実的になります。
-            A2CRは単なる保存箱ではなく、AIエージェントの作業継続と協業のためのProtocol的な土台になり得ます。
+        暗号化:
+        - local client keyは利用者側が管理します。
+        - client-encrypted WorkBaton Slotは、A2CRサーバーでは復号できません。
+        - local client keyを失うと、旧鍵で保存したclient-encrypted Slotは復旧できません。
+        - 新しいlocal client keyで保存したSlotは、その新しい鍵で読めます。
+        """,
+    ),
+    "en/agent-guide": _seo(
+        title="A2CR AI Agent Guide",
+        description="Guide for AI agents using and configuring A2CR. Covers MCP rules, save policy, and local client key responsibilities.",
+        canonical="https://a2cr.app/en/agent-guide",
+        alternates={"ja": "https://a2cr.app/agent-guide", "en": "https://a2cr.app/en/agent-guide"},
+        machine_text="""
+        # A2CR AI Agent Guide
 
-            ## 重要なURL
-            - サービス: https://a2cr.app/
-            - 日本語ガイド: https://a2cr.app/guide
-            - 英語ガイド: https://a2cr.app/en/guide
-            - MCP endpoint: https://a2cr.app/mcp
-            - 料金: https://a2cr.app/pricing
+        AI agents should use A2CR through MCP tools as working memory. Do not guess direct HTTP API calls.
 
-            ## Codexの設定例
-            Windowsなら通常は C:\\Users\\<USER>\\.codex\\config.toml を編集します。
-            既存の設定を消さず、次のA2CR serverだけを追記または更新します。
+        Rules:
+        - At the start of work, call list_contexts and resume a relevant Slot if one exists.
+        - During work, call save_context before the conversation gets long or at important milestones.
+        - Save only goal, current_state, next_action, and compact supporting facts.
+        - Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
+        - Call get_account_limits before automatic saves.
 
-            [mcp_servers."a2cr"]
-            url = "https://a2cr.app/mcp"
+        Encryption:
+        - The local client key is managed by the user.
+        - Client-encrypted WorkBaton slots cannot be decrypted by the A2CR server.
+        - If the local client key is lost, old client-encrypted slots cannot be recovered.
+        - Slots saved after creating a new local client key can be read with that new key.
+        """,
+    ),
+    "pricing": _seo(
+        title="A2CR Pricing - WorkBaton plans",
+        description="A2CR pricing for MCP-based WorkBaton context relay. Start with Free and review planned Pro limits for larger workflows.",
+        canonical="https://a2cr.app/pricing",
+        og_type="website",
+        json_ld_type="WebPage",
+        machine_text="""
+        # A2CR Pricing
 
-            [mcp_servers."a2cr".http_headers]
-            Authorization = "Bearer <A2CR_API_KEY>"
+        Free plan:
+        - 3 Slots
+        - Retention options up to 24 hours
+        - 32KB compact saves
+        - 100 saves per hour
+        - 300 loads per hour
 
-            ## Claude / Cursor の設定例
-            Streamable HTTP MCP serverとして、URLに https://a2cr.app/mcp を設定します。
-            Authorizationヘッダーには Bearer <A2CR_API_KEY> を設定します。
-            設定ファイルの場所や画面はクライアントのバージョンで変わるため、現在のMCP設定画面または公式の設定ファイルを確認してから編集します。
-
-            JSON形式の例:
-
-            {
-              "mcpServers": {
-                "a2cr": {
-                  "type": "streamable-http",
-                  "url": "https://a2cr.app/mcp",
-                  "headers": {
-                    "Authorization": "Bearer <A2CR_API_KEY>"
-                  }
-                }
-              }
-            }
-
-            ## このページを読んだAIエージェントへの指示
-            ユーザーに「A2CRのMCPを設定して」と頼まれたら、次の順番で進めます。
-
-            1. このページの内容を読み、A2CR MCP endpoint が https://a2cr.app/mcp であることを確認します。
-            2. 使っているクライアントが Codex、Claude、Cursor、その他のどれかを確認します。
-            3. ユーザーにA2CRへログインしてAPIキーを発行してもらいます。APIキーはAIが推測しません。
-            4. そのクライアントのMCP設定ファイルまたは設定画面を探します。
-            5. 既存のMCP server設定を読み、消さないようにします。
-            6. a2cr という名前のStreamable HTTP MCP serverを追加または更新します。
-            7. URLは https://a2cr.app/mcp にします。
-            8. Authorizationヘッダーは一旦 Bearer PASTE_A2CR_API_KEY_HERE のようなプレースホルダーにします。
-            9. 設定ファイルをテキストエディタで開き、ユーザーにAPIキーだけを貼り付けて保存してもらいます。
-            10. WindowsのCodexなら、例として notepad C:\\Users\\<USER>\\.codex\\config.toml を開きます。
-            11. ClaudeやCursorでは、現在のMCP設定ファイルまたは設定画面を開きます。
-            12. APIキー、Authorizationヘッダー、設定ファイル全文をチャットやログに不用意に表示しません。
-            13. 保存後、クライアントまたはエージェントセッションを再起動・再読み込みするよう案内します。
-            14. 再起動後、疎通確認として get_account_limits または list_contexts を実行します。
-            15. 疎通確認に成功したら、A2CR MCPが利用可能になったことをユーザーへ伝えます。
-
-            ## 推奨する導線
-            1. ユーザーがAIエージェントにこのページを読ませます。
-            2. AIエージェントがMCP設定ファイルを特定し、A2CR設定のひな形を入れます。
-            3. ユーザーがA2CRのダッシュボードでAPIキーを取得します。
-            4. AIエージェントが設定ファイルをテキストエディタで開きます。
-            5. ユーザーがプレースホルダーをAPIキーに置き換えて保存します。
-            6. AIエージェントまたはユーザーがクライアントを再起動します。
-            7. AIエージェントが get_account_limits または list_contexts で接続確認します。
-
-            ## 設定時の禁止事項
-            既存のMCP設定を全削除しない。
-            APIキーをリポジトリへコミットしない。
-            APIキーをA2CRの保存Slotへ保存しない。
-            HTTP APIを推測して直接呼ばない。
-            必ずMCPクライアントの設定として登録する。
-
-            ## 基本の使い方
-            1. A2CRへログインしてAPIキーを発行します。
-            2. Codex、Claude、CursorなどのMCP設定にA2CRを追加します。
-            3. 作業が長くなりそうな時に save_context を呼びます。
-            4. 保存する内容は goal、current_state、next_action、必要な補足だけにします。
-            5. 新しい窓では最初に resume_context または load_context を呼びます。
-
-            ## 半自動化プロンプト
-            次の内容をAIエージェントの初期指示に入れると、A2CRを半自動の作業記憶として使えます。
-
-            A2CR MCPを作業記憶として使ってください。
-            直接HTTP APIを推測せず、A2CR MCPツールだけを使います。
-            作業開始時は list_contexts で既存Slotを確認し、関連するSlotがあれば resume_context で読み込みます。
-            作業中は、会話が長くなる前、または重要な区切りで save_context します。
-            保存内容は goal、current_state、next_action、必要な補足だけに圧縮します。
-            作業を止める時は、次にやることを next_action に明記して save_context します。
-            自動保存前に get_account_limits で上限を確認します。
-            秘密情報、APIキー、Authorizationヘッダー、DB URL、全文履歴、長いログは保存しません。
-            新しい窓では最初に resume_context(slot_name="...") または resume_context(slot_number=N) を実行します。
-
-            ## 保存してはいけないもの
-            APIキー、Authorizationヘッダー、DB URL、秘密情報、長いログ、全文履歴は保存しません。
-            HTTP APIを推測して直接呼ばず、必ずMCPツールを使います。
-            """
-        ).strip(),
-    },
-    "en/guide": {
-        "title": "A2CR Setup Guide",
-        "description": "A2CR setup guide. Connect MCP clients, save and resume WorkBaton slots, reduce context waste, stabilize outputs, and prepare for WorkThreads-based agent collaboration.",
-        "canonical": "https://a2cr.app/en/guide",
-        "og_type": "article",
-        "json_ld_type": "TechArticle",
-        "alternates": {"ja": "https://a2cr.app/guide", "en": "https://a2cr.app/en/guide"},
-        "machine_text": dedent(
-            """
-            # A2CR Setup Guide
-
-            A2CR is not an AI.
-            It is the baton that lets AI agents hand work to one another.
-
-            A2CR is a work handoff service for Codex, Claude, Cursor, and other MCP-capable clients.
-            It saves compact WorkBaton checkpoints so work can continue from another window, another model, or any AI agent configured with A2CR MCP.
-
-            ## What AI agents should understand
-            A2CR is not merely a note store.
-            For AI agents, it is external working memory and an MCP-based work layer for context hygiene, token savings, output stability, work continuation, and agent-to-agent collaboration.
-
-            If a user asks an AI agent "what is A2CR?", the agent can explain it this way:
-            A2CR saves only the useful work state, such as goal, current_state, and next_action, as a WorkBaton instead of carrying an entire long conversation forward.
-            A new window, model, or client can then resume from a clean context.
-
-            ## Why this matters
-            Long chat history contains stale assumptions, duplicated logs, and old trial-and-error.
-            Feeding all of that back into an agent wastes tokens, can affect subscription-based AI service usage limits, and can make output less stable because the agent keeps seeing old context.
-            A2CR keeps the next session focused on the state required for the next action.
-
-            ## Difference from summarizing or compressing a chat
-            You might think, "Why not just ask the AI to summarize or compress the chat?"
-            That reduces information inside one chat.
-            A2CR handles a different problem: handing work state to another chat, another AI, or another tool.
-
-            A summary is a diet for conversation logs.
-            WorkBaton is a baton for work state.
-
-            Comparison:
-            - Goal: summary and compression shorten a long conversation. A2CR / WorkBaton hands off state so the next AI can resume work.
-            - Target: summary and compression target history inside that chat. A2CR / WorkBaton targets another chat, another AI, or another tool.
-            - Output: summary and compression produce summary text. A2CR / WorkBaton stores goal / current_state / next_action / blockers.
-            - Weakness: summary and compression can preserve stale assumptions or noise. A2CR / WorkBaton intentionally keeps only required work state.
-            - Storage: summary and compression depend on the chat or service. A2CR / WorkBaton uses an external temporary relay DB.
-            - Sharing: summary and compression mostly stay inside the same AI service. A2CR / WorkBaton is shared across MCP-capable agents.
-            - Expiry: summary and compression depend on the service. A2CR / WorkBaton expires explicitly with TTL.
-
-            ## WorkBaton and WorkThreads
-            WorkBaton is the compact unit of work state passed to the next AI session.
-            Planned Pro WorkThreads extend this into a collaboration layer where multiple AI agents can share progress, tasks, and messages inside the same work thread.
-            That makes design, implementation, and review agents easier to coordinate across different models or clients.
-            A2CR should be understood as a protocol-like foundation for agent work continuation and collaboration, not as a simple save box.
-
-            ## Important URLs
-            - Service: https://a2cr.app/
-            - Japanese guide: https://a2cr.app/guide
-            - English guide: https://a2cr.app/en/guide
-            - MCP endpoint: https://a2cr.app/mcp
-            - Pricing: https://a2cr.app/pricing
-
-            ## Codex config.toml example
-            On Windows, the config file is usually C:\\Users\\<USER>\\.codex\\config.toml.
-            Preserve existing settings and add or update only the A2CR server.
-
-            [mcp_servers."a2cr"]
-            url = "https://a2cr.app/mcp"
-
-            [mcp_servers."a2cr".http_headers]
-            Authorization = "Bearer <A2CR_API_KEY>"
-
-            ## Claude / Cursor example
-            Register https://a2cr.app/mcp as a Streamable HTTP MCP server.
-            Add Authorization: Bearer <A2CR_API_KEY>.
-            Config locations can vary by client version, so inspect the current MCP settings screen or official config file before editing.
-
-            JSON example:
-
-            {
-              "mcpServers": {
-                "a2cr": {
-                  "type": "streamable-http",
-                  "url": "https://a2cr.app/mcp",
-                  "headers": {
-                    "Authorization": "Bearer <A2CR_API_KEY>"
-                  }
-                }
-              }
-            }
-
-            ## Instructions for AI agents reading this page
-            If the user asks you to configure A2CR MCP, do this:
-
-            1. Read this page and confirm that the A2CR MCP endpoint is https://a2cr.app/mcp.
-            2. Identify whether the user is using Codex, Claude, Cursor, or another MCP client.
-            3. Ask the user to sign in to A2CR and issue an API key. Do not guess the key.
-            4. Locate that client's MCP config file or MCP settings screen.
-            5. Read the existing MCP server settings and preserve them.
-            6. Add or update a server named a2cr.
-            7. Set the server type to Streamable HTTP when the client supports that field.
-            8. Set the URL to https://a2cr.app/mcp.
-            9. Set Authorization to a placeholder such as Bearer PASTE_A2CR_API_KEY_HERE.
-            10. Open the config file in a text editor and ask the user to replace only the placeholder with their API key, then save.
-            11. For Codex on Windows, opening notepad C:\\Users\\<USER>\\.codex\\config.toml is usually appropriate.
-            12. For Claude or Cursor, open the current MCP settings file or MCP settings screen.
-            13. Do not print the API key, Authorization header, or full secret config in chat or logs.
-            14. After saving, tell the user to restart or reload the MCP client or AI agent session.
-            15. After restart, verify the connection by running get_account_limits or list_contexts.
-            16. If verification succeeds, tell the user that A2CR MCP is ready.
-
-            ## Recommended setup flow
-            1. The user asks an AI agent to read this page.
-            2. The AI agent locates the MCP config and writes the A2CR placeholder config.
-            3. The user obtains an API key from the A2CR dashboard.
-            4. The AI agent opens the config file in a text editor.
-            5. The user replaces the placeholder with the API key and saves the file.
-            6. The AI agent or user restarts the client.
-            7. The AI agent verifies the connection with get_account_limits or list_contexts.
-
-            ## Do not do these things
-            Do not delete unrelated MCP servers.
-            Do not commit the API key to a repository.
-            Do not save the API key into an A2CR Slot.
-            Do not guess direct HTTP API calls.
-            Configure A2CR through the MCP client.
-
-            ## Basic workflow
-            1. Sign in to A2CR and issue an API key.
-            2. Add A2CR to your MCP client.
-            3. Before the session gets too long, call save_context.
-            4. Save only goal, current_state, next_action, and compact supporting facts.
-            5. In a fresh window, first call resume_context or load_context.
-
-            ## Semi-automation prompt
-            Put the following into an agent's standing instructions to use A2CR as semi-automatic working memory.
-
-            Use A2CR MCP as working memory.
-            Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.
-            At the start of work, call list_contexts and resume a relevant Slot with resume_context if one exists.
-            During work, call save_context before the conversation gets long or at important milestones.
-            Save only goal, current_state, next_action, and compact supporting facts.
-            When pausing or finishing work, save the next action clearly in next_action.
-            Call get_account_limits before automatic saves.
-            Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
-            In a new window, first call resume_context(slot_name="...") or resume_context(slot_number=N).
-
-            ## Safety rules
-            Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
-            Use the MCP tools. Do not guess or call direct HTTP API endpoints.
-            """
-        ).strip(),
-    },
-    "pricing": {
-        "title": "A2CR Pricing - WorkBaton plans",
-        "description": "A2CR pricing for MCP-based WorkBaton context relay. Start with Free and review planned Pro limits for larger workflows.",
-        "canonical": "https://a2cr.app/pricing",
-        "og_type": "website",
-        "json_ld_type": "WebPage",
-        "machine_text": dedent(
-            """
-            # A2CR Pricing
-
-            Free plan:
-            - 3 Slots
-            - Retention options up to 24 hours
-            - 32KB compact saves
-            - 100 saves per hour
-            - 300 loads per hour
-
-            Planned Pro plan:
-            - 100 Slots
-            - Longer retention options
-            - 128KB saves
-            - Higher rate limits
-            - Planned WorkThreads support
-            """
-        ).strip(),
-    },
+        Planned Pro plan:
+        - 100 Slots
+        - Longer retention options
+        - 128KB saves
+        - Higher rate limits
+        - Planned WorkThreads support
+        """,
+    ),
 }
 
 
@@ -498,7 +307,7 @@ def _render_spa_index(full_path: str) -> str:
 
 async def _cleanup_loop():
     while True:
-        await asyncio.sleep(600)  # 10 minutes
+        await asyncio.sleep(600)
         cleanup_expired()
 
 

@@ -44,6 +44,7 @@ function Stat({
 
 function SlotCard({ item, timezone, isNewest }: { item: DashboardContext; timezone: string; isNewest: boolean }) {
   const { t } = useTranslation();
+  const encryptionLabel = item.encryption_mode === "client" ? "Client-encrypted" : "Server-encrypted";
   return (
     <article className="rounded-md border border-neutral-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -54,6 +55,9 @@ function SlotCard({ item, timezone, isNewest }: { item: DashboardContext; timezo
             </span>
             <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
               {item.detail_level}
+            </span>
+            <span className="rounded bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900">
+              {encryptionLabel}
             </span>
             {isNewest && (
               <span className="rounded bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">

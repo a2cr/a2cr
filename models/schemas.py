@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 ModelSource = Literal["claude", "gpt", "gemini", "codex", "other"]
+EncryptionMode = Literal["server", "client"]
 
 
 class ContentSchema(BaseModel):
@@ -22,12 +23,34 @@ class ContentSchema(BaseModel):
     references: list[str] = []
 
 
+class EncryptedContentSchema(BaseModel):
+    version: int = Field(ge=1)
+    alg: str
+    nonce: str
+    ciphertext: str
+    key_wrap: dict[str, Any] | None = None
+
+    @field_validator("alg", "nonce", "ciphertext")
+    @classmethod
+    def validate_non_empty_string(cls, v: str) -> str:
+        if not v:
+            raise ValueError("field must not be empty")
+        return v
+
+
 class SaveRequest(BaseModel):
     slot_name: str
     slot_number: Optional[int] = None
-    content: ContentSchema
+    content: Optional[ContentSchema] = None
+    encrypted_content: Optional[EncryptedContentSchema] = None
     original_length: Optional[int] = None
     model_source: Optional[ModelSource] = None
+
+    @model_validator(mode="after")
+    def validate_exactly_one_body(self) -> "SaveRequest":
+        if (self.content is None) == (self.encrypted_content is None):
+            raise ValueError("Provide exactly one of content or encrypted_content")
+        return self
 
     @field_validator("slot_name")
     @classmethod
@@ -65,7 +88,9 @@ class SaveResponse(BaseModel):
 class LoadResponse(BaseModel):
     slot_name: str
     slot_number: Optional[int] = None
-    content: ContentSchema
+    encryption_mode: EncryptionMode = "server"
+    content: Optional[ContentSchema] = None
+    encrypted_content: Optional[EncryptedContentSchema] = None
     expires_at: datetime
     compressed_tokens: int
     model_source: Optional[str] = None
@@ -75,6 +100,7 @@ class LoadResponse(BaseModel):
 class ListItem(BaseModel):
     slot_name: str
     slot_number: Optional[int] = None
+    encryption_mode: EncryptionMode = "server"
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
@@ -95,11 +121,18 @@ class ErrorResponse(BaseModel):
 class WebContextSaveRequest(BaseModel):
     slot_name: str
     slot_number: Optional[int] = None
-    content: ContentSchema
+    content: Optional[ContentSchema] = None
+    encrypted_content: Optional[EncryptedContentSchema] = None
     original_length: Optional[int] = None
     model_source: Optional[ModelSource] = None
     retention_seconds: Optional[int] = None
     detail_level: Optional[Literal["compact", "detailed"]] = "compact"
+
+    @model_validator(mode="after")
+    def validate_exactly_one_body(self) -> "WebContextSaveRequest":
+        if (self.content is None) == (self.encrypted_content is None):
+            raise ValueError("Provide exactly one of content or encrypted_content")
+        return self
 
     @field_validator("slot_name")
     @classmethod
@@ -137,6 +170,7 @@ class WebContextSaveResponse(BaseModel):
 class WebContextMetadataItem(BaseModel):
     slot_name: str
     slot_number: int
+    encryption_mode: EncryptionMode = "server"
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
@@ -149,7 +183,9 @@ class WebContextMetadataItem(BaseModel):
 class WebContextLoadResponse(BaseModel):
     slot_name: str
     slot_number: int
-    content: ContentSchema
+    encryption_mode: EncryptionMode = "server"
+    content: Optional[ContentSchema] = None
+    encrypted_content: Optional[EncryptedContentSchema] = None
     expires_at: datetime
     compressed_tokens: int
     detail_level: str
@@ -200,6 +236,7 @@ class DashboardProfileUpdateRequest(BaseModel):
 class DashboardContextItem(BaseModel):
     slot_name: str
     slot_number: int
+    encryption_mode: EncryptionMode = "server"
     created_at: datetime
     updated_at: datetime
     expires_at: datetime

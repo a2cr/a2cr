@@ -13,8 +13,12 @@ Registration (Claude Code):
     }
   }
 """
+import hashlib
+import json
 import os
+from pathlib import Path
 import httpx
+from cryptography.fernet import Fernet, InvalidToken
 from fastmcp import FastMCP
 
 BASE_URL = os.environ.get(
@@ -30,6 +34,97 @@ API_KEY = os.environ.get("A2CR_API_KEY", os.environ.get("AI_CLIPBOARD_API_KEY", 
 mcp = FastMCP("A2CR")
 
 _HEADERS = {"X-API-Key": API_KEY}
+
+
+def _client_encryption_enabled() -> bool:
+    return os.environ.get("A2CR_CLIENT_ENCRYPTION", "1").lower() not in {"0", "false", "no"}
+
+
+def _client_key_path() -> Path:
+    override = os.environ.get("A2CR_CLIENT_KEY_FILE")
+    if override:
+        return Path(override).expanduser()
+    base = os.environ.get("A2CR_CONFIG_DIR")
+    if base:
+        return Path(base).expanduser() / "workbaton.key"
+    if os.name == "nt":
+        root = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+        return Path(root) / "A2CR" / "workbaton.key"
+    return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "a2cr" / "workbaton.key"
+
+
+def _client_key(create: bool) -> bytes | None:
+    path = _client_key_path()
+    if path.exists():
+        return path.read_bytes().strip()
+    if not create:
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    key = Fernet.generate_key()
+    path.write_bytes(key)
+    return key
+
+
+def _key_id(key: bytes) -> str:
+    return hashlib.sha256(key).hexdigest()[:16]
+
+
+def _encrypt_content(content: dict) -> dict:
+    key = _client_key(create=True)
+    if key is None:
+        raise RuntimeError("A2CR client encryption key is unavailable")
+    plaintext = json.dumps(content, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    token = Fernet(key).encrypt(plaintext).decode("utf-8")
+    return {
+        "version": 1,
+        "alg": "Fernet",
+        "nonce": "embedded",
+        "ciphertext": token,
+        "key_wrap": {"type": "local-key", "kid": _key_id(key)},
+    }
+
+
+def _decrypt_content(encrypted_content: dict) -> dict:
+    key = _client_key(create=False)
+    if key is None:
+        raise FileNotFoundError(str(_client_key_path()))
+    plaintext = Fernet(key).decrypt(encrypted_content["ciphertext"].encode("utf-8"))
+    return json.loads(plaintext.decode("utf-8"))
+
+
+def _decrypt_loaded_context(data: dict) -> dict:
+    if data.get("encryption_mode") != "client":
+        return data
+    encrypted_content = data.get("encrypted_content")
+    if not encrypted_content:
+        return {
+            **data,
+            "status": "decrypt_failed",
+            "message": "Client-encrypted context did not include encrypted_content.",
+        }
+    try:
+        return {
+            **data,
+            "content": _decrypt_content(encrypted_content),
+            "encrypted_content": None,
+            "status": data.get("status", "loaded"),
+        }
+    except FileNotFoundError:
+        return {
+            **data,
+            "content": None,
+            "encrypted_content": None,
+            "status": "key_unavailable",
+            "message": "This WorkBaton is client-encrypted, but the local A2CR key file is missing.",
+        }
+    except (InvalidToken, KeyError, json.JSONDecodeError):
+        return {
+            **data,
+            "content": None,
+            "encrypted_content": None,
+            "status": "decrypt_failed",
+            "message": "This WorkBaton is client-encrypted, but the local A2CR key could not decrypt it.",
+        }
 
 
 def _resume_context_call(slot_name: str, slot_number: int | None = None) -> str:
@@ -62,7 +157,7 @@ def _load_slot(client: httpx.Client, slot_name: str) -> dict:
     data = r.json()
     data["status"] = "loaded"
     data["response_language_hint"] = "current_message_language"
-    return data
+    return _decrypt_loaded_context(data)
 
 
 def _load_slot_number(client: httpx.Client, slot_number: int) -> dict:
@@ -73,7 +168,7 @@ def _load_slot_number(client: httpx.Client, slot_number: int) -> dict:
     data = r.json()
     data["status"] = "loaded"
     data["response_language_hint"] = "current_message_language"
-    return data
+    return _decrypt_loaded_context(data)
 
 SAVE_DESCRIPTION = """Save conversation context to A2CR.
 
@@ -127,16 +222,20 @@ def save_context(
     slot_number: int | None = None,
 ) -> dict:
     """Save context to a named slot. Optionally overwrite a fixed Slot number."""
+    body = {
+        "slot_name": slot_name,
+        "slot_number": slot_number,
+        "original_length": original_length,
+        "model_source": model_source,
+    }
+    if _client_encryption_enabled():
+        body["encrypted_content"] = _encrypt_content(content)
+    else:
+        body["content"] = content
     with httpx.Client() as client:
         r = client.post(
             f"{BASE_URL}/v1/context/save",
-            json={
-                "slot_name": slot_name,
-                "slot_number": slot_number,
-                "content": content,
-                "original_length": original_length,
-                "model_source": model_source,
-            },
+            json=body,
             headers=_HEADERS,
             timeout=10,
         )
@@ -216,7 +315,7 @@ def load_context(slot_name: str | None = None, slot_number: int | None = None) -
     r.raise_for_status()
     data = r.json()
     data["status"] = "loaded"
-    return data
+    return _decrypt_loaded_context(data)
 
 
 @mcp.tool(description="List all active context slots with their expiry times and sizes.")

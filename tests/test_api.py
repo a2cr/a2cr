@@ -103,8 +103,50 @@ def test_load_existing(client):
     assert r.status_code == 200
     body = r.json()
     assert body["content"]["goal"] == "test goal"
+    assert body["encryption_mode"] == "server"
     assert body["slot_number"] == 1
     assert body["load_count"] == 1
+
+
+def test_save_load_client_encrypted_context(client):
+    encrypted_content = {
+        "version": 1,
+        "alg": "XChaCha20-Poly1305",
+        "nonce": "nonce",
+        "ciphertext": "ciphertext",
+        "key_wrap": {"type": "local-key", "kid": "test"},
+    }
+    r = client.post(
+        "/v1/context/save",
+        json={"slot_name": "encrypted-api", "encrypted_content": encrypted_content},
+        headers=HEADERS,
+    )
+    assert r.status_code == 201
+
+    loaded = client.get("/v1/context/encrypted-api", headers=HEADERS)
+    assert loaded.status_code == 200
+    body = loaded.json()
+    assert body["encryption_mode"] == "client"
+    assert body["content"] is None
+    assert body["encrypted_content"] == encrypted_content
+
+
+def test_save_rejects_content_and_encrypted_content_together(client):
+    r = client.post(
+        "/v1/context/save",
+        json={
+            "slot_name": "bad-body",
+            "content": CONTENT,
+            "encrypted_content": {
+                "version": 1,
+                "alg": "XChaCha20-Poly1305",
+                "nonce": "nonce",
+                "ciphertext": "ciphertext",
+            },
+        },
+        headers=HEADERS,
+    )
+    assert r.status_code == 422
 
 
 def test_load_by_slot_number(client):

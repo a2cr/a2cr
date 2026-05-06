@@ -64,6 +64,7 @@ def _metadata_response(result) -> WebContextMetadataItem:
     return WebContextMetadataItem(
         slot_name=result.slot_name,
         slot_number=result.slot_number,
+        encryption_mode=result.encryption_mode,
         expires_at=result.expires_at,
         updated_at=result.updated_at,
         size_bytes=result.size_bytes,
@@ -78,7 +79,9 @@ def _load_response(result) -> WebContextLoadResponse:
     return WebContextLoadResponse(
         slot_name=result.slot_name,
         slot_number=result.slot_number,
+        encryption_mode=result.encryption_mode,
         content=result.content,
+        encrypted_content=result.encrypted_content,
         expires_at=result.expires_at,
         compressed_tokens=result.compressed_tokens,
         detail_level=result.detail_level,
@@ -96,7 +99,8 @@ def save_context(
     result = web_context_service.save_context(
         user_id=user.user_id,
         slot_name=req.slot_name,
-        content_dict=req.content.model_dump(),
+        content_dict=req.content.model_dump() if req.content else None,
+        encrypted_content=req.encrypted_content.model_dump() if req.encrypted_content else None,
         original_length=req.original_length,
         model_source=req.model_source,
         slot_number=req.slot_number,

@@ -43,6 +43,7 @@ class DashboardContext:
     load_count: int
     resume_context_call: str
     resume_prompt: str
+    encryption_mode: str = "server"
 
 
 @dataclass(frozen=True)
@@ -178,7 +179,7 @@ def list_contexts(user_id: UUID | str) -> list[DashboardContext]:
                 """
                 SELECT slot_name, slot_number, created_at, updated_at, expires_at,
                        size_bytes, compressed_tokens, saved_tokens, detail_level,
-                       model_source, load_count
+                       model_source, load_count, encryption_mode
                 FROM public.contexts
                 WHERE user_id = :user_id
                   AND expires_at > now()
@@ -202,6 +203,7 @@ def list_contexts(user_id: UUID | str) -> list[DashboardContext]:
             load_count=row.load_count,
             resume_context_call=build_resume_context_call(row.slot_name),
             resume_prompt=build_resume_prompt(service_url=config.a2cr_service_url, slot_name=row.slot_name),
+            encryption_mode=row.encryption_mode,
         )
         for row in rows
     ]

@@ -75,6 +75,9 @@ class Context(Base):
     compressed_tokens: Mapped[int] = mapped_column(Integer)
     load_count: Mapped[int] = mapped_column(Integer, default=0)
     model_source: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    encryption_mode: Mapped[str] = mapped_column(String, default="server")
+    encryption_version: Mapped[int] = mapped_column(Integer, default=1)
+    encryption_metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class Stats(Base):
@@ -89,14 +92,14 @@ class Stats(Base):
 def init_db() -> None:
     engine = get_engine()
     Base.metadata.create_all(engine)
-    _migrate_slot_number(engine)
+    _migrate_context_columns(engine)
     with Session(engine) as session:
         if session.get(Stats, 1) is None:
             session.add(Stats(id=1, total_saves=0, total_loads=0, total_tokens_saved=0))
             session.commit()
 
 
-def _migrate_slot_number(engine) -> None:
+def _migrate_context_columns(engine) -> None:
     with engine.begin() as conn:
         columns = {
             row[1]
@@ -104,6 +107,12 @@ def _migrate_slot_number(engine) -> None:
         }
         if "slot_number" not in columns:
             conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN slot_number INTEGER")
+        if "encryption_mode" not in columns:
+            conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN encryption_mode TEXT NOT NULL DEFAULT 'server'")
+        if "encryption_version" not in columns:
+            conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN encryption_version INTEGER NOT NULL DEFAULT 1")
+        if "encryption_metadata" not in columns:
+            conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN encryption_metadata TEXT")
         conn.exec_driver_sql(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_contexts_slot_number ON contexts(slot_number)"
         )

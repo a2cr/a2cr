@@ -18,6 +18,12 @@ export function LanguageToggle() {
     if (location.pathname === "/en/guide" && language === "ja") {
       navigate("/guide");
     }
+    if (location.pathname === "/agent-guide" && language === "en") {
+      navigate("/en/agent-guide");
+    }
+    if (location.pathname === "/en/agent-guide" && language === "ja") {
+      navigate("/agent-guide");
+    }
   };
 
   return (

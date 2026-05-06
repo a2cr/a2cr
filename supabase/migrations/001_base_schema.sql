@@ -63,6 +63,9 @@ CREATE TABLE IF NOT EXISTS public.contexts (
   saved_tokens integer NOT NULL DEFAULT 0,
   load_count integer NOT NULL DEFAULT 0 CHECK (load_count >= 0),
   model_source text,
+  encryption_mode text NOT NULL DEFAULT 'server' CHECK (encryption_mode IN ('server', 'client')),
+  encryption_version integer NOT NULL DEFAULT 1,
+  encryption_metadata jsonb,
   encryption_key_version integer NOT NULL DEFAULT 1,
   UNIQUE (user_id, slot_name),
   UNIQUE (user_id, slot_number)

@@ -44,6 +44,7 @@ def _context_response(item) -> DashboardContextItem:
     return DashboardContextItem(
         slot_name=item.slot_name,
         slot_number=item.slot_number,
+        encryption_mode=item.encryption_mode,
         created_at=item.created_at,
         updated_at=item.updated_at,
         expires_at=item.expires_at,

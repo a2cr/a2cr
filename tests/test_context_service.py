@@ -100,6 +100,36 @@ def test_load_existing():
     assert result.slot_number == 1
     assert result.model_source == "gpt"
     assert result.load_count == 1
+    assert result.encryption_mode == "server"
+
+
+def test_save_load_client_encrypted_context_without_server_decrypt(monkeypatch):
+    encrypted_content = {
+        "version": 1,
+        "alg": "XChaCha20-Poly1305",
+        "nonce": "nonce",
+        "ciphertext": "ciphertext",
+        "key_wrap": {"type": "local-key", "kid": "test"},
+    }
+
+    result = ctx_service.save_context(
+        "encrypted-slot",
+        None,
+        None,
+        "codex",
+        encrypted_content=encrypted_content,
+    )
+
+    def fail_decrypt(*args, **kwargs):
+        raise AssertionError("client-encrypted context should not be decrypted server-side")
+
+    monkeypatch.setattr(ctx_service, "decrypt", fail_decrypt)
+
+    loaded = ctx_service.load_context("encrypted-slot")
+    assert result.encryption_mode == "client"
+    assert loaded.encryption_mode == "client"
+    assert loaded.content is None
+    assert loaded.encrypted_content == encrypted_content
 
 
 def test_load_by_slot_number():

@@ -1,5 +1,6 @@
 export type Plan = "free" | "pro";
 export type DetailLevel = "compact" | "detailed";
+export type EncryptionMode = "server" | "client";
 
 export type DashboardProfile = {
   user_id: string;
@@ -16,6 +17,7 @@ export type DashboardProfile = {
 export type DashboardContext = {
   slot_name: string;
   slot_number: number;
+  encryption_mode: EncryptionMode | string;
   created_at: string;
   updated_at: string;
   expires_at: string;

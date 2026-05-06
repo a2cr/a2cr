@@ -15,6 +15,8 @@ export function App() {
       <Route path="/" element={<TopPage />} />
       <Route path="/guide" element={<GuidePage />} />
       <Route path="/en/guide" element={<GuidePage />} />
+      <Route path="/agent-guide" element={<GuidePage />} />
+      <Route path="/en/agent-guide" element={<GuidePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route

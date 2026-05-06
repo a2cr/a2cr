@@ -56,18 +56,21 @@ class WebContextMetadata:
     detail_level: str
     model_source: str | None
     load_count: int
+    encryption_mode: str = "server"
 
 
 @dataclass(frozen=True)
 class WebLoadResult:
     slot_name: str
     slot_number: int
-    content: dict
+    content: dict | None
     expires_at: datetime
     compressed_tokens: int
     detail_level: str
     model_source: str | None
     load_count: int
+    encrypted_content: dict | None = None
+    encryption_mode: str = "server"
 
 
 @dataclass(frozen=True)
@@ -88,6 +91,7 @@ def _row_to_metadata(row) -> WebContextMetadata:
         detail_level=row.detail_level,
         model_source=row.model_source,
         load_count=row.load_count,
+        encryption_mode=getattr(row, "encryption_mode", "server") or "server",
     )
 
 
@@ -184,7 +188,7 @@ def _get_context_row(
         text(
             f"""
             SELECT id, slot_name, slot_number, content, expires_at, compressed_tokens,
-                   detail_level, model_source, load_count
+                   detail_level, model_source, load_count, encryption_mode
             FROM public.contexts
             WHERE user_id = :user_id
               AND {selector_sql}
@@ -199,17 +203,23 @@ def save_context(
     *,
     user_id: UUID | str,
     slot_name: str,
-    content_dict: dict,
-    original_length: Optional[int],
-    model_source: Optional[str],
-    slot_number: Optional[int],
-    retention_seconds: Optional[int],
-    detail_level: Optional[str],
+    content_dict: dict | None,
+    encrypted_content: dict | None = None,
+    original_length: Optional[int] = None,
+    model_source: Optional[str] = None,
+    slot_number: Optional[int] = None,
+    retention_seconds: Optional[int] = None,
+    detail_level: Optional[str] = None,
     meta: RequestMeta | None = None,
 ) -> WebSaveResult:
     meta = meta or RequestMeta()
     config = get_web_config()
-    content_json = json.dumps(content_dict, ensure_ascii=False, separators=(",", ":"))
+    if (content_dict is None) == (encrypted_content is None):
+        raise AppError("invalid_context_body", "Provide exactly one of content or encrypted_content", 422)
+
+    encryption_mode = "client" if encrypted_content is not None else "server"
+    body_dict = encrypted_content if encrypted_content is not None else content_dict
+    content_json = json.dumps(body_dict, ensure_ascii=False, separators=(",", ":"))
     content_bytes = content_json.encode("utf-8")
     compressed_tokens = count_tokens(content_json)
     original_tokens = original_tokens_from_length_optional(original_length)
@@ -257,12 +267,15 @@ def save_context(
             else _next_slot_number(session, user_id=user_id, active_slots=limits.active_slots)
         )
 
-        encrypted = encrypt(content_json, config.fernet_key)
+        stored_content = content_json if encryption_mode == "client" else encrypt(content_json, config.fernet_key)
         params = {
             "user_id": str(user_id),
             "slot_name": slot_name,
             "slot_number": assigned_slot_number,
-            "content": encrypted,
+            "content": stored_content,
+            "encryption_mode": encryption_mode,
+            "encryption_version": 1,
+            "encryption_metadata": None,
             "detail_level": detail_level,
             "retention_seconds": retention_seconds,
             "size_bytes": len(content_bytes),
@@ -279,11 +292,13 @@ def save_context(
                     INSERT INTO public.contexts (
                       user_id, slot_name, slot_number, content, detail_level, expires_at,
                       size_bytes, original_tokens, compressed_tokens, saved_tokens, model_source
+                      , encryption_mode, encryption_version, encryption_metadata
                     )
                     VALUES (
                       :user_id, :slot_name, :slot_number, :content, :detail_level,
                       now() + (:retention_seconds * interval '1 second'),
-                      :size_bytes, :original_tokens, :compressed_tokens, :saved_tokens, :model_source
+                      :size_bytes, :original_tokens, :compressed_tokens, :saved_tokens, :model_source,
+                      :encryption_mode, :encryption_version, CAST(:encryption_metadata AS jsonb)
                     )
                     RETURNING slot_name, slot_number, expires_at
                     """
@@ -304,7 +319,10 @@ def save_context(
                         original_tokens = :original_tokens,
                         compressed_tokens = :compressed_tokens,
                         saved_tokens = :saved_tokens,
-                        model_source = :model_source
+                        model_source = :model_source,
+                        encryption_mode = :encryption_mode,
+                        encryption_version = :encryption_version,
+                        encryption_metadata = CAST(:encryption_metadata AS jsonb)
                     WHERE id = :existing_id
                       AND user_id = :user_id
                     RETURNING slot_name, slot_number, expires_at
@@ -349,7 +367,7 @@ def list_contexts(*, user_id: UUID | str) -> list[WebContextMetadata]:
             text(
                 """
                 SELECT slot_name, slot_number, expires_at, updated_at, size_bytes,
-                       compressed_tokens, detail_level, model_source, load_count
+                       compressed_tokens, detail_level, model_source, load_count, encryption_mode
                 FROM public.contexts
                 WHERE user_id = :user_id
                   AND expires_at > now()
@@ -414,7 +432,13 @@ def load_context(
             ),
         )
 
-    content = json.loads(decrypt(row["content"], config.fernet_key))
+    encryption_mode = row["encryption_mode"] or "server"
+    if encryption_mode == "client":
+        content = None
+        encrypted = json.loads(row["content"])
+    else:
+        content = json.loads(decrypt(row["content"], config.fernet_key))
+        encrypted = None
     return WebLoadResult(
         slot_name=row["slot_name"],
         slot_number=row["slot_number"],
@@ -424,6 +448,8 @@ def load_context(
         detail_level=row["detail_level"],
         model_source=row["model_source"],
         load_count=load_count,
+        encrypted_content=encrypted,
+        encryption_mode=encryption_mode,
     )
 
 
@@ -453,7 +479,7 @@ def resume_context(
             text(
                 """
                 SELECT slot_name, slot_number, expires_at, updated_at, size_bytes,
-                       compressed_tokens, detail_level, model_source, load_count
+                       compressed_tokens, detail_level, model_source, load_count, encryption_mode
                 FROM public.contexts
                 WHERE user_id = :user_id
                   AND expires_at > now()

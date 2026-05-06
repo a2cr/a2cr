@@ -16,6 +16,15 @@ Never put these in the browser bundle, logs, GitHub, or support tools:
 
 `SUPABASE_SERVICE_ROLE_KEY` must not exist in the normal Railway runtime. It is only for migrations or emergency admin work in a separate, short-lived environment.
 
+## Client Key Rules
+
+The local stdio MCP wrapper can create a client-encryption key file for client-encrypted WorkBaton slots.
+
+- Do not commit local A2CR client key files.
+- Do not print client keys in logs, tool responses, support messages, or screenshots.
+- If a client key is lost, A2CR cannot recover client-encrypted WorkBaton bodies.
+- Client-encrypted WorkBaton can be described as zero-knowledge-style only for that storage mode.
+
 ## Content Visibility
 
 Dashboards and ordinary admin/support views must not display:
@@ -26,7 +35,12 @@ Dashboards and ordinary admin/support views must not display:
 - full API keys
 - Authorization headers
 
-Saved bodies are encrypted in the application layer. A service administrator should not be able to read bodies through normal dashboards, support tools, or direct DB inspection. This is not a zero-knowledge claim because the A2CR server decrypts content in memory when returning authenticated MCP/API responses for the user.
+WorkBaton storage modes:
+
+- `server-encrypted`: bodies are encrypted in the application layer. A service administrator should not be able to read bodies through normal dashboards, support tools, or direct DB inspection. This is not a zero-knowledge claim because the A2CR server decrypts content in memory when returning authenticated MCP/API responses for the user.
+- `client-encrypted`: the client encrypts WorkBaton bodies before sending them to A2CR. The server stores and returns ciphertext and cannot decrypt those bodies.
+
+Do not describe A2CR as a whole as zero-knowledge. WorkThreads and legacy server-encrypted slots remain outside that claim.
 
 ## Startup Guards
 
@@ -56,7 +70,7 @@ Isolation layers:
 - Application SQL keeps `user_id` predicates on account-owned rows, including id-based follow-up updates.
 - Unique constraints for WorkBaton slots are scoped by `(user_id, slot_name)` and `(user_id, slot_number)`, not global slot names or numbers.
 
-Encryption is a second line of defense, not the tenant-isolation boundary. Do not describe A2CR as zero-knowledge.
+Encryption is a second line of defense, not the tenant-isolation boundary.
 
 ## Logging Rules
 
@@ -78,6 +92,7 @@ Access logs must not contain:
 - raw IP address
 - full User-Agent
 - database URLs or secrets
+- client encryption keys
 
 ## Monitoring Signals
 
@@ -104,47 +119,3 @@ Initial alert paths:
 3. Revoke exposed API keys.
 4. Rotate runtime secrets if exposure is plausible.
 5. Re-run smoke checks before reopening traffic.
-
----
-
-## 概要
-
-このrunbookはA2CR Web SaaS MVPの運用セキュリティ手順です。
-
-## runtime secretの扱い
-
-`DATABASE_URL`、`FERNET_KEY`、`API_KEY_HASH_SECRET`、`AUDIT_HASH_SECRET`、`SUPABASE_JWT_SECRET`、Stripe/Google OAuth secretは、ブラウザbundle、ログ、GitHub、通常のサポート画面に出しません。
-
-`SUPABASE_SERVICE_ROLE_KEY` は通常Railway runtimeに置きません。migrationや緊急管理作業だけ、通常runtimeと分けた短時間の環境で使います。
-
-## 本文の見え方
-
-人間向けダッシュボード、通常管理画面、サポート画面ではWorkBaton本文、WorkThreads本文、AIプロンプト本文、AI応答本文、APIキー全文、Authorization headerを表示しません。
-
-保存本文はアプリ層暗号化します。DBを直接見てもサービス管理者が本文を読めない設計にします。ただし、A2CRサーバーはユーザーのためにMCP/APIレスポンスを返す際、処理中メモリ上で本文を復号するため、ゼロ知識とは表現しません。
-
-## 起動時ガード
-
-本番起動時には、service role key混入、必須env不足、不正なFernet key、HTTPの `A2CR_SERVICE_URL`、短すぎるhash/audit secretを拒否します。
-
-## CORS / same-origin
-
-本番は同一origin前提です。想定外の `Origin` は403で拒否します。通常のMCP/APIクライアントのように `Origin` を送らない通信は影響を受けません。
-
-## テナント分離
-
-Web SaaSの各リクエストは、product dataを読む前に必ず1つの認証済み `user_id` に解決します。
-
-分離レイヤー:
-
-- FastAPI serviceはproduct data操作ごとに `user_id` を渡します。
-- `web_transaction(user_id)` は新しいSQLAlchemy sessionを開き、`set_config(..., true)` で `app.user_id` をtransaction-localに設定します。接続プールでコネクションが再利用されても、前リクエストのユーザー文脈を残しません。
-- Supabase RLS policyはuser tableを `user_id = app.current_user_id()` に制限します。
-- アプリケーションSQLでもaccount-owned rowに `user_id` 条件を付けます。id指定の後続UPDATEも同様です。
-- WorkBaton slotの一意制約はglobalなslot名/番号ではなく、`(user_id, slot_name)` と `(user_id, slot_number)` です。
-
-暗号化は二重防御であり、テナント分離そのものではありません。A2CRをゼロ知識とは表現しません。
-
-## 監視
-
-auth失敗、rate limit、save/load/delete数、cleanup失敗、DBエラー、想定外Origin拒否、API key発行/失効を追います。cleanup失敗時はRailway job logを確認し、必要なら `python -m services.maintenance expire-contexts` を手動実行します。

@@ -17,6 +17,8 @@ A summary is a diet for conversation logs. WorkBaton is a baton for work state.
 Primary site: https://a2cr.app/
 Public guide (Japanese): https://a2cr.app/guide
 Public guide (English): https://a2cr.app/en/guide
+AI agent guide (Japanese): https://a2cr.app/agent-guide
+AI agent guide (English): https://a2cr.app/en/agent-guide
 Pricing: https://a2cr.app/pricing
 MCP endpoint: https://a2cr.app/mcp
 
@@ -25,6 +27,13 @@ Use case:
 - Resume a saved slot from another window, another model, or any AI agent configured with A2CR MCP.
 - Use MCP tools instead of guessing direct HTTP API endpoints.
 - Keep future sessions focused on the next action instead of old chat history.
+
+Encryption notes:
+- WorkBaton has server-encrypted and client-encrypted storage modes.
+- In client-encrypted mode, the local stdio MCP wrapper encrypts before upload and A2CR stores ciphertext only.
+- The local client key is managed by the user, not by the service administrator.
+- If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
+- Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way.
 
 MCP setup:
 

@@ -107,8 +107,8 @@ def test_contexts_return_metadata_without_content(client, monkeypatch):
     assert response.status_code == 200
     item = response.json()[0]
     assert item["slot_name"] == "slot-a"
+    assert item["encryption_mode"] == "server"
     assert "content" not in item
-    assert "encrypted" not in item
     assert "private" not in str(item).lower()
 
 

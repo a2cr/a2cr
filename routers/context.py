@@ -63,10 +63,11 @@ def verify_api_key(x_api_key: Optional[str] = Header(default=None, alias="X-API-
 def save(req: SaveRequest, _: None = Depends(verify_api_key)) -> SaveResponse:
     result = ctx_service.save_context(
         slot_name=req.slot_name,
-        content_dict=req.content.model_dump(),
+        content_dict=req.content.model_dump() if req.content else None,
         original_length=req.original_length,
         model_source=req.model_source,
         slot_number=req.slot_number,
+        encrypted_content=req.encrypted_content.model_dump() if req.encrypted_content else None,
     )
     return SaveResponse(
         slot_name=result.slot_name,
@@ -90,6 +91,7 @@ def list_contexts(_: None = Depends(verify_api_key)) -> list[ListItem]:
         ListItem(
             slot_name=r.slot_name,
             slot_number=r.slot_number,
+            encryption_mode=r.encryption_mode,
             expires_at=r.expires_at,
             updated_at=r.updated_at,
             size_bytes=r.size_bytes,
@@ -112,7 +114,9 @@ def load_by_slot_number(slot_number: int, _: None = Depends(verify_api_key)) -> 
     return LoadResponse(
         slot_name=result.slot_name,
         slot_number=result.slot_number,
+        encryption_mode=result.encryption_mode,
         content=result.content,
+        encrypted_content=result.encrypted_content,
         expires_at=result.expires_at,
         compressed_tokens=result.compressed_tokens,
         model_source=result.model_source,
@@ -126,7 +130,9 @@ def load(slot_name: str, _: None = Depends(verify_api_key)) -> LoadResponse:
     return LoadResponse(
         slot_name=result.slot_name,
         slot_number=result.slot_number,
+        encryption_mode=result.encryption_mode,
         content=result.content,
+        encrypted_content=result.encrypted_content,
         expires_at=result.expires_at,
         compressed_tokens=result.compressed_tokens,
         model_source=result.model_source,
