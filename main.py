@@ -125,6 +125,8 @@ async def serve_mcp_exact(request: Request):
 def serve_spa(full_path: str = ""):
     if full_path.startswith(("api/", "mcp")):
         raise HTTPException(status_code=404)
+    if any(part.startswith(".") for part in Path(full_path).parts):
+        raise HTTPException(status_code=404)
     if not WEB_INDEX_FILE.exists():
         raise HTTPException(status_code=404)
 

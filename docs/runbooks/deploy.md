@@ -81,6 +81,7 @@ Notes:
 
 - Use the transaction pooler connection from Supabase Connect.
 - Use the `a2cr_app` role, not `postgres`.
+- URL-encode the password part in `DATABASE_URL` if it contains reserved characters such as `@`, `:`, `/`, `?`, `#`, or `%`.
 - Store the `a2cr_app` password in a password manager and Railway variables only.
 - Do not set `SUPABASE_SERVICE_ROLE_KEY` on the Railway runtime.
 - This Supabase project uses asymmetric JWT signing. Use `SUPABASE_JWKS_URL`; do not require `SUPABASE_JWT_SECRET`.

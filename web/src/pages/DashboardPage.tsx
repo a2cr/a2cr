@@ -1,6 +1,8 @@
 import {
   Activity,
   Boxes,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   Loader2,
   RefreshCw,
@@ -153,6 +155,8 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [autoReload, setAutoReload] = useState(false);
+  const [slotsOpen, setSlotsOpen] = useState(true);
+  const [accessLogsOpen, setAccessLogsOpen] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!session?.access_token) {
@@ -242,19 +246,34 @@ export function DashboardPage() {
       </section>
 
       <section className="grid gap-3">
-        <h2 className="text-base font-semibold">{t("dashboard.slots")}</h2>
-        {data && data.contexts.length > 0 ? (
-          <div className="grid gap-3 xl:grid-cols-2">
-            {data.contexts.map((item) => (
-              <SlotCard key={`${item.slot_number}-${item.slot_name}`} item={item} timezone={timezone} />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed border-neutral-300 bg-white p-6">
-            <div className="text-lg font-semibold">{t("dashboard.emptyTitle")}</div>
-            <div className="mt-1 text-sm text-neutral-500">{t("dashboard.emptyBody")}</div>
-          </div>
-        )}
+        <h2 className="text-base font-semibold">
+          <button
+            type="button"
+            onClick={() => setSlotsOpen((value) => !value)}
+            className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left hover:bg-neutral-100"
+            aria-expanded={slotsOpen}
+          >
+            <span>{t("dashboard.slots")}</span>
+            {slotsOpen ? (
+              <ChevronDown className="size-4 text-neutral-500" aria-hidden="true" />
+            ) : (
+              <ChevronRight className="size-4 text-neutral-500" aria-hidden="true" />
+            )}
+          </button>
+        </h2>
+        {slotsOpen &&
+          (data && data.contexts.length > 0 ? (
+            <div className="grid gap-3 xl:grid-cols-2">
+              {data.contexts.map((item) => (
+                <SlotCard key={`${item.slot_number}-${item.slot_name}`} item={item} timezone={timezone} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-md border border-dashed border-neutral-300 bg-white p-6">
+              <div className="text-lg font-semibold">{t("dashboard.emptyTitle")}</div>
+              <div className="mt-1 text-sm text-neutral-500">{t("dashboard.emptyBody")}</div>
+            </div>
+          ))}
       </section>
 
       {data && data.profile.plan === "pro" && (
@@ -276,41 +295,57 @@ export function DashboardPage() {
       )}
 
       <section className="grid gap-3">
-        <h2 className="text-base font-semibold">{t("dashboard.accessLogs")}</h2>
-        <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
-          {data && data.accessLogs.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">{t("common.created")}</th>
-                    <th className="px-3 py-2 font-semibold">{t("common.action")}</th>
-                    <th className="px-3 py-2 font-semibold">{t("common.slot")}</th>
-                    <th className="px-3 py-2 font-semibold">{t("common.client")}</th>
-                    <th className="px-3 py-2 font-semibold">{t("common.status")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {data.accessLogs.map((item) => (
-                    <tr key={`${item.created_at}-${item.action}-${item.request_id || ""}`}>
-                      <td className="whitespace-nowrap px-3 py-2">{formatDateTime(item.created_at, timezone)}</td>
-                      <td className="whitespace-nowrap px-3 py-2 font-medium">{item.action}</td>
-                      <td className="whitespace-nowrap px-3 py-2">{item.slot_name || "-"}</td>
-                      <td className="whitespace-nowrap px-3 py-2">{item.client_type}</td>
-                      <td className="whitespace-nowrap px-3 py-2">
-                        <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
-                          {item.result}
-                        </span>
-                      </td>
+        <h2 className="text-base font-semibold">
+          <button
+            type="button"
+            onClick={() => setAccessLogsOpen((value) => !value)}
+            className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left hover:bg-neutral-100"
+            aria-expanded={accessLogsOpen}
+          >
+            <span>{t("dashboard.accessLogs")}</span>
+            {accessLogsOpen ? (
+              <ChevronDown className="size-4 text-neutral-500" aria-hidden="true" />
+            ) : (
+              <ChevronRight className="size-4 text-neutral-500" aria-hidden="true" />
+            )}
+          </button>
+        </h2>
+        {accessLogsOpen && (
+          <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
+            {data && data.accessLogs.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500">
+                    <tr>
+                      <th className="px-3 py-2 font-semibold">{t("common.created")}</th>
+                      <th className="px-3 py-2 font-semibold">{t("common.action")}</th>
+                      <th className="px-3 py-2 font-semibold">{t("common.slot")}</th>
+                      <th className="px-3 py-2 font-semibold">{t("common.client")}</th>
+                      <th className="px-3 py-2 font-semibold">{t("common.status")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-6 text-sm text-neutral-500">{t("dashboard.noLogs")}</div>
-          )}
-        </div>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {data.accessLogs.map((item) => (
+                      <tr key={`${item.created_at}-${item.action}-${item.request_id || ""}`}>
+                        <td className="whitespace-nowrap px-3 py-2">{formatDateTime(item.created_at, timezone)}</td>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium">{item.action}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{item.slot_name || "-"}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{item.client_type}</td>
+                        <td className="whitespace-nowrap px-3 py-2">
+                          <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
+                            {item.result}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 text-sm text-neutral-500">{t("dashboard.noLogs")}</div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );
