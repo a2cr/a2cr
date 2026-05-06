@@ -10,7 +10,7 @@ import {
   Save,
   TimerReset
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -160,8 +160,10 @@ function newestFirst(left: string, right: string) {
 export function DashboardPage() {
   const { t } = useTranslation();
   const { session } = useAuth();
+  const refreshInFlight = useRef(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoReload, setAutoReload] = useState(false);
   const [slotsOpen, setSlotsOpen] = useState(true);
@@ -169,8 +171,14 @@ export function DashboardPage() {
 
   const refresh = useCallback(async () => {
     if (!session?.access_token) {
+      setLoading(false);
       return;
     }
+    if (refreshInFlight.current) {
+      return;
+    }
+    refreshInFlight.current = true;
+    setRefreshing(true);
     setError(null);
     try {
       const nextData = await loadDashboardData(session.access_token);
@@ -182,6 +190,8 @@ export function DashboardPage() {
         setError(err instanceof Error ? err.message : t("errors.generic"));
       }
     } finally {
+      refreshInFlight.current = false;
+      setRefreshing(false);
       setLoading(false);
     }
   }, [session?.access_token, t]);
@@ -245,9 +255,11 @@ export function DashboardPage() {
           <button
             type="button"
             onClick={() => void refresh()}
-            className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+            disabled={refreshing}
+            aria-busy={refreshing}
+            className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RefreshCw className="size-4" aria-hidden="true" />
+            <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
             {t("common.refresh")}
           </button>
         </div>
