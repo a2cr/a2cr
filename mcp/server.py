@@ -30,14 +30,43 @@ SERVICE_URL = os.environ.get(
     os.environ.get("AI_CLIPBOARD_SERVICE_URL", BASE_URL),
 )
 API_KEY = os.environ.get("A2CR_API_KEY", os.environ.get("AI_CLIPBOARD_API_KEY", ""))
+API_STYLE = os.environ.get("A2CR_API_STYLE", "web").lower()
 
 mcp = FastMCP("A2CR")
 
-_HEADERS = {"X-API-Key": API_KEY}
+_HEADERS = (
+    {"X-API-Key": API_KEY}
+    if API_STYLE == "legacy"
+    else {"Authorization": f"Bearer {API_KEY}"}
+)
 
 
-def _client_encryption_enabled() -> bool:
-    return os.environ.get("A2CR_CLIENT_ENCRYPTION", "1").lower() not in {"0", "false", "no"}
+def _url(path: str) -> str:
+    return f"{BASE_URL}{path}"
+
+
+def _save_url() -> str:
+    return _url("/v1/context/save" if API_STYLE == "legacy" else "/api/v1/context")
+
+
+def _list_url() -> str:
+    return _url("/v1/context/list" if API_STYLE == "legacy" else "/api/v1/contexts")
+
+
+def _load_url(slot_name: str) -> str:
+    return _url(f"/v1/context/{slot_name}" if API_STYLE == "legacy" else f"/api/v1/context/{slot_name}")
+
+
+def _load_slot_number_url(slot_number: int) -> str:
+    return _url(
+        f"/v1/context/slot/{slot_number}"
+        if API_STYLE == "legacy"
+        else f"/api/v1/context/slot/{slot_number}"
+    )
+
+
+def _delete_url(slot_name: str) -> str:
+    return _url(f"/v1/context/{slot_name}" if API_STYLE == "legacy" else f"/api/v1/context/{slot_name}")
 
 
 def _client_key_path() -> Path:
@@ -149,8 +178,35 @@ def _resume_prompt(slot_name: str, slot_number: int | None = None) -> str:
     )
 
 
+def _build_handoff_text(content: dict) -> str:
+    sections = [
+        f"# GOAL\n{content['goal']}",
+        f"# CURRENT_STATE\n{content['current_state']}",
+        f"# NEXT_ACTION\n{content['next_action']}",
+    ]
+    for key, section in [
+        ("decisions", "DECISIONS"),
+        ("constraints", "CONSTRAINTS"),
+        ("problems", "PROBLEMS"),
+        ("failed_attempts", "FAILED_ATTEMPTS"),
+        ("references", "REFERENCES"),
+    ]:
+        items = content.get(key) or []
+        if items:
+            sections.append(f"# {section}\n" + "\n".join(f"- {item}" for item in items))
+    for key, section in [
+        ("environment", "ENVIRONMENT"),
+        ("background", "BACKGROUND"),
+        ("summary", "SUMMARY"),
+    ]:
+        value = content.get(key)
+        if value:
+            sections.append(f"# {section}\n{value}")
+    return "\n\n".join(sections)
+
+
 def _load_slot(client: httpx.Client, slot_name: str) -> dict:
-    r = client.get(f"{BASE_URL}/v1/context/{slot_name}", headers=_HEADERS, timeout=10)
+    r = client.get(_load_url(slot_name), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "slot_name": slot_name}
     r.raise_for_status()
@@ -161,7 +217,7 @@ def _load_slot(client: httpx.Client, slot_name: str) -> dict:
 
 
 def _load_slot_number(client: httpx.Client, slot_number: int) -> dict:
-    r = client.get(f"{BASE_URL}/v1/context/slot/{slot_number}", headers=_HEADERS, timeout=10)
+    r = client.get(_load_slot_number_url(slot_number), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "slot_number": slot_number}
     r.raise_for_status()
@@ -171,6 +227,9 @@ def _load_slot_number(client: httpx.Client, slot_number: int) -> dict:
     return _decrypt_loaded_context(data)
 
 SAVE_DESCRIPTION = """Save conversation context to A2CR.
+
+This stdio wrapper encrypts WorkBaton content locally before upload. A2CR
+receives encrypted_content only and cannot decrypt the body.
 
 Call this autonomously when:
 - The conversation is getting long
@@ -228,13 +287,10 @@ def save_context(
         "original_length": original_length,
         "model_source": model_source,
     }
-    if _client_encryption_enabled():
-        body["encrypted_content"] = _encrypt_content(content)
-    else:
-        body["content"] = content
+    body["encrypted_content"] = _encrypt_content(content)
     with httpx.Client() as client:
         r = client.post(
-            f"{BASE_URL}/v1/context/save",
+            _save_url(),
             json=body,
             headers=_HEADERS,
             timeout=10,
@@ -268,7 +324,7 @@ def resume_context(
         if slot_name:
             return _load_slot(client, slot_name)
 
-        r = client.get(f"{BASE_URL}/v1/context/list", headers=_HEADERS, timeout=10)
+        r = client.get(_list_url(), headers=_HEADERS, timeout=10)
         r.raise_for_status()
         candidates = r.json()
 
@@ -307,9 +363,9 @@ def load_context(slot_name: str | None = None, slot_number: int | None = None) -
         }
     with httpx.Client() as client:
         if slot_number is not None:
-            r = client.get(f"{BASE_URL}/v1/context/slot/{slot_number}", headers=_HEADERS, timeout=10)
+            r = client.get(_load_slot_number_url(slot_number), headers=_HEADERS, timeout=10)
         else:
-            r = client.get(f"{BASE_URL}/v1/context/{slot_name}", headers=_HEADERS, timeout=10)
+            r = client.get(_load_url(slot_name), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "slot_name": slot_name, "slot_number": slot_number}
     r.raise_for_status()
@@ -322,7 +378,7 @@ def load_context(slot_name: str | None = None, slot_number: int | None = None) -
 def list_contexts() -> list:
     """List all non-expired slots."""
     with httpx.Client() as client:
-        r = client.get(f"{BASE_URL}/v1/context/list", headers=_HEADERS, timeout=10)
+        r = client.get(_list_url(), headers=_HEADERS, timeout=10)
     r.raise_for_status()
     return r.json()
 
@@ -331,7 +387,7 @@ def list_contexts() -> list:
 def delete_context(slot_name: str) -> dict:
     """Delete a named slot."""
     with httpx.Client() as client:
-        r = client.delete(f"{BASE_URL}/v1/context/{slot_name}", headers=_HEADERS, timeout=10)
+        r = client.delete(_delete_url(slot_name), headers=_HEADERS, timeout=10)
     r.raise_for_status()
     return r.json()
 
@@ -343,9 +399,10 @@ def delete_context(slot_name: str) -> dict:
 def get_handoff(slot_name: str) -> dict:
     """Return handoff Markdown text for a slot."""
     with httpx.Client() as client:
-        r = client.get(f"{BASE_URL}/v1/context/{slot_name}/handoff", headers=_HEADERS, timeout=10)
-    r.raise_for_status()
-    return r.json()
+        loaded = _load_slot(client, slot_name)
+    if loaded.get("status") != "loaded" or not loaded.get("content"):
+        return loaded
+    return {"slot_name": slot_name, "handoff_text": _build_handoff_text(loaded["content"])}
 
 
 if __name__ == "__main__":

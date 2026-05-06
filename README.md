@@ -21,7 +21,6 @@ Implemented locally:
 
 - FastAPI context API
 - SQLite local storage
-- server-encrypted WorkBaton mode using Fernet application-layer encryption
 - client-encrypted WorkBaton mode through the local stdio MCP wrapper
 - fixed Slot 1-3 support
 - MCP wrapper tools: `save_context`, `resume_context`, `load_context`, `list_contexts`
@@ -33,9 +32,9 @@ Implemented Web SaaS foundation:
 - Supabase/Postgres schema, RLS, and least-privileged runtime role design
 - API key and Supabase JWT auth foundation
 - WorkBaton Web Context API with plan limits and sanitized access logs
-- server-encrypted and client-encrypted WorkBaton storage modes
+- client-encrypted-only WorkBaton storage
 - Dashboard API that returns metadata, stats, logs, and API key state without saved content bodies
-- Streamable HTTP MCP `/mcp` with `save_context`, `resume_context`, `load_context`, `list_contexts`, and `get_account_limits`
+- Streamable HTTP MCP `/mcp` for metadata, account limits, and WorkThreads tools; WorkBaton saving uses the local stdio wrapper for client encryption
 - React/Vite dashboard UI for login, WorkBaton metadata, settings, API key management, and pricing
 - Railway Docker build wiring, production startup guards, same-origin guard, and deployment/security runbooks
 
@@ -92,22 +91,23 @@ See [deploy runbook](docs/runbooks/deploy.md) and [security runbook](docs/runboo
 
 Example only. Do not commit real API keys.
 
-Web SaaS Streamable HTTP example:
+WorkBaton requires the local stdio wrapper so content is encrypted before upload. Direct remote HTTP MCP saving is disabled for WorkBaton.
 
-```json
-{
-  "mcpServers": {
-    "a2cr": {
-      "url": "https://a2cr.example/mcp",
-      "headers": {
-        "Authorization": "Bearer <your-a2cr-api-key>"
-      }
-    }
-  }
-}
+Codex-style local stdio example:
+
+```toml
+[mcp_servers."a2cr"]
+command = "python"
+args = ["<project-root>/mcp/server.py"]
+
+[mcp_servers."a2cr".env]
+A2CR_API_KEY = "<your-a2cr-api-key>"
+A2CR_BASE_URL = "https://a2cr.app"
+A2CR_SERVICE_URL = "https://a2cr.app/mcp"
+# Optional: A2CR_CLIENT_KEY_FILE = "<path-to-workbaton.key>"
 ```
 
-Local prototype stdio example:
+Generic MCP stdio example:
 
 ```json
 {
@@ -116,23 +116,22 @@ Local prototype stdio example:
       "command": "python",
       "args": ["<project-root>/mcp/server.py"],
       "env": {
-        "A2CR_API_KEY": "<your-api-key>"
+        "A2CR_API_KEY": "<your-a2cr-api-key>",
+        "A2CR_BASE_URL": "https://a2cr.app",
+        "A2CR_SERVICE_URL": "https://a2cr.app/mcp"
       }
     }
   }
 }
 ```
 
-The local stdio MCP wrapper uses client-encrypted WorkBaton mode by default. It stores the client key in a local key file. You can set `A2CR_CLIENT_KEY_FILE` to choose the path, or set `A2CR_CLIENT_ENCRYPTION=0` to use legacy server-encrypted mode.
+The local stdio MCP wrapper creates and stores the local client key in a local key file. Set `A2CR_CLIENT_KEY_FILE` to choose the path, or `A2CR_CONFIG_DIR` to choose the directory that contains `workbaton.key`.
 
 ## Security Direction
 
 A2CR is designed so human-facing dashboards do not display saved context bodies. Dashboards should show metadata only, such as slot names, timestamps, sizes, counts, status, and logs.
 
-WorkBaton currently supports two storage modes:
-
-- `server-encrypted`: the server stores Fernet-encrypted content and decrypts it only for authenticated MCP/API responses acting for the user. This is application-layer encryption, not zero-knowledge encryption.
-- `client-encrypted`: the local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. In this mode, A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
+WorkBaton is client-encrypted only. The local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
 
 Saved context bodies should not be viewable by service administrators through normal admin dashboards, support tooling, or direct database inspection. The dashboard remains metadata-only.
 
@@ -141,11 +140,11 @@ Important principles:
 - do not log API keys or Authorization headers
 - do not log saved context bodies
 - do not expose decrypted content through dashboard APIs
-- distinguish server-encrypted slots from client-encrypted WorkBaton slots
+- reject plaintext WorkBaton bodies on A2CR APIs
 - use RLS and user-scoped access in the Web SaaS design
 - do not put Supabase service-role keys in normal runtime environments
 
-Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way, and users must understand that losing the local client key makes those slots unrecoverable.
+Users must understand that losing the local client key makes those WorkBaton slots unrecoverable. Creating a new key works for future saves, but it cannot decrypt slots saved with the old key.
 
 ## Documentation
 

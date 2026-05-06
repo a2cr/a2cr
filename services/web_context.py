@@ -10,7 +10,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from services.config import get_web_config
-from services.crypto import decrypt, encrypt
 from services.db import web_transaction
 from services.exceptions import AppError, PlanLimitExceeded, SlotNameConflict, SlotNotFound
 from services.limits import (
@@ -56,7 +55,7 @@ class WebContextMetadata:
     detail_level: str
     model_source: str | None
     load_count: int
-    encryption_mode: str = "server"
+    encryption_mode: str = "client"
 
 
 @dataclass(frozen=True)
@@ -70,7 +69,7 @@ class WebLoadResult:
     model_source: str | None
     load_count: int
     encrypted_content: dict | None = None
-    encryption_mode: str = "server"
+    encryption_mode: str = "client"
 
 
 @dataclass(frozen=True)
@@ -91,7 +90,7 @@ def _row_to_metadata(row) -> WebContextMetadata:
         detail_level=row.detail_level,
         model_source=row.model_source,
         load_count=row.load_count,
-        encryption_mode=getattr(row, "encryption_mode", "server") or "server",
+        encryption_mode=getattr(row, "encryption_mode", "client") or "client",
     )
 
 
@@ -214,11 +213,17 @@ def save_context(
 ) -> WebSaveResult:
     meta = meta or RequestMeta()
     config = get_web_config()
-    if (content_dict is None) == (encrypted_content is None):
-        raise AppError("invalid_context_body", "Provide exactly one of content or encrypted_content", 422)
+    if content_dict is not None:
+        raise AppError(
+            "client_encryption_required",
+            "WorkBaton requires client-encrypted encrypted_content; plaintext content is not accepted.",
+            422,
+        )
+    if encrypted_content is None:
+        raise AppError("invalid_context_body", "encrypted_content is required", 422)
 
-    encryption_mode = "client" if encrypted_content is not None else "server"
-    body_dict = encrypted_content if encrypted_content is not None else content_dict
+    encryption_mode = "client"
+    body_dict = encrypted_content
     content_json = json.dumps(body_dict, ensure_ascii=False, separators=(",", ":"))
     content_bytes = content_json.encode("utf-8")
     compressed_tokens = count_tokens(content_json)
@@ -267,7 +272,7 @@ def save_context(
             else _next_slot_number(session, user_id=user_id, active_slots=limits.active_slots)
         )
 
-        stored_content = content_json if encryption_mode == "client" else encrypt(content_json, config.fernet_key)
+        stored_content = content_json
         params = {
             "user_id": str(user_id),
             "slot_name": slot_name,
@@ -390,7 +395,6 @@ def load_context(
         raise AppError("invalid_slot_selector", "Provide exactly one of slot_name or slot_number", 422)
 
     meta = meta or RequestMeta()
-    config = get_web_config()
     with web_transaction(user_id) as session:
         plan, _ = _get_profile(session, user_id)
         limits = get_plan_limits(plan)
@@ -432,13 +436,15 @@ def load_context(
             ),
         )
 
-    encryption_mode = row["encryption_mode"] or "server"
-    if encryption_mode == "client":
-        content = None
-        encrypted = json.loads(row["content"])
-    else:
-        content = json.loads(decrypt(row["content"], config.fernet_key))
-        encrypted = None
+    encryption_mode = row["encryption_mode"] or "client"
+    if encryption_mode != "client":
+        raise AppError(
+            "legacy_decryption_disabled",
+            "Legacy WorkBaton slots that require server-side decryption are disabled and cannot be loaded.",
+            410,
+        )
+    content = None
+    encrypted = json.loads(row["content"])
     return WebLoadResult(
         slot_name=row["slot_name"],
         slot_number=row["slot_number"],

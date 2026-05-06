@@ -44,8 +44,8 @@ const resources = {
           "The hosted app serves the dashboard, authenticated APIs, and Streamable HTTP MCP endpoint from the same A2CR origin.",
         surfaces: {
           dashboard: "Slots, profile, keys, limits, and access log visibility.",
-          api: "Authenticated WorkBaton save, load, resume, and delete paths.",
-          mcp: "Shared tools for AI clients that support Streamable HTTP MCP."
+          api: "Authenticated WorkBaton ciphertext save, load, resume, and delete paths.",
+          mcp: "Shared metadata and account tools for AI clients; WorkBaton saving uses the local stdio wrapper."
         }
       },
       common: {
@@ -179,8 +179,8 @@ const resources = {
           "ホスト版アプリは、ダッシュボード、認証済み API、Streamable HTTP MCP エンドポイントを同じ A2CR origin から提供します。",
         surfaces: {
           dashboard: "スロット、プロフィール、キー、上限、アクセスログを確認できます。",
-          api: "認証済みの WorkBaton 保存、読込、再開、削除 API を提供します。",
-          mcp: "Streamable HTTP MCP 対応 AI クライアント向けの共有ツール群です。"
+          api: "認証済みの WorkBaton 暗号文保存、読込、再開、削除 API を提供します。",
+          mcp: "AI クライアント向けのメタデータ/アカウント系ツールです。WorkBaton保存はローカルstdio wrapperを使います。"
         }
       },
       common: {

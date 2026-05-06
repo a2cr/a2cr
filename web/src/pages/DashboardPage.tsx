@@ -44,7 +44,7 @@ function Stat({
 
 function SlotCard({ item, timezone, isNewest }: { item: DashboardContext; timezone: string; isNewest: boolean }) {
   const { t } = useTranslation();
-  const encryptionLabel = item.encryption_mode === "client" ? "Client-encrypted" : "Server-encrypted";
+  const encryptionLabel = "Client-encrypted";
   return (
     <article className="rounded-md border border-neutral-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">

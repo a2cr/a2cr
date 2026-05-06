@@ -29,11 +29,12 @@ Use case:
 - Keep future sessions focused on the next action instead of old chat history.
 
 Encryption notes:
-- WorkBaton has server-encrypted and client-encrypted storage modes.
-- In client-encrypted mode, the local stdio MCP wrapper encrypts before upload and A2CR stores ciphertext only.
+- WorkBaton is client-encrypted only.
+- The local stdio MCP wrapper encrypts before upload and A2CR stores and returns ciphertext only.
+- A2CR does not accept plaintext WorkBaton bodies.
+- Direct remote HTTP MCP saving is disabled for WorkBaton.
 - The local client key is managed by the user, not by the service administrator.
 - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
-- Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way.
 
 MCP setup:
 
@@ -41,22 +42,28 @@ Codex TOML example:
 
 ```toml
 [mcp_servers."a2cr"]
-url = "https://a2cr.app/mcp"
+command = "python"
+args = ["<A2CR_REPO>/mcp/server.py"]
 
-[mcp_servers."a2cr".http_headers]
-Authorization = "Bearer <A2CR_API_KEY>"
+[mcp_servers."a2cr".env]
+A2CR_API_KEY = "<A2CR_API_KEY>"
+A2CR_BASE_URL = "https://a2cr.app"
+A2CR_SERVICE_URL = "https://a2cr.app/mcp"
+# Optional: A2CR_CLIENT_KEY_FILE = "<path-to-workbaton.key>"
 ```
 
-Generic Streamable HTTP JSON example:
+Generic stdio JSON example:
 
 ```json
 {
   "mcpServers": {
     "a2cr": {
-      "type": "streamable-http",
-      "url": "https://a2cr.app/mcp",
-      "headers": {
-        "Authorization": "Bearer <A2CR_API_KEY>"
+      "command": "python",
+      "args": ["<A2CR_REPO>/mcp/server.py"],
+      "env": {
+        "A2CR_API_KEY": "<A2CR_API_KEY>",
+        "A2CR_BASE_URL": "https://a2cr.app",
+        "A2CR_SERVICE_URL": "https://a2cr.app/mcp"
       }
     }
   }

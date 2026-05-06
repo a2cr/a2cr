@@ -87,7 +87,9 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
             return False
 
         def post(self, url, json, headers, timeout):
+            captured["url"] = url
             captured["json"] = json
+            captured["headers"] = headers
             return FakeResponse()
 
     monkeypatch.setattr(server.httpx, "Client", FakeClient)
@@ -95,6 +97,8 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
     result = server.save_context("slot-a", CONTENT, model_source="codex")
 
     assert result["slot_name"] == "slot-a"
+    assert captured["url"].endswith("/api/v1/context")
+    assert "Authorization" in captured["headers"]
     assert "content" not in captured["json"]
     assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
     assert CONTENT["goal"] not in captured["json"]["encrypted_content"]["ciphertext"]

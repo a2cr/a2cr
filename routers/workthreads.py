@@ -19,6 +19,7 @@ from models.schemas import (
 )
 from routers.web_context import get_current_api_user
 from services.auth import AuthenticatedUser
+from services.exceptions import AppError
 import services.workthreads as workthreads_service
 
 router = APIRouter(prefix="/api/v1/workthreads")
@@ -227,20 +228,8 @@ def save_workthread_result(
     req: WorkThreadResultSaveRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadResultSaveResponse:
-    result = workthreads_service.save_workthread_result(
-        user_id=user.user_id,
-        thread_id=thread_id,
-        slot_name=req.slot_name,
-        content_dict=req.content.model_dump(),
-        original_length=req.original_length,
-        model_source=req.model_source,
-        slot_number=req.slot_number,
-        retention_seconds=req.retention_seconds,
-        detail_level=req.detail_level,
-    )
-    return WorkThreadResultSaveResponse(
-        thread_id=result.thread_id,
-        final_slot_name=result.final_slot_name,
-        resume_context_call=result.resume_context_call,
-        resume_prompt=result.resume_prompt,
+    raise AppError(
+        "client_encryption_required",
+        "Saving a WorkThread result into WorkBaton requires client-side encryption before upload.",
+        422,
     )

@@ -1,6 +1,6 @@
 export type Plan = "free" | "pro";
 export type DetailLevel = "compact" | "detailed";
-export type EncryptionMode = "server" | "client";
+export type EncryptionMode = "client";
 
 export type DashboardProfile = {
   user_id: string;

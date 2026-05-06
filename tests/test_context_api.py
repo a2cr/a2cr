@@ -24,6 +24,16 @@ CONTENT = {
 }
 
 
+def encrypted(label: str = "ciphertext") -> dict:
+    return {
+        "version": 1,
+        "alg": "Fernet",
+        "nonce": "embedded",
+        "ciphertext": label,
+        "key_wrap": {"type": "local-key", "kid": "test"},
+    }
+
+
 @pytest.fixture
 def client():
     app.dependency_overrides[get_current_api_user] = lambda: AuthenticatedUser(USER_ID, "api_key")
@@ -54,12 +64,13 @@ def load_result(slot_name="slot-a", slot_number=1):
     return WebLoadResult(
         slot_name=slot_name,
         slot_number=slot_number,
-        content=CONTENT,
+        content=None,
         expires_at=future_time(),
         compressed_tokens=12,
         detail_level="compact",
         model_source="gpt",
         load_count=1,
+        encrypted_content=encrypted(slot_name),
     )
 
 
@@ -89,7 +100,7 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
         json={
             "slot_name": "slot-a",
             "slot_number": 1,
-            "content": CONTENT,
+            "encrypted_content": encrypted("slot-a"),
             "model_source": "codex",
             "retention_seconds": 86400,
             "detail_level": "compact",
@@ -106,6 +117,8 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
     assert "ship web context api" not in body["resume_prompt"]
     assert "sk-test-secret" not in body["resume_prompt"]
     assert captured["user_id"] == USER_ID
+    assert captured["content_dict"] is None
+    assert captured["encrypted_content"]["ciphertext"] == "slot-a"
     assert captured["model_source"] == "codex"
     assert captured["retention_seconds"] == 86400
     assert captured["detail_level"] == "compact"
@@ -123,14 +136,15 @@ def test_web_list_contexts_returns_metadata_without_content(client, monkeypatch)
     assert "content" not in body[0]
 
 
-def test_web_load_context_returns_content_for_api_key_route(client, monkeypatch):
+def test_web_load_context_returns_ciphertext_for_api_key_route(client, monkeypatch):
     monkeypatch.setattr(web_context_service, "load_context", lambda **_: load_result())
 
     response = client.get("/api/v1/context/slot-a", headers={"Authorization": "Bearer sk-test-secret"})
 
     assert response.status_code == 200
     body = response.json()
-    assert body["content"]["goal"] == "ship web context api"
+    assert body["content"] is None
+    assert body["encrypted_content"]["ciphertext"] == "slot-a"
     assert body["load_count"] == 1
 
 
@@ -169,7 +183,8 @@ def test_web_resume_context_loads_exact_slot(client, monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["mode"] == "loaded"
-    assert body["context"]["content"]["next_action"] == "assert response"
+    assert body["context"]["content"] is None
+    assert body["context"]["encrypted_content"]["ciphertext"] == "slot-a"
     assert body["candidates"] == []
 
 

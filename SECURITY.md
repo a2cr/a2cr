@@ -21,22 +21,20 @@ Sensitive areas include:
 
 ## Current Guarantees
 
-The current local prototype supports two WorkBaton storage modes:
+WorkBaton is client-encrypted only. The local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
 
-- `server-encrypted`: the server stores Fernet-encrypted content and decrypts it only for authenticated MCP/API responses acting for the user. This is application-layer encryption, not a zero-knowledge guarantee.
-- `client-encrypted`: the local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. In this mode, A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
+A2CR APIs reject plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabled for WorkBaton because encryption must happen before upload.
 
-Saved context bodies should not be viewable by service administrators through normal admin dashboards, support tooling, or direct database inspection. This is an operational visibility control.
+Saved context bodies are not exposed through normal admin dashboards, support tooling, or direct database inspection because A2CR does not possess the local client key.
 
 The project does not currently claim:
 
 - production readiness
 - full end-to-end encryption for the whole product
-- zero-knowledge encryption for A2CR as a whole
 - zero-knowledge encryption for WorkThreads
 - autonomous server-side AI execution
 
-Only client-encrypted WorkBaton slots should be described as zero-knowledge-style or client-encrypted. If the local client key is lost, A2CR cannot recover those slot bodies.
+If the local client key is lost, A2CR cannot recover those WorkBaton bodies. Creating a new key works for future saves, but it cannot decrypt slots saved with the old key.
 
 ## Public Repository Hygiene
 

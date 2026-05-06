@@ -10,9 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from services.config import get_config
-from services.crypto import encrypt, decrypt
 from services.db import get_engine, Context, Stats
 from services.exceptions import (
+    AppError,
     SlotLimitExceeded,
     ContentTooLarge,
     SlotNotFound,
@@ -34,7 +34,7 @@ class SaveResult:
     compressed_tokens: int
     saved_tokens: Optional[int]
     original_tokens: Optional[int]
-    encryption_mode: str = "server"
+    encryption_mode: str = "client"
 
 
 @dataclass
@@ -113,19 +113,22 @@ def save_context(
     encrypted_content: dict | None = None,
 ) -> SaveResult:
     _validate_slot_number(slot_number)
-    if (content_dict is None) == (encrypted_content is None):
-        raise ValueError("Provide exactly one of content_dict or encrypted_content")
+    if content_dict is not None:
+        raise AppError(
+            "client_encryption_required",
+            "WorkBaton requires client-encrypted encrypted_content; plaintext content is not accepted.",
+            422,
+        )
+    if encrypted_content is None:
+        raise ValueError("encrypted_content is required")
 
-    encryption_mode = "client" if encrypted_content is not None else "server"
-    content_json = json.dumps(
-        encrypted_content if encrypted_content is not None else content_dict,
-        ensure_ascii=False,
-    )
+    encryption_mode = "client"
+    content_json = json.dumps(encrypted_content, ensure_ascii=False)
     content_bytes = content_json.encode("utf-8")
     if len(content_bytes) > _MAX_BYTES:
         raise ContentTooLarge()
 
-    stored_content = content_json if encryption_mode == "client" else encrypt(content_json)
+    stored_content = content_json
     compressed_tokens = count_tokens(content_json)
     original_tokens = original_tokens_from_length_optional(original_length)
     saved_tokens = (original_tokens - compressed_tokens) if original_tokens is not None else None
@@ -248,13 +251,15 @@ def load_context(slot_name: Optional[str] = None, slot_number: Optional[int] = N
         stats.total_loads += 1
         session.commit()
 
-        encryption_mode = getattr(ctx, "encryption_mode", "server") or "server"
-        if encryption_mode == "client":
-            content_dict = None
-            encrypted_content = json.loads(ctx.content)
-        else:
-            content_dict = json.loads(decrypt(ctx.content))
-            encrypted_content = None
+        encryption_mode = getattr(ctx, "encryption_mode", "client") or "client"
+        if encryption_mode != "client":
+            raise AppError(
+                "legacy_decryption_disabled",
+                "Legacy WorkBaton slots that require server-side decryption are disabled and cannot be loaded.",
+                410,
+            )
+        content_dict = None
+        encrypted_content = json.loads(ctx.content)
         return LoadResult(
             slot_name=ctx.slot_name,
             slot_number=ctx.slot_number,
@@ -290,7 +295,7 @@ def list_contexts() -> list[ListResult]:
             ListResult(
                 slot_name=r.slot_name,
                 slot_number=r.slot_number,
-                encryption_mode=getattr(r, "encryption_mode", "server") or "server",
+                encryption_mode=getattr(r, "encryption_mode", "client") or "client",
                 expires_at=r.expires_at,
                 updated_at=r.updated_at,
                 size_bytes=r.size_bytes,
@@ -315,36 +320,9 @@ def cleanup_expired() -> int:
 
 
 def get_handoff(slot_name: str) -> HandoffResult:
-    result = load_context(slot_name=slot_name)  # raises SlotNotFound if missing/expired
-    text = _build_handoff_text(result.content)
-    return HandoffResult(slot_name=slot_name, handoff_text=text)
-
-
-def _build_handoff_text(content: dict) -> str:
-    sections = []
-
-    sections.append(f"# GOAL\n{content['goal']}")
-    sections.append(f"# CURRENT_STATE\n{content['current_state']}")
-    sections.append(f"# NEXT_ACTION\n{content['next_action']}")
-
-    for key, section in [
-        ("decisions", "DECISIONS"),
-        ("constraints", "CONSTRAINTS"),
-        ("problems", "PROBLEMS"),
-        ("failed_attempts", "FAILED_ATTEMPTS"),
-        ("references", "REFERENCES"),
-    ]:
-        items = content.get(key) or []
-        if items:
-            sections.append(f"# {section}\n" + "\n".join(f"- {item}" for item in items))
-
-    for key, section in [
-        ("environment", "ENVIRONMENT"),
-        ("background", "BACKGROUND"),
-        ("summary", "SUMMARY"),
-    ]:
-        value = content.get(key)
-        if value:
-            sections.append(f"# {section}\n{value}")
-
-    return "\n\n".join(sections)
+    load_context(slot_name=slot_name)  # raises SlotNotFound if missing/expired
+    raise AppError(
+        "client_decryption_required",
+        "A2CR cannot render handoff text server-side for client-encrypted WorkBaton slots. Load through the local stdio MCP wrapper.",
+        422,
+    )

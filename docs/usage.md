@@ -50,19 +50,20 @@ Do not commit real API keys or local `.env` files.
 
 ## Save A WorkBaton Slot
 
+WorkBaton bodies must be encrypted before upload. Prefer the local stdio MCP wrapper. Direct API saves must send `encrypted_content`, not plaintext `content`.
+
 ```bash
 curl -X POST http://localhost:8000/v1/context/save \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $API_KEY" \
   -d '{
     "slot_name": "my-project-main",
-    "content": {
-      "goal": "Fix the current bug",
-      "current_state": "The failing route has been identified",
-      "next_action": "Patch the handler and run tests",
-      "decisions": ["Keep the change minimal"],
-      "constraints": ["Do not commit secrets"],
-      "environment": "Python 3.13, FastAPI"
+    "encrypted_content": {
+      "version": 1,
+      "alg": "Fernet",
+      "nonce": "embedded",
+      "ciphertext": "<local-wrapper-generated-ciphertext>",
+      "key_wrap": {"type": "local-key", "kid": "<key-id>"}
     },
     "original_length": 15000,
     "model_source": "codex"
@@ -110,14 +111,17 @@ Example only:
       "command": "python",
       "args": ["<project-root>/mcp/server.py"],
       "env": {
-        "A2CR_API_KEY": "<your-api-key>"
+        "A2CR_API_KEY": "<your-api-key>",
+        "A2CR_API_STYLE": "legacy",
+        "A2CR_BASE_URL": "http://localhost:8000",
+        "A2CR_SERVICE_URL": "http://localhost:8000"
       }
     }
   }
 }
 ```
 
-The local stdio MCP wrapper uses client-encrypted WorkBaton mode by default.
+The local stdio MCP wrapper always uses client-encrypted WorkBaton mode.
 
 Optional environment variables:
 
@@ -125,18 +129,16 @@ Optional environment variables:
 |---|---|
 | `A2CR_CLIENT_KEY_FILE` | Explicit local client key file path |
 | `A2CR_CONFIG_DIR` | Directory for the generated local client key file |
-| `A2CR_CLIENT_ENCRYPTION=0` | Disable client-encrypted mode and use legacy server-encrypted mode |
 
 If the local client key is lost, A2CR cannot recover client-encrypted WorkBaton bodies.
 
-## Storage Modes
+## Storage Mode
 
 | Mode | Behavior |
 |---|---|
-| `server-encrypted` | A2CR stores Fernet-encrypted content and can decrypt it for authenticated MCP/API responses |
 | `client-encrypted` | The stdio MCP wrapper encrypts before sending; A2CR stores and returns ciphertext only |
 
-Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way.
+A2CR rejects plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabled for WorkBaton because encryption must happen before upload.
 
 ## Tests
 

@@ -19,23 +19,37 @@ const clientLabels: Record<ClientKey, string> = {
 
 function mcpConfigSnippet(client: ClientKey): string {
   const url = serviceUrl();
+  const baseUrl = (() => {
+    try {
+      return new URL(url, window.location.origin).origin;
+    } catch {
+      return url.replace(/\/mcp\/?$/, "");
+    }
+  })();
   if (client === "codex") {
     return [
       '[mcp_servers."a2cr"]',
-      `url = "${url}"`,
+      'command = "python"',
+      'args = ["<A2CR_REPO>/mcp/server.py"]',
       "",
-      '[mcp_servers."a2cr".http_headers]',
-      'Authorization = "Bearer <A2CR_API_KEY>"'
+      '[mcp_servers."a2cr".env]',
+      'A2CR_API_KEY = "<A2CR_API_KEY>"',
+      `A2CR_BASE_URL = "${baseUrl}"`,
+      `A2CR_SERVICE_URL = "${url}"`,
+      '# Optional: A2CR_CLIENT_KEY_FILE = "<path-to-workbaton.key>"'
     ].join("\n");
   }
   return JSON.stringify(
     {
       mcpServers: {
         a2cr: {
-          type: "streamable-http",
-          url,
-          headers: {
-            Authorization: "Bearer <A2CR_API_KEY>"
+          command: "python",
+          args: ["<A2CR_REPO>/mcp/server.py"],
+          env: {
+            A2CR_API_KEY: "<A2CR_API_KEY>",
+            A2CR_BASE_URL: baseUrl,
+            A2CR_SERVICE_URL: url,
+            A2CR_CLIENT_KEY_FILE: "<optional-path-to-workbaton.key>"
           }
         }
       }
@@ -127,7 +141,7 @@ const text = {
     ],
     keyTitle: "Important: local client key",
     keyBody:
-      "The local stdio MCP wrapper can use client-encrypted WorkBaton mode. It creates a local client key on the user's machine and encrypts WorkBaton content before sending it to A2CR.",
+      "WorkBaton requires the local stdio MCP wrapper. The wrapper creates a local client key on the user's machine and encrypts WorkBaton content before sending it to A2CR.",
     keyPoints: [
       "The local client key is managed by the user, not by the service administrator.",
       "A2CR stores and returns ciphertext for client-encrypted WorkBaton slots and cannot decrypt those bodies.",
@@ -136,14 +150,13 @@ const text = {
     ],
     encryptionTitle: "Storage modes",
     storageRows: [
-      ["Server-encrypted", "A2CR stores Fernet-encrypted content and can decrypt it for authenticated MCP/API responses."],
-      ["Client-encrypted", "The local stdio MCP wrapper encrypts before upload; A2CR stores ciphertext only."]
+      ["Client-encrypted only", "The local stdio MCP wrapper encrypts before upload; A2CR stores and returns ciphertext only."]
     ],
     noOverclaim:
-      "Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way. WorkThreads are not covered by this claim.",
+      "WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload.",
     setupTitle: "MCP setup",
     setupBody:
-      "Create an API key after signing in, then put it in your MCP client as a Bearer token. Keep real keys out of repositories and logs.",
+      "Create an API key after signing in, then configure the local stdio MCP wrapper. The wrapper stores the local client key on your machine. Keep real API keys and key files out of repositories and logs.",
     workflowTitle: "Basic workflow",
     workflow: [
       "Sign in to A2CR and issue an API key.",
@@ -215,7 +228,7 @@ const text = {
     ],
     keyTitle: "重要: local client key",
     keyBody:
-      "ローカルstdio MCP wrapperは、client-encrypted WorkBaton modeを利用できます。この場合、ユーザーの端末上でlocal client keyを作り、WorkBaton本文を暗号化してからA2CRへ送ります。",
+      "WorkBatonではローカルstdio MCP wrapperを使います。このwrapperがユーザーの端末上でlocal client keyを作り、WorkBaton本文を暗号化してからA2CRへ送ります。",
     keyPoints: [
       "local client keyは利用者側が管理します。サービス管理者は管理しません。",
       "client-encrypted Slotでは、A2CRは暗号文だけを保存・返却し、本文を復号できません。",
@@ -224,14 +237,13 @@ const text = {
     ],
     encryptionTitle: "保存方式",
     storageRows: [
-      ["Server-encrypted", "A2CRがFernetで暗号化保存し、認証済みMCP/API応答時にサーバー側で復号できます。"],
-      ["Client-encrypted", "ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存します。"]
+      ["Client-encryptedのみ", "ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存・返却します。"]
     ],
     noOverclaim:
-      "A2CR全体をゼロ知識とは表現しません。ゼロ知識相当と言えるのはclient-encrypted WorkBaton Slotに限ります。WorkThreadsはこの主張の対象外です。",
+      "A2CRはWorkBaton本文の平文保存を受け付けません。直接HTTP MCPからの保存は無効化し、ローカルstdio wrapperで暗号化してから送る前提です。",
     setupTitle: "MCP設定",
     setupBody:
-      "ログイン後にAPIキーを発行し、MCPクライアントへBearer tokenとして設定します。実際のキーはリポジトリやログに入れないでください。",
+      "ログイン後にAPIキーを発行し、ローカルstdio MCP wrapperをMCPクライアントに設定します。wrapperがlocal client keyを端末上に保存します。実際のAPIキーやkeyファイルはリポジトリやログに入れないでください。",
     workflowTitle: "基本の流れ",
     workflow: [
       "A2CRへログインし、APIキーを発行します。",

@@ -52,8 +52,8 @@ def test_public_human_guide_serves_static_html():
     assert "https://a2cr.app/mcp" in response.text
     assert "local client keyは利用者側が管理します" in response.text
     assert "client-encrypted" in response.text
-    assert "server-encrypted" in response.text
-    assert "ゼロ知識相当と言えるのはclient-encrypted WorkBaton Slotに限ります" in response.text
+    assert "WorkBatonはclient-encryptedのみです" in response.text
+    assert "A2CRはWorkBaton本文の平文保存を受け付けません" in response.text
     assert "圧縮・要約機能との違い" in response.text
     assert "会話ログのダイエット" in response.text
     assert "サブエージェントとの違い" in response.text
@@ -77,8 +77,8 @@ def test_public_english_human_guide_serves_static_html():
     assert "A2CR is not an AI" in response.text
     assert "local client key is managed by the user" in response.text
     assert "client-encrypted" in response.text
-    assert "server-encrypted" in response.text
-    assert "Only client-encrypted WorkBaton slots should be described that way" in response.text
+    assert "WorkBaton is client-encrypted only" in response.text
+    assert "A2CR does not accept plaintext WorkBaton bodies" in response.text
     assert "Compression / summarization vs A2CR / WorkBaton" in response.text
     assert "diet for a conversation log" in response.text
     assert "Sub-agents vs A2CR" in response.text
@@ -126,3 +126,6 @@ def test_public_seo_support_files_are_served():
     assert "At the start of work, call list_contexts" in llms.text
     assert "local client key is managed by the user" in llms.text
     assert "old client-encrypted slots cannot be recovered" in llms.text
+    assert "WorkBaton is client-encrypted only" in llms.text
+    assert "A2CR does not accept plaintext WorkBaton bodies" in llms.text
+    assert 'command = "python"' in llms.text

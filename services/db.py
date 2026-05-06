@@ -75,7 +75,7 @@ class Context(Base):
     compressed_tokens: Mapped[int] = mapped_column(Integer)
     load_count: Mapped[int] = mapped_column(Integer, default=0)
     model_source: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    encryption_mode: Mapped[str] = mapped_column(String, default="server")
+    encryption_mode: Mapped[str] = mapped_column(String, default="client")
     encryption_version: Mapped[int] = mapped_column(Integer, default=1)
     encryption_metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -108,7 +108,7 @@ def _migrate_context_columns(engine) -> None:
         if "slot_number" not in columns:
             conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN slot_number INTEGER")
         if "encryption_mode" not in columns:
-            conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN encryption_mode TEXT NOT NULL DEFAULT 'server'")
+            conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN encryption_mode TEXT NOT NULL DEFAULT 'client'")
         if "encryption_version" not in columns:
             conn.exec_driver_sql("ALTER TABLE contexts ADD COLUMN encryption_version INTEGER NOT NULL DEFAULT 1")
         if "encryption_metadata" not in columns:
@@ -116,6 +116,7 @@ def _migrate_context_columns(engine) -> None:
         conn.exec_driver_sql(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_contexts_slot_number ON contexts(slot_number)"
         )
+        conn.exec_driver_sql("DELETE FROM contexts WHERE encryption_mode != 'client'")
 
         used = {
             row[0]

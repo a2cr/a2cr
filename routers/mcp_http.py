@@ -53,30 +53,28 @@ with _without_project_root_on_path():
 
 INSTRUCTIONS = (
     "A2CR is the MCP surface for WorkBaton checkpoints. "
-    "Use these MCP tools for save, resume, load, and list operations. "
+    "Use the local stdio MCP wrapper for WorkBaton saves so content is encrypted before upload. "
+    "This remote MCP surface can list metadata, load ciphertext, check account limits, and work with WorkThreads. "
     "Do not guess or call direct HTTP API endpoints. "
     "Never save secrets, API keys, Authorization headers, private database URLs, "
     "full transcripts, long logs, generated caches, or large code bodies that can be read from the repository."
 )
 
 SAVE_CONTEXT_DESCRIPTION = (
-    "Save a WorkBaton checkpoint for a future AI window. The content object must include "
-    "goal, current_state, and next_action. Keep Free saves compact. Pro detailed saves may include "
-    "important decisions, constraints, failed attempts, references, and verification results. "
-    "Never include secrets, API keys, Authorization headers, private database URLs, full transcripts, "
-    "or long logs. Use the returned resume_prompt for the next AI window."
-    " Use this MCP tool; do not guess direct HTTP API endpoints."
+    "Direct remote MCP saving is disabled because WorkBaton requires client-side encryption. "
+    "Use the local stdio A2CR MCP wrapper so the WorkBaton body is encrypted before it reaches A2CR. "
+    "Do not guess or call direct HTTP API endpoints."
 )
 
 RESUME_CONTEXT_DESCRIPTION = (
     "Resume a WorkBaton checkpoint in a fresh AI window. Prefer slot_name when a resume prompt provides it. "
     "slot_number is an optional compatibility path. If project search is ambiguous, candidates are returned "
-    "without saved content. Use this MCP tool; do not guess direct HTTP API endpoints."
+    "without saved content. This remote MCP surface cannot decrypt WorkBaton bodies; use the local stdio wrapper for decrypted resumes."
 )
 
 LOAD_CONTEXT_DESCRIPTION = (
-    "Load a known WorkBaton checkpoint by slot_name or slot_number. Provide exactly one selector. "
-    "Use resume_context first in a fresh AI window when possible. Do not guess direct HTTP API endpoints."
+    "Load a known WorkBaton checkpoint by slot_name or slot_number. The remote MCP surface returns encrypted_content only; "
+    "use the local stdio wrapper when the AI needs decrypted WorkBaton content. Do not guess direct HTTP API endpoints."
 )
 
 LIST_CONTEXTS_DESCRIPTION = (
@@ -310,29 +308,11 @@ def save_context(
     retention_seconds: int | None = None,
     detail_level: str | None = "compact",
 ) -> dict:
-    user, meta = _current_auth_context()
-    req = _validate_save_request(
-        slot_name=slot_name,
-        content=content,
-        original_length=original_length,
-        model_source=model_source,
-        slot_number=slot_number,
-        retention_seconds=retention_seconds,
-        detail_level=detail_level,
+    raise AppError(
+        "client_encryption_required",
+        "Direct remote MCP save_context cannot save WorkBaton content. Use the local stdio A2CR MCP wrapper so content is encrypted before upload.",
+        422,
     )
-    result = web_context_service.save_context(
-        user_id=user.user_id,
-        slot_name=req.slot_name,
-        content_dict=req.content.model_dump() if req.content else None,
-        encrypted_content=req.encrypted_content.model_dump() if req.encrypted_content else None,
-        original_length=req.original_length,
-        model_source=req.model_source,
-        slot_number=req.slot_number,
-        retention_seconds=req.retention_seconds,
-        detail_level=req.detail_level,
-        meta=meta,
-    )
-    return _save_result(result)
 
 
 @web_mcp.tool(name="resume_context", description=RESUME_CONTEXT_DESCRIPTION)
@@ -570,24 +550,11 @@ def save_workthread_result(
     retention_seconds: int | None = None,
     detail_level: str | None = "compact",
 ) -> dict:
-    user, _ = _current_auth_context()
-    result = workthreads_service.save_workthread_result(
-        user_id=user.user_id,
-        thread_id=thread_id,
-        slot_name=slot_name,
-        content_dict=content,
-        original_length=original_length,
-        model_source=model_source,
-        slot_number=slot_number,
-        retention_seconds=retention_seconds,
-        detail_level=detail_level,
+    raise AppError(
+        "client_encryption_required",
+        "Saving a WorkThread result into WorkBaton requires the local stdio A2CR MCP wrapper so content is encrypted before upload.",
+        422,
     )
-    return {
-        "thread_id": result.thread_id,
-        "final_slot_name": result.final_slot_name,
-        "resume_context_call": result.resume_context_call,
-        "resume_prompt": result.resume_prompt,
-    }
 
 
 mcp_app = ReusableMCPApp()

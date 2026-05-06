@@ -83,12 +83,13 @@ ROUTE_SEO = {
         - A2CRが何を渡し、何を保存しないのかまで、あなた向けにかみ砕いて説明できます。
 
         重要事項:
-        - WorkBatonにはserver-encryptedとclient-encryptedの保存方式があります。
-        - server-encryptedでは、A2CRがFernetで暗号化保存し、認証済みMCP/API応答時にサーバー側で復号できます。
-        - client-encryptedでは、ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存します。
+        - WorkBatonはclient-encryptedのみです。
+        - A2CRはWorkBaton本文の平文保存を受け付けません。
+        - ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存・返却します。
+        - 直接HTTP MCPからのWorkBaton保存は無効化されています。
         - local client keyは利用者側が管理します。サービス管理者は管理しません。
         - local client keyを失うと、旧鍵で保存したclient-encrypted SlotはA2CR側でも復旧できません。
-        - A2CR全体をゼロ知識とは表現しません。ゼロ知識相当と言えるのはclient-encrypted WorkBaton Slotに限ります。
+        - local client keyを作り直すと、それ以後に新しい鍵で保存したSlotは読めますが、旧鍵で保存したSlotには旧鍵が必要です。
 
         関連ページ:
         - AIエージェント向けガイド: https://a2cr.app/agent-guide
@@ -130,12 +131,13 @@ ROUTE_SEO = {
         - The guide is written for agents, so it can turn the app's role, limits, and setup into plain guidance for your situation.
 
         Important points:
-        - WorkBaton supports server-encrypted and client-encrypted storage modes.
-        - In server-encrypted mode, A2CR stores Fernet-encrypted content and can decrypt it for authenticated MCP/API responses.
-        - In client-encrypted mode, the local stdio MCP wrapper encrypts before upload and A2CR stores ciphertext only.
+        - WorkBaton is client-encrypted only.
+        - A2CR does not accept plaintext WorkBaton bodies.
+        - The local stdio MCP wrapper encrypts before upload, and A2CR stores and returns ciphertext only.
+        - Direct remote HTTP MCP saving is disabled for WorkBaton.
         - The local client key is managed by the user, not by the service administrator.
         - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
-        - Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way.
+        - Slots saved after creating a new local client key can be read with that new key, but old slots still need the old key.
 
         Related pages:
         - AI agent guide: https://a2cr.app/en/agent-guide

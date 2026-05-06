@@ -6,7 +6,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 ModelSource = Literal["claude", "gpt", "gemini", "codex", "other"]
-EncryptionMode = Literal["server", "client"]
+EncryptionMode = Literal["client"]
 
 
 class ContentSchema(BaseModel):
@@ -48,8 +48,10 @@ class SaveRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_exactly_one_body(self) -> "SaveRequest":
-        if (self.content is None) == (self.encrypted_content is None):
-            raise ValueError("Provide exactly one of content or encrypted_content")
+        if self.content is not None:
+            raise ValueError("WorkBaton requires encrypted_content; plaintext content is not accepted")
+        if self.encrypted_content is None:
+            raise ValueError("encrypted_content is required")
         return self
 
     @field_validator("slot_name")
@@ -88,7 +90,7 @@ class SaveResponse(BaseModel):
 class LoadResponse(BaseModel):
     slot_name: str
     slot_number: Optional[int] = None
-    encryption_mode: EncryptionMode = "server"
+    encryption_mode: EncryptionMode = "client"
     content: Optional[ContentSchema] = None
     encrypted_content: Optional[EncryptedContentSchema] = None
     expires_at: datetime
@@ -100,7 +102,7 @@ class LoadResponse(BaseModel):
 class ListItem(BaseModel):
     slot_name: str
     slot_number: Optional[int] = None
-    encryption_mode: EncryptionMode = "server"
+    encryption_mode: EncryptionMode = "client"
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
@@ -130,8 +132,10 @@ class WebContextSaveRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_exactly_one_body(self) -> "WebContextSaveRequest":
-        if (self.content is None) == (self.encrypted_content is None):
-            raise ValueError("Provide exactly one of content or encrypted_content")
+        if self.content is not None:
+            raise ValueError("WorkBaton requires encrypted_content; plaintext content is not accepted")
+        if self.encrypted_content is None:
+            raise ValueError("encrypted_content is required")
         return self
 
     @field_validator("slot_name")
@@ -170,7 +174,7 @@ class WebContextSaveResponse(BaseModel):
 class WebContextMetadataItem(BaseModel):
     slot_name: str
     slot_number: int
-    encryption_mode: EncryptionMode = "server"
+    encryption_mode: EncryptionMode = "client"
     expires_at: datetime
     updated_at: datetime
     size_bytes: int
@@ -183,7 +187,7 @@ class WebContextMetadataItem(BaseModel):
 class WebContextLoadResponse(BaseModel):
     slot_name: str
     slot_number: int
-    encryption_mode: EncryptionMode = "server"
+    encryption_mode: EncryptionMode = "client"
     content: Optional[ContentSchema] = None
     encrypted_content: Optional[EncryptedContentSchema] = None
     expires_at: datetime
@@ -236,7 +240,7 @@ class DashboardProfileUpdateRequest(BaseModel):
 class DashboardContextItem(BaseModel):
     slot_name: str
     slot_number: int
-    encryption_mode: EncryptionMode = "server"
+    encryption_mode: EncryptionMode = "client"
     created_at: datetime
     updated_at: datetime
     expires_at: datetime

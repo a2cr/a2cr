@@ -23,7 +23,7 @@ The local stdio MCP wrapper can create a client-encryption key file for client-e
 - Do not commit local A2CR client key files.
 - Do not print client keys in logs, tool responses, support messages, or screenshots.
 - If a client key is lost, A2CR cannot recover client-encrypted WorkBaton bodies.
-- Client-encrypted WorkBaton can be described as zero-knowledge-style only for that storage mode.
+- WorkBaton depends on this local key. Creating a new key works for future saves, but it cannot decrypt slots saved with the old key.
 
 ## Content Visibility
 
@@ -35,12 +35,14 @@ Dashboards and ordinary admin/support views must not display:
 - full API keys
 - Authorization headers
 
-WorkBaton storage modes:
+WorkBaton storage:
 
-- `server-encrypted`: bodies are encrypted in the application layer. A service administrator should not be able to read bodies through normal dashboards, support tools, or direct DB inspection. This is not a zero-knowledge claim because the A2CR server decrypts content in memory when returning authenticated MCP/API responses for the user.
-- `client-encrypted`: the client encrypts WorkBaton bodies before sending them to A2CR. The server stores and returns ciphertext and cannot decrypt those bodies.
+- WorkBaton is client-encrypted only.
+- A2CR APIs reject plaintext WorkBaton bodies.
+- Direct remote HTTP MCP saving is disabled for WorkBaton because encryption must happen before upload.
+- The server stores and returns ciphertext and cannot decrypt WorkBaton bodies.
 
-Do not describe A2CR as a whole as zero-knowledge. WorkThreads and legacy server-encrypted slots remain outside that claim.
+WorkThreads are a separate feature and are not covered by the WorkBaton client-encryption guarantee.
 
 ## Startup Guards
 

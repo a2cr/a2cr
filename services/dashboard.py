@@ -43,7 +43,7 @@ class DashboardContext:
     load_count: int
     resume_context_call: str
     resume_prompt: str
-    encryption_mode: str = "server"
+    encryption_mode: str = "client"
 
 
 @dataclass(frozen=True)

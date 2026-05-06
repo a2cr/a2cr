@@ -24,29 +24,39 @@ const setupTabs = ["codex", "claude", "cursor"] as const;
 
 function mcpConfigSnippet(client: string): string {
   const serverUrl = serviceUrl();
+  const baseUrl = (() => {
+    try {
+      return new URL(serverUrl, window.location.origin).origin;
+    } catch {
+      return serverUrl.replace(/\/mcp\/?$/, "");
+    }
+  })();
   if (client === "codex") {
-    return JSON.stringify(
-      {
-        mcpServers: {
-          a2cr: {
-            url: serverUrl,
-            headers: {
-              Authorization: "Bearer <A2CR_API_KEY>"
-            }
-          }
-        }
-      },
-      null,
-      2
-    );
+    return [
+      '[mcp_servers."a2cr"]',
+      'command = "python"',
+      'args = ["<A2CR_REPO>/mcp/server.py"]',
+      "",
+      '[mcp_servers."a2cr".env]',
+      'A2CR_API_KEY = "<A2CR_API_KEY>"',
+      `A2CR_BASE_URL = "${baseUrl}"`,
+      `A2CR_SERVICE_URL = "${serverUrl}"`,
+      '# Optional: A2CR_CLIENT_KEY_FILE = "<path-to-workbaton.key>"'
+    ].join("\n");
   }
   return JSON.stringify(
     {
-      name: "a2cr",
-      type: "streamable-http",
-      url: serverUrl,
-      headers: {
-        Authorization: "Bearer <A2CR_API_KEY>"
+      mcpServers: {
+        a2cr: {
+          command: "python",
+          args: ["<A2CR_REPO>/mcp/server.py"],
+          env: {
+            A2CR_API_KEY: "<A2CR_API_KEY>",
+            A2CR_BASE_URL: baseUrl,
+            A2CR_SERVICE_URL: serverUrl,
+            A2CR_CLIENT_KEY_FILE: "<optional-path-to-workbaton.key>"
+          }
+        }
       }
     },
     null,

@@ -8,13 +8,13 @@ from fastapi.testclient import TestClient
 from main import app
 from routers import mcp_http
 from services.auth import AuthError, AuthenticatedUser
+from services.exceptions import AppError
 from services.dashboard import DashboardProfile
 from services.web_context import (
     RequestMeta,
     WebContextMetadata,
     WebLoadResult,
     WebResumeResult,
-    WebSaveResult,
 )
 import services.dashboard as dashboard_service
 import services.web_context as web_context_service
@@ -54,12 +54,18 @@ def load_result(slot_name="slot-a", slot_number=1):
     return WebLoadResult(
         slot_name=slot_name,
         slot_number=slot_number,
-        content=CONTENT,
+        content=None,
         expires_at=future_time(),
         compressed_tokens=12,
         detail_level="compact",
         model_source="gpt",
         load_count=1,
+        encrypted_content={
+            "version": 1,
+            "alg": "Fernet",
+            "nonce": "embedded",
+            "ciphertext": slot_name,
+        },
     )
 
 
@@ -85,26 +91,8 @@ def _sse_json(response):
     raise AssertionError("SSE response did not contain a data line")
 
 
-def test_mcp_streamable_http_lists_tools_and_calls_save(monkeypatch):
-    captured = {}
+def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
-
-    def fake_save_context(**kwargs):
-        captured.update(kwargs)
-        return WebSaveResult(
-            slot_name=kwargs["slot_name"],
-            slot_number=1,
-            expires_at=future_time(),
-            compressed_tokens=10,
-            saved_tokens=3,
-            resume_context_call='resume_context(slot_name="slot-a")',
-            resume_prompt=(
-                "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints. "
-                'First run: resume_context(slot_name="slot-a")'
-            ),
-        )
-
-    monkeypatch.setattr(web_context_service, "save_context", fake_save_context)
     headers = {"content-type": "application/json", "accept": "application/json, text/event-stream"}
 
     with TestClient(app) as client:
@@ -158,57 +146,30 @@ def test_mcp_streamable_http_lists_tools_and_calls_save(monkeypatch):
     tool_names = {tool["name"] for tool in tools}
     assert {"save_context", "resume_context", "load_context", "list_contexts", "get_account_limits"} <= tool_names
     save_tool = next(tool for tool in tools if tool["name"] == "save_context")
-    assert "do not guess" in save_tool["description"].lower()
-    assert "direct HTTP API" in save_tool["description"]
+    assert "client-side encryption" in save_tool["description"]
+    assert "local stdio" in save_tool["description"]
 
     assert save_response.status_code == 200
     result = _sse_json(save_response)["result"]
-    assert result["isError"] is False
-    saved = json.loads(result["content"][0]["text"])
-    assert saved["resume_context_call"] == 'resume_context(slot_name="slot-a")'
-    assert "A2CR MCP tool" in saved["resume_prompt"]
-    assert captured["meta"].client_type == "mcp"
+    assert result["isError"] is True
+    assert "Error calling tool" in result["content"][0]["text"]
 
 
-def test_mcp_save_context_returns_resume_prompt_without_content_or_key(monkeypatch):
-    captured = {}
+def test_mcp_save_context_requires_local_stdio_wrapper(monkeypatch):
     monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
 
-    def fake_save_context(**kwargs):
-        captured.update(kwargs)
-        return WebSaveResult(
-            slot_name=kwargs["slot_name"],
-            slot_number=kwargs["slot_number"],
-            expires_at=future_time(),
-            compressed_tokens=12,
-            saved_tokens=8,
-            resume_context_call='resume_context(slot_name="slot-a")',
-            resume_prompt=(
-                "A2CR service: https://a2cr.example/mcp\n"
-                "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints.\n"
-                'First run: resume_context(slot_name="slot-a")'
-            ),
+    with pytest.raises(AppError) as exc:
+        mcp_http.save_context(
+            slot_name="slot-a",
+            slot_number=1,
+            content=CONTENT,
+            model_source="codex",
+            retention_seconds=86400,
+            detail_level="compact",
         )
 
-    monkeypatch.setattr(web_context_service, "save_context", fake_save_context)
-
-    result = mcp_http.save_context(
-        slot_name="slot-a",
-        slot_number=1,
-        content=CONTENT,
-        model_source="codex",
-        retention_seconds=86400,
-        detail_level="compact",
-    )
-
-    assert result["resume_context_call"] == 'resume_context(slot_name="slot-a")'
-    assert "A2CR MCP tool" in result["resume_prompt"]
-    assert "direct HTTP API" in result["resume_prompt"]
-    assert "ship http mcp" not in result["resume_prompt"]
-    assert "sk-test-secret" not in result["resume_prompt"]
-    assert captured["user_id"] == USER_ID
-    assert captured["model_source"] == "codex"
-    assert captured["meta"].client_type == "mcp"
+    assert exc.value.code == "client_encryption_required"
+    assert "local stdio" in exc.value.message
 
 
 def test_mcp_resume_context_loads_exact_slot_number(monkeypatch):
@@ -226,7 +187,8 @@ def test_mcp_resume_context_loads_exact_slot_number(monkeypatch):
     assert captured["slot_number"] == 2
     assert result["mode"] == "loaded"
     assert result["context"]["slot_name"] == "slot-b"
-    assert result["context"]["content"]["next_action"] == "run pytest"
+    assert result["context"]["content"] is None
+    assert result["context"]["encrypted_content"]["ciphertext"] == "slot-b"
 
 
 def test_mcp_ambiguous_resume_returns_candidates_without_content(monkeypatch):

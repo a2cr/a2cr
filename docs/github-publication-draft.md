@@ -43,7 +43,6 @@ Implemented locally:
 
 - FastAPI local API
 - SQLite local storage
-- server-encrypted WorkBaton mode using Fernet application-layer encryption
 - client-encrypted WorkBaton mode through the local stdio MCP wrapper
 - fixed Slot 1-3 support
 - MCP wrapper tools such as `save_context`, `resume_context`, `load_context`, and `list_contexts`
@@ -57,7 +56,7 @@ Implemented Web SaaS foundation:
 - Supabase Auth + Postgres + RLS foundation
 - API-key management foundation
 - WorkBaton Web Context API with plan limits and sanitized access logs
-- server-encrypted and client-encrypted WorkBaton storage modes
+- client-encrypted-only WorkBaton storage
 - dashboard APIs that return metadata, not saved context bodies
 - React/Vite dashboard
 
@@ -72,12 +71,9 @@ Planned:
 
 A2CR is designed so human-facing dashboards do not display saved context bodies. Dashboards should show metadata only: slot names, timestamps, sizes, counts, status, and logs.
 
-WorkBaton currently supports two storage modes:
+WorkBaton is client-encrypted only. The local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
 
-- `server-encrypted`: the server stores Fernet-encrypted content and decrypts it only for authenticated MCP/API responses acting for the user. This is application-layer encryption, not zero-knowledge encryption.
-- `client-encrypted`: the local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. In this mode, A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
-
-Do not describe A2CR as a whole as zero-knowledge. Only client-encrypted WorkBaton slots should be described that way, and users must understand that losing the local client key makes those slots unrecoverable.
+A2CR rejects plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabled for WorkBaton because encryption must happen before upload. Users must understand that losing the local client key makes those slots unrecoverable.
 
 ## Must Fix Before Public
 
@@ -111,11 +107,11 @@ Say:
 - A2CR should remain model-neutral.
 - Dashboards are designed to show metadata, not saved context bodies.
 - Client-encrypted WorkBaton slots are encrypted before reaching A2CR.
+- A2CR cannot decrypt WorkBaton bodies.
 
 Do not overclaim:
 
 - Do not call it a protocol yet.
-- Do not describe A2CR as a whole as zero-knowledge.
 - Do not claim full end-to-end encryption for the whole product.
 - Do not claim zero-knowledge encryption for WorkThreads.
 - Do not claim autonomous AI orchestration.

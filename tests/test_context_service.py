@@ -1,9 +1,8 @@
-import json
 from datetime import datetime, timezone, timedelta
 import pytest
 from sqlalchemy.orm import Session
 from services.db import get_engine, Context, Stats
-from services.exceptions import SlotLimitExceeded, ContentTooLarge, SlotNotFound
+from services.exceptions import AppError, SlotLimitExceeded, ContentTooLarge, SlotNotFound
 import services.context as ctx_service
 
 CONTENT = {
@@ -13,8 +12,35 @@ CONTENT = {
 }
 
 
+def encrypted(label: str = "ciphertext") -> dict:
+    return {
+        "version": 1,
+        "alg": "Fernet",
+        "nonce": "embedded",
+        "ciphertext": label,
+        "key_wrap": {"type": "local-key", "kid": "test"},
+    }
+
+
+def save_slot(
+    slot_name: str,
+    original_length=None,
+    model_source=None,
+    slot_number=None,
+    payload: dict | None = None,
+):
+    return ctx_service.save_context(
+        slot_name,
+        None,
+        original_length,
+        model_source,
+        slot_number=slot_number,
+        encrypted_content=payload or encrypted(slot_name),
+    )
+
+
 def test_save_creates_slot():
-    result = ctx_service.save_context("proj-a", CONTENT, None, None)
+    result = save_slot("proj-a")
     assert result.slot_name == "proj-a"
     assert result.slot_number == 1
     assert result.compressed_tokens > 0
@@ -22,15 +48,15 @@ def test_save_creates_slot():
 
 
 def test_save_assigns_fixed_slot_numbers():
-    first = ctx_service.save_context("slot-one", CONTENT, None, None)
-    second = ctx_service.save_context("slot-two", CONTENT, None, None)
+    first = save_slot("slot-one")
+    second = save_slot("slot-two")
     assert first.slot_number == 1
     assert second.slot_number == 2
 
 
 def test_save_to_fixed_slot_number_overwrites_that_position():
-    first = ctx_service.save_context("fixed-a", CONTENT, None, None, slot_number=2)
-    second = ctx_service.save_context("fixed-b", CONTENT, None, None, slot_number=2)
+    first = save_slot("fixed-a", slot_number=2)
+    second = save_slot("fixed-b", slot_number=2)
 
     assert first.slot_number == 2
     assert second.slot_number == 2
@@ -42,8 +68,8 @@ def test_save_to_fixed_slot_number_overwrites_that_position():
 
 
 def test_list_contexts_returns_fixed_slot_order():
-    ctx_service.save_context("slot-two", CONTENT, None, None, slot_number=2)
-    ctx_service.save_context("slot-one", CONTENT, None, None, slot_number=1)
+    save_slot("slot-two", slot_number=2)
+    save_slot("slot-one", slot_number=1)
 
     results = ctx_service.list_contexts()
     assert [(r.slot_number, r.slot_name) for r in results] == [
@@ -53,15 +79,15 @@ def test_list_contexts_returns_fixed_slot_order():
 
 
 def test_save_with_original_length():
-    result = ctx_service.save_context("proj-b", CONTENT, 3000, "claude")
+    result = save_slot("proj-b", 3000, "claude")
     assert result.original_tokens == 1000  # ceil(3000/3)
     assert result.saved_tokens == 1000 - result.compressed_tokens
 
 
 def test_save_overwrite_resets_expires_at():
-    ctx_service.save_context("proj-c", CONTENT, None, None)
+    save_slot("proj-c")
     import time; time.sleep(0.01)
-    r2 = ctx_service.save_context("proj-c", CONTENT, None, None)
+    r2 = save_slot("proj-c")
     assert r2.slot_name == "proj-c"
     # Load should return updated content
     loaded = ctx_service.load_context("proj-c")
@@ -69,41 +95,41 @@ def test_save_overwrite_resets_expires_at():
 
 
 def test_save_slot_limit_exceeded():
-    ctx_service.save_context("slot-1", CONTENT, None, None)
-    ctx_service.save_context("slot-2", CONTENT, None, None)
-    ctx_service.save_context("slot-3", CONTENT, None, None)
+    save_slot("slot-1")
+    save_slot("slot-2")
+    save_slot("slot-3")
     with pytest.raises(SlotLimitExceeded):
-        ctx_service.save_context("slot-4", CONTENT, None, None)
+        save_slot("slot-4")
 
 
 def test_save_overwrite_does_not_count_toward_limit():
-    ctx_service.save_context("slot-1", CONTENT, None, None)
-    ctx_service.save_context("slot-2", CONTENT, None, None)
-    ctx_service.save_context("slot-3", CONTENT, None, None)
+    save_slot("slot-1")
+    save_slot("slot-2")
+    save_slot("slot-3")
     # Overwriting slot-1 should succeed even though 3 slots exist
-    result = ctx_service.save_context("slot-1", CONTENT, None, None)
+    result = save_slot("slot-1")
     assert result.slot_name == "slot-1"
 
 
 def test_save_content_too_large():
-    big_content = dict(CONTENT)
-    big_content["background"] = "x" * 11000
     with pytest.raises(ContentTooLarge):
-        ctx_service.save_context("proj-x", big_content, None, None)
+        save_slot("proj-x", payload=encrypted("x" * 11000))
 
 
 def test_load_existing():
-    ctx_service.save_context("proj-load", CONTENT, None, "gpt")
+    payload = encrypted("proj-load")
+    save_slot("proj-load", model_source="gpt", payload=payload)
     result = ctx_service.load_context("proj-load")
     assert result is not None
-    assert result.content["goal"] == "test goal"
+    assert result.content is None
+    assert result.encrypted_content == payload
     assert result.slot_number == 1
     assert result.model_source == "gpt"
     assert result.load_count == 1
-    assert result.encryption_mode == "server"
+    assert result.encryption_mode == "client"
 
 
-def test_save_load_client_encrypted_context_without_server_decrypt(monkeypatch):
+def test_save_load_client_encrypted_context_without_server_decrypt():
     encrypted_content = {
         "version": 1,
         "alg": "XChaCha20-Poly1305",
@@ -120,12 +146,8 @@ def test_save_load_client_encrypted_context_without_server_decrypt(monkeypatch):
         encrypted_content=encrypted_content,
     )
 
-    def fail_decrypt(*args, **kwargs):
-        raise AssertionError("client-encrypted context should not be decrypted server-side")
-
-    monkeypatch.setattr(ctx_service, "decrypt", fail_decrypt)
-
     loaded = ctx_service.load_context("encrypted-slot")
+    assert not hasattr(ctx_service, "decrypt")
     assert result.encryption_mode == "client"
     assert loaded.encryption_mode == "client"
     assert loaded.content is None
@@ -133,28 +155,26 @@ def test_save_load_client_encrypted_context_without_server_decrypt(monkeypatch):
 
 
 def test_load_by_slot_number():
-    ctx_service.save_context("number-load", CONTENT, None, "gpt", slot_number=2)
+    payload = encrypted("number-load")
+    save_slot("number-load", model_source="gpt", slot_number=2, payload=payload)
     result = ctx_service.load_context(slot_number=2)
     assert result.slot_name == "number-load"
     assert result.slot_number == 2
-    assert result.content["goal"] == "test goal"
+    assert result.content is None
+    assert result.encrypted_content == payload
 
 
-def test_save_load_preserves_unicode_content():
-    content = dict(CONTENT)
-    content["goal"] = "設計書レビュー"
-    content["current_state"] = "Freeは24時間保持、Proは30日保持"
-    content["next_action"] = "日本語のままMCPで読み込めることを確認する"
-    content["decisions"] = ["RLSを有効化", "アクセスログは本文を保存しない"]
-
-    ctx_service.save_context("proj-unicode", content, None, None)
+def test_save_load_preserves_encrypted_payload():
+    payload = encrypted("unicode-ciphertext")
+    save_slot("proj-unicode", payload=payload)
     result = ctx_service.load_context("proj-unicode")
 
-    assert result.content == content
+    assert result.content is None
+    assert result.encrypted_content == payload
 
 
 def test_load_increments_load_count():
-    ctx_service.save_context("proj-lc", CONTENT, None, None)
+    save_slot("proj-lc")
     ctx_service.load_context("proj-lc")
     ctx_service.load_context("proj-lc")
     result = ctx_service.load_context("proj-lc")
@@ -167,7 +187,7 @@ def test_load_nonexistent_raises():
 
 
 def test_delete_removes_slot():
-    ctx_service.save_context("proj-del", CONTENT, None, None)
+    save_slot("proj-del")
     ctx_service.delete_context("proj-del")
     with pytest.raises(SlotNotFound):
         ctx_service.load_context("proj-del")
@@ -179,8 +199,8 @@ def test_delete_nonexistent_raises():
 
 
 def test_list_returns_active_slots():
-    ctx_service.save_context("slot-a", CONTENT, None, None)
-    ctx_service.save_context("slot-b", CONTENT, None, "claude")
+    save_slot("slot-a")
+    save_slot("slot-b", model_source="claude")
     result = ctx_service.list_contexts()
     names = [r.slot_name for r in result]
     assert "slot-a" in names
@@ -188,7 +208,7 @@ def test_list_returns_active_slots():
 
 
 def test_list_excludes_expired(monkeypatch):
-    ctx_service.save_context("slot-exp", CONTENT, None, None)
+    save_slot("slot-exp")
     # Manually expire the slot
     with Session(get_engine()) as session:
         ctx = session.execute(
@@ -201,7 +221,7 @@ def test_list_excludes_expired(monkeypatch):
 
 
 def test_cleanup_expired_deletes_old_slots():
-    ctx_service.save_context("slot-clean", CONTENT, None, None)
+    save_slot("slot-clean")
     with Session(get_engine()) as session:
         ctx = session.execute(
             __import__("sqlalchemy").select(Context).where(Context.slot_name == "slot-clean")
@@ -214,7 +234,7 @@ def test_cleanup_expired_deletes_old_slots():
 
 
 def test_stats_incremented_on_save():
-    ctx_service.save_context("slot-stats", CONTENT, 3000, None)
+    save_slot("slot-stats", 3000)
     with Session(get_engine()) as session:
         stats = session.get(Stats, 1)
     assert stats.total_saves == 1
@@ -222,28 +242,18 @@ def test_stats_incremented_on_save():
 
 
 def test_stats_incremented_on_load():
-    ctx_service.save_context("slot-stats-load", CONTENT, None, None)
+    save_slot("slot-stats-load")
     ctx_service.load_context("slot-stats-load")
     with Session(get_engine()) as session:
         stats = session.get(Stats, 1)
     assert stats.total_loads == 1
 
 
-def test_get_handoff_returns_markdown():
-    content = dict(CONTENT)
-    content["decisions"] = ["Use FastAPI", "Use SQLite"]
-    content["constraints"] = ["No SQLCipher"]
-    content["environment"] = "Python 3.13"
-    ctx_service.save_context("proj-handoff", content, None, None)
-    result = ctx_service.get_handoff("proj-handoff")
-    assert result.slot_name == "proj-handoff"
-    assert "# GOAL" in result.handoff_text
-    assert "# CURRENT_STATE" in result.handoff_text
-    assert "# NEXT_ACTION" in result.handoff_text
-    assert "# DECISIONS" in result.handoff_text
-    assert "Use FastAPI" in result.handoff_text
-    assert "# CONSTRAINTS" in result.handoff_text
-    assert "# ENVIRONMENT" in result.handoff_text
+def test_get_handoff_requires_client_decryption():
+    save_slot("proj-handoff")
+    with pytest.raises(AppError) as exc:
+        ctx_service.get_handoff("proj-handoff")
+    assert exc.value.code == "client_decryption_required"
 
 
 def test_get_handoff_nonexistent_raises():
