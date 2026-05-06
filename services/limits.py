@@ -137,6 +137,7 @@ def ensure_active_slot_capacity(
             FROM public.contexts
             WHERE user_id = :user_id
               AND expires_at > now()
+              AND encryption_mode = 'client'
               AND (slot_name = :slot_name OR (:slot_number IS NOT NULL AND slot_number = :slot_number))
             LIMIT 1
             """
@@ -153,6 +154,7 @@ def ensure_active_slot_capacity(
             FROM public.contexts
             WHERE user_id = :user_id
               AND expires_at > now()
+              AND encryption_mode = 'client'
             """
         ),
         {"user_id": str(user_id)},

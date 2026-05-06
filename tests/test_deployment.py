@@ -119,3 +119,15 @@ def test_web_context_id_based_context_queries_remain_user_scoped():
     assert "SELECT slot_number FROM public.contexts WHERE id = :id AND user_id = :user_id" in service
     assert "WHERE id = :existing_id\n                      AND user_id = :user_id" in service
     assert "WHERE id = :id\n                  AND user_id = :user_id" in service
+
+
+def test_client_encrypted_only_queries_ignore_legacy_context_rows():
+    web_context = (ROOT / "services" / "web_context.py").read_text(encoding="utf-8")
+    dashboard = (ROOT / "services" / "dashboard.py").read_text(encoding="utf-8")
+    limits = (ROOT / "services" / "limits.py").read_text(encoding="utf-8")
+
+    assert "DELETE FROM public.contexts" in web_context
+    assert "encryption_mode <> 'client'" in web_context
+    assert web_context.count("encryption_mode = 'client'") >= 5
+    assert dashboard.count("encryption_mode = 'client'") >= 2
+    assert limits.count("encryption_mode = 'client'") >= 2

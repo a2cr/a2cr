@@ -183,6 +183,7 @@ def list_contexts(user_id: UUID | str) -> list[DashboardContext]:
                 FROM public.contexts
                 WHERE user_id = :user_id
                   AND expires_at > now()
+                  AND encryption_mode = 'client'
                 ORDER BY slot_number ASC, updated_at DESC
                 """
             ),
@@ -220,6 +221,7 @@ def get_stats(user_id: UUID | str) -> DashboardStats:
                          FROM public.contexts c
                          WHERE c.user_id = :user_id
                            AND c.expires_at > now()
+                           AND c.encryption_mode = 'client'
                        ) AS active_slots
                 FROM public.stats s
                 WHERE s.user_id = :user_id

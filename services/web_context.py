@@ -110,6 +110,19 @@ def _get_profile(session: Session, user_id: UUID | str) -> tuple[str, int]:
     return row["plan"], row["default_retention_seconds"]
 
 
+def _delete_legacy_contexts(session: Session, user_id: UUID | str) -> None:
+    session.execute(
+        text(
+            """
+            DELETE FROM public.contexts
+            WHERE user_id = :user_id
+              AND encryption_mode <> 'client'
+            """
+        ),
+        {"user_id": str(user_id)},
+    )
+
+
 def _get_existing_context_id(
     session: Session,
     *,
@@ -125,6 +138,7 @@ def _get_existing_context_id(
             WHERE user_id = :user_id
               AND slot_name = :slot_name
               AND expires_at > now()
+              AND encryption_mode = 'client'
             """
         ),
         {"user_id": str(user_id), "slot_name": slot_name},
@@ -139,6 +153,7 @@ def _get_existing_context_id(
                 WHERE user_id = :user_id
                   AND slot_number = :slot_number
                   AND expires_at > now()
+                  AND encryption_mode = 'client'
                 """
             ),
             {"user_id": str(user_id), "slot_number": slot_number},
@@ -161,6 +176,7 @@ def _next_slot_number(session: Session, *, user_id: UUID | str, active_slots: in
             FROM public.contexts
             WHERE user_id = :user_id
               AND expires_at > now()
+              AND encryption_mode = 'client'
             """
         ),
         {"user_id": str(user_id)},
@@ -192,6 +208,7 @@ def _get_context_row(
             WHERE user_id = :user_id
               AND {selector_sql}
               AND expires_at > now()
+              AND encryption_mode = 'client'
             """
         ),
         {"user_id": str(user_id), "slot_name": slot_name, "slot_number": slot_number},
@@ -232,6 +249,7 @@ def save_context(
 
     with web_transaction(user_id) as session:
         session.execute(text("SELECT app.expire_contexts()"))
+        _delete_legacy_contexts(session, user_id)
         plan, default_retention = _get_profile(session, user_id)
         limits = get_plan_limits(plan)
         if retention_seconds is None:
@@ -376,6 +394,7 @@ def list_contexts(*, user_id: UUID | str) -> list[WebContextMetadata]:
                 FROM public.contexts
                 WHERE user_id = :user_id
                   AND expires_at > now()
+                  AND encryption_mode = 'client'
                 ORDER BY slot_number ASC, updated_at DESC
                 """
             ),
@@ -490,6 +509,7 @@ def resume_context(
                 WHERE user_id = :user_id
                   AND expires_at > now()
                   AND slot_name ILIKE :project_pattern
+                  AND encryption_mode = 'client'
                 ORDER BY updated_at DESC
                 """
             ),
