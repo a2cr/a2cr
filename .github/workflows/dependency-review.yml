@@ -10,6 +10,7 @@ permissions:
 jobs:
   dependency-review:
     name: Dependency review
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository

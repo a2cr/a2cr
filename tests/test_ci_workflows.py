@@ -15,3 +15,5 @@ def test_ci_workflows_cover_tests_build_and_security_audits():
     assert "npm run build" in ci
     assert "actions/dependency-review-action" in dependency_review
     assert "github/codeql-action/analyze" in codeql
+    assert "!github.event.repository.private" in dependency_review
+    assert "!github.event.repository.private" in codeql
