@@ -303,10 +303,28 @@ def save_context(
                     session, user_id=user_id, active_slots=limits.active_slots
                 )
             except PlanLimitExceeded:
-                oldest = _oldest_active_slot(session, user_id=user_id)
-                if oldest is None:
-                    raise
-                existing_id, assigned_slot_number = oldest
+                if slot_number is not None:
+                    target = session.execute(
+                        text(
+                            """
+                            SELECT id FROM public.contexts
+                            WHERE user_id = :user_id
+                              AND slot_number = :slot_number
+                              AND expires_at > now()
+                              AND encryption_mode = 'client'
+                            """
+                        ),
+                        {"user_id": str(user_id), "slot_number": slot_number},
+                    ).scalar_one_or_none()
+                    if target is None:
+                        raise
+                    existing_id = str(target)
+                    assigned_slot_number = slot_number
+                else:
+                    oldest = _oldest_active_slot(session, user_id=user_id)
+                    if oldest is None:
+                        raise
+                    existing_id, assigned_slot_number = oldest
 
         stored_content = content_json
         params = {
