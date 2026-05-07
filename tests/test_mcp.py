@@ -172,6 +172,30 @@ def test_mcp_save_context_requires_local_stdio_wrapper(monkeypatch):
     assert "local stdio" in exc.value.message
 
 
+def test_mcp_save_workthread_result_requires_local_stdio_wrapper(monkeypatch):
+    monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
+    secret_content = {
+        "goal": "secret workthread goal",
+        "current_state": "secret workthread state",
+        "next_action": "secret workthread action",
+    }
+
+    with pytest.raises(AppError) as exc:
+        mcp_http.save_workthread_result(
+            thread_id="11111111-1111-1111-1111-111111111111",
+            slot_name="slot-a",
+            content=secret_content,
+            retention_seconds=86400,
+            detail_level="compact",
+        )
+
+    assert exc.value.code == "client_encryption_required"
+    assert "local stdio" in exc.value.message
+    assert "secret workthread goal" not in exc.value.message
+    assert "secret workthread state" not in exc.value.message
+    assert "secret workthread action" not in exc.value.message
+
+
 def test_mcp_resume_context_loads_exact_slot_number(monkeypatch):
     captured = {}
     monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)

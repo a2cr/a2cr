@@ -19,7 +19,7 @@ from services.auth import (
 )
 from services.config import WebConfig, get_web_config, is_request_origin_allowed, reset_config, validate_runtime_environment
 from services.db import set_rls_user_context
-from services.logs import build_access_log_row, write_access_log
+from services.logs import build_access_log_row, sanitize_log_request_id, write_access_log
 
 
 USER_ID = UUID("00000000-0000-0000-0000-0000000000a1")
@@ -383,6 +383,29 @@ def test_build_access_log_row_hashes_ip_and_user_agent_without_raw_values():
     assert "content" not in row
 
 
+def test_access_log_request_id_allows_only_safe_values():
+    safe_row = build_access_log_row(
+        user_id=USER_ID,
+        action="context.load",
+        client_type="mcp",
+        result="success",
+        request_id="req-123.safe:value",
+    )
+    secret_row = build_access_log_row(
+        user_id=USER_ID,
+        action="context.load",
+        client_type="mcp",
+        result="failure",
+        request_id="sk-test-secret",
+    )
+
+    assert safe_row["request_id"] == "req-123.safe:value"
+    assert secret_row["request_id"] is None
+    assert sanitize_log_request_id("req_1") == "req_1"
+    assert sanitize_log_request_id("Bearer sk-test-secret") is None
+    assert sanitize_log_request_id("sk-test-secret") is None
+
+
 def test_write_access_log_drops_unapproved_fields():
     session = FakeSession()
     row = build_access_log_row(
@@ -402,4 +425,23 @@ def test_write_access_log_drops_unapproved_fields():
     assert "INSERT INTO public.access_logs" in statement
     assert "authorization" not in params
     assert "content" not in params
+    assert "sk-test-secret" not in params.values()
+
+
+def test_write_access_log_sanitizes_direct_request_id():
+    session = FakeSession()
+    row = build_access_log_row(
+        user_id=USER_ID,
+        action="context.load",
+        client_type="mcp",
+        result="failure",
+        error_code="slot_not_found",
+        hash_secret="audit-secret",
+    )
+    row["request_id"] = "Bearer sk-test-secret"
+
+    write_access_log(session, row)
+
+    _, params = session.executed[0]
+    assert params["request_id"] is None
     assert "sk-test-secret" not in params.values()

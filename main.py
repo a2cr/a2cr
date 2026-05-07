@@ -1,7 +1,6 @@
 import asyncio
 import html
 import json
-import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from textwrap import dedent
@@ -18,6 +17,7 @@ from services.context import cleanup_expired
 from services.db_errors import classify_db_error
 from services.db import init_db
 from services.exceptions import AppError
+from services.logs import sanitize_log_request_id
 
 WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
 WEB_PUBLIC_DIR = Path(__file__).resolve().parent / "web" / "public"
@@ -45,9 +45,6 @@ SECURITY_HEADERS = {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
     "Content-Security-Policy": CONTENT_SECURITY_POLICY,
 }
-
-_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
-
 
 def _seo(
     *,
@@ -442,8 +439,8 @@ def app_error_handler(request: Request, exc: AppError):
 
 
 def _safe_request_id(request: Request) -> str:
-    request_id = request.headers.get("x-request-id")
-    if request_id and _REQUEST_ID_PATTERN.fullmatch(request_id):
+    request_id = sanitize_log_request_id(request.headers.get("x-request-id"))
+    if request_id:
         return request_id
     return uuid4().hex
 

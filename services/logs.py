@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 from typing import Any
 from uuid import UUID
 
@@ -11,11 +12,24 @@ from sqlalchemy.orm import Session
 from services.config import get_web_config
 
 
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
+
+
 def hash_log_value(value: str | None, secret: str | None = None) -> str | None:
     if not value:
         return None
     secret = secret or get_web_config().audit_hash_secret
     return hmac.new(secret.encode("utf-8"), value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def sanitize_log_request_id(request_id: str | None) -> str | None:
+    if not request_id:
+        return None
+    if request_id.lower().startswith(("bearer", "sk-")):
+        return None
+    if _REQUEST_ID_PATTERN.fullmatch(request_id):
+        return request_id
+    return None
 
 
 def build_access_log_row(
@@ -40,7 +54,7 @@ def build_access_log_row(
         "result": result,
         "error_code": error_code,
         "size_bytes": max(size_bytes, 0) if size_bytes is not None else None,
-        "request_id": request_id,
+        "request_id": sanitize_log_request_id(request_id),
         "ip_hash": hash_log_value(ip, hash_secret),
         "user_agent_hash": hash_log_value(user_agent, hash_secret),
     }
@@ -60,6 +74,7 @@ def write_access_log(session: Session, row: dict[str, Any]) -> None:
         "user_agent_hash",
     }
     safe_row = {key: row.get(key) for key in allowed}
+    safe_row["request_id"] = sanitize_log_request_id(safe_row["request_id"])
     session.execute(
         text(
             """

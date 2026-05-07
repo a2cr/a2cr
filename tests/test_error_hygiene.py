@@ -66,6 +66,24 @@ def test_unexpected_exception_response_is_generic(monkeypatch):
     assert_no_secret_leak(response)
 
 
+def test_sensitive_request_id_that_matches_pattern_is_not_echoed(monkeypatch):
+    def raise_unexpected(full_path):
+        raise RuntimeError("request failed")
+
+    monkeypatch.setattr("main._render_spa_index", raise_unexpected)
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.get(
+            "/dashboard",
+            headers={"X-Request-ID": "sk-a2cr-secret"},
+        )
+
+    assert response.status_code == 500
+    body = response.json()
+    assert body["request_id"] != "sk-a2cr-secret"
+    assert_no_secret_leak(response)
+
+
 def test_db_exception_response_hides_sql_and_secrets(monkeypatch):
     def raise_db_error(full_path):
         raise DBAPIError.instance(

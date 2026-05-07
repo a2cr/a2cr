@@ -213,6 +213,28 @@ def test_task_claim_and_complete_routes(api_client, monkeypatch):
     assert completed.json()["status"] == "completed"
 
 
+def test_save_workthread_result_rejects_plaintext_without_echoing_body(api_client):
+    secret_content = {
+        "goal": "secret workthread goal",
+        "current_state": "secret workthread state",
+        "next_action": "secret workthread action",
+    }
+
+    response = api_client.post(
+        "/api/v1/workthreads/11111111-1111-1111-1111-111111111111/result",
+        json={"slot_name": "slot-a", "content": secret_content},
+        headers={"Authorization": "Bearer sk-test-secret"},
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["code"] == "client_encryption_required"
+    assert "secret workthread goal" not in response.text
+    assert "secret workthread state" not in response.text
+    assert "secret workthread action" not in response.text
+    assert "sk-test-secret" not in response.text
+
+
 def test_loop_guard_warning_and_dashboard_metadata(api_client, dashboard_client, monkeypatch):
     monkeypatch.setattr(
         workthreads_service,

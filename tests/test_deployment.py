@@ -202,3 +202,13 @@ def test_deploy_runbook_includes_migration_safety_and_readiness():
     assert "python scripts/check_migrations.py" in runbook
     assert "https://a2cr.app/api/v1/health/readiness" in runbook
     assert "access_logs(user_id, action, created_at DESC)" in runbook
+
+
+def test_deploy_runbook_includes_hosted_rls_pooler_smoke():
+    runbook = (ROOT / "docs" / "runbooks" / "deploy.md").read_text(encoding="utf-8")
+
+    assert "python scripts/smoke_rls_pooler.py" in runbook
+    assert "A2CR_SMOKE_USER_A_ID" in runbook
+    assert "A2CR_SMOKE_USER_B_ID" in runbook
+    assert "transaction-local `app.user_id` is reset" in runbook
+    assert "no DB URL, token, API key, password, or row content is printed" in runbook

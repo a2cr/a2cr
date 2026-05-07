@@ -242,6 +242,31 @@ Expected:
 - MCP `resume_context` works from a fresh AI window
 - Dashboard context and WorkThreads responses are metadata-only
 
+## Hosted RLS And Pooler Smoke
+
+Run this against the same Supabase transaction-pooler connection shape used by
+Railway. Use two existing test Supabase user IDs. Do not use real customer
+accounts.
+
+```bash
+set DATABASE_URL=<SUPABASE_TRANSACTION_POOLER_DATABASE_URL>
+set A2CR_SMOKE_USER_A_ID=<TEST_USER_A_UUID>
+set A2CR_SMOKE_USER_B_ID=<TEST_USER_B_UUID>
+python scripts/smoke_rls_pooler.py
+```
+
+Expected:
+
+- output is exactly `RLS/pooler smoke: PASS`
+- no DB URL, token, API key, password, or row content is printed
+- user A cannot see user B `contexts` or `work_threads`
+- user B cannot see user A `contexts` or `work_threads`
+- transaction-local `app.user_id` is reset after each transaction
+
+If this fails, treat the deploy as unsafe. Check that the runtime uses the
+`a2cr_app` role, that `web_transaction` still calls transaction-local
+`set_config(..., true)`, and that Supabase pooler mode has not changed.
+
 ## Hot Query And Index Review
 
 Review `EXPLAIN` on production-like data before public beta and after migrations
