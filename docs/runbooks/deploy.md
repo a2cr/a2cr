@@ -167,8 +167,11 @@ npm run build
 - purpose
 - expected affected objects
 - expected changed row count for data changes
+- whether the SQL can run inside an explicit transaction
 - lock risk and whether user traffic should be paused
 - readiness check impact
+- confirmation that no secrets, DB URLs, tokens, or Authorization headers are pasted into SQL or notes
+- `SECURITY DEFINER` functions use fixed `SET search_path = pg_catalog, pg_temp`
 - forward-fix plan
 
 Prefer small migrations and non-blocking indexes. Run the SQL first on a staging-like database, then check pending migrations without printing `DATABASE_URL`:

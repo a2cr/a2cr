@@ -3,6 +3,7 @@ import re
 
 
 MIGRATION = Path(__file__).resolve().parents[1] / "supabase" / "migrations" / "001_base_schema.sql"
+MIGRATIONS_DIR = Path(__file__).resolve().parents[1] / "supabase" / "migrations"
 REPAIR_MIGRATION = (
     Path(__file__).resolve().parents[1]
     / "supabase"
@@ -17,6 +18,10 @@ def sql() -> str:
 
 def normalized_sql() -> str:
     return re.sub(r"\s+", " ", sql().lower())
+
+
+def migration_files() -> list[Path]:
+    return sorted(MIGRATIONS_DIR.glob("*.sql"))
 
 
 def test_base_schema_file_exists():
@@ -73,6 +78,27 @@ def test_api_key_resolution_is_security_definer_and_secret_safe():
     assert "return v_user_id" in text
     assert "revoke all on function app.resolve_api_key(text, text) from public" in text
     assert "grant execute on function app.resolve_api_key(text, text) to a2cr_app" in text
+
+
+def test_all_security_definer_functions_set_fixed_search_path():
+    checked = []
+    failures = []
+    pattern = re.compile(
+        r"create\s+(?:or\s+replace\s+)?function\s+([^(]+)\([^$]+?security\s+definer[^$]+?as\s+\$",
+        re.IGNORECASE | re.DOTALL,
+    )
+
+    for migration in migration_files():
+        text = migration.read_text(encoding="utf-8")
+        for match in pattern.finditer(text):
+            function_name = re.sub(r"\s+", " ", match.group(1).strip())
+            header = re.sub(r"\s+", " ", match.group(0).lower())
+            checked.append(f"{migration.name}:{function_name}")
+            if "set search_path = pg_catalog, pg_temp" not in header:
+                failures.append(f"{migration.name}:{function_name}")
+
+    assert checked
+    assert failures == []
 
 
 def test_expiration_logs_before_delete_semantics():

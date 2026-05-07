@@ -199,6 +199,9 @@ def test_deploy_runbook_includes_migration_safety_and_readiness():
     assert "supabase/migrations/007_workthreads_message_uniqueness.sql" in runbook
     assert "lock risk" in runbook
     assert "readiness check impact" in runbook
+    assert "explicit transaction" in runbook
+    assert "no secrets, DB URLs, tokens, or Authorization headers" in runbook
+    assert "`SECURITY DEFINER` functions use fixed `SET search_path = pg_catalog, pg_temp`" in runbook
     assert "python scripts/check_migrations.py" in runbook
     assert "https://a2cr.app/api/v1/health/readiness" in runbook
     assert "access_logs(user_id, action, created_at DESC)" in runbook
