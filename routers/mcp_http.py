@@ -563,7 +563,10 @@ def complete_workthread_task(
 
 @web_mcp.tool(
     name="save_workthread_result",
-    description="Save a WorkThread final result into a normal A2CR WorkBaton Slot and link that slot to the thread.",
+    description=(
+        "Disabled until WorkThread final-result saving has a local stdio encryption flow. "
+        "Do not send WorkThread result content to this remote MCP tool."
+    ),
 )
 def save_workthread_result(
     thread_id: str,

@@ -242,6 +242,6 @@ def save_workthread_result(
     enforce_authenticated_rate_limit(user.user_id, "workthreads.write")
     raise AppError(
         "client_encryption_required",
-        "Saving a WorkThread result into WorkBaton requires client-side encryption before upload.",
+        "Saving a WorkThread result into WorkBaton requires the local stdio A2CR MCP wrapper so content is encrypted before upload. This server-side shortcut is disabled.",
         422,
     )

@@ -18,6 +18,7 @@ from services.web_context import (
 )
 import services.dashboard as dashboard_service
 import services.web_context as web_context_service
+import services.workthreads as workthreads_service
 
 
 USER_ID = UUID("00000000-0000-0000-0000-0000000000a1")
@@ -148,6 +149,9 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     save_tool = next(tool for tool in tools if tool["name"] == "save_context")
     assert "client-side encryption" in save_tool["description"]
     assert "local stdio" in save_tool["description"]
+    result_tool = next(tool for tool in tools if tool["name"] == "save_workthread_result")
+    assert "Disabled" in result_tool["description"]
+    assert "local stdio encryption flow" in result_tool["description"]
 
     assert save_response.status_code == 200
     result = _sse_json(save_response)["result"]
@@ -172,6 +176,29 @@ def test_mcp_save_context_requires_local_stdio_wrapper(monkeypatch):
     assert "local stdio" in exc.value.message
 
 
+def test_mcp_save_context_gate_runs_before_auth_or_service(monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("disabled remote save must not reach auth or service")
+
+    monkeypatch.setattr(mcp_http, "_current_auth_context", fail_if_called)
+    monkeypatch.setattr(web_context_service, "save_context", fail_if_called)
+
+    with pytest.raises(AppError) as exc:
+        mcp_http.save_context(
+            slot_name="slot-a",
+            slot_number=1,
+            content={"goal": "secret goal", "current_state": "secret state", "next_action": "secret action"},
+            model_source="codex",
+            retention_seconds=86400,
+            detail_level="compact",
+        )
+
+    assert exc.value.code == "client_encryption_required"
+    assert "secret goal" not in exc.value.message
+    assert "secret state" not in exc.value.message
+    assert "secret action" not in exc.value.message
+
+
 def test_mcp_save_workthread_result_requires_local_stdio_wrapper(monkeypatch):
     monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
     secret_content = {
@@ -191,6 +218,32 @@ def test_mcp_save_workthread_result_requires_local_stdio_wrapper(monkeypatch):
 
     assert exc.value.code == "client_encryption_required"
     assert "local stdio" in exc.value.message
+    assert "secret workthread goal" not in exc.value.message
+    assert "secret workthread state" not in exc.value.message
+    assert "secret workthread action" not in exc.value.message
+
+
+def test_mcp_save_workthread_result_gate_runs_before_auth_or_service(monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("disabled WorkThread result save must not reach auth or service")
+
+    monkeypatch.setattr(mcp_http, "_current_auth_context", fail_if_called)
+    monkeypatch.setattr(workthreads_service, "save_workthread_result", fail_if_called)
+
+    with pytest.raises(AppError) as exc:
+        mcp_http.save_workthread_result(
+            thread_id="11111111-1111-1111-1111-111111111111",
+            slot_name="slot-a",
+            content={
+                "goal": "secret workthread goal",
+                "current_state": "secret workthread state",
+                "next_action": "secret workthread action",
+            },
+            retention_seconds=86400,
+            detail_level="compact",
+        )
+
+    assert exc.value.code == "client_encryption_required"
     assert "secret workthread goal" not in exc.value.message
     assert "secret workthread state" not in exc.value.message
     assert "secret workthread action" not in exc.value.message

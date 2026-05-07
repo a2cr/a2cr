@@ -10,6 +10,7 @@ from routers.dashboard import get_current_dashboard_user
 from routers.web_context import get_current_api_user
 from services.auth import AuthenticatedUser
 from services.dashboard import DashboardProfile
+from services.exceptions import AppError
 from services.workthreads import WorkThread, WorkThreadMessage, WorkThreadTask, WorkThreadUpdateCheck
 import services.dashboard as dashboard_service
 import services.workthreads as workthreads_service
@@ -297,7 +298,36 @@ def test_workthreads_read_paths_do_not_use_unbounded_selects():
     assert "LIMIT :limit" in unread_slice
 
 
-def test_save_workthread_result_rejects_plaintext_without_echoing_body(api_client):
+def test_service_save_workthread_result_is_disabled_before_db(monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("disabled WorkThread result save must not open a transaction")
+
+    monkeypatch.setattr(workthreads_service, "web_transaction", fail_if_called)
+
+    with pytest.raises(AppError) as exc:
+        workthreads_service.save_workthread_result(
+            user_id=USER_ID,
+            thread_id="11111111-1111-1111-1111-111111111111",
+            slot_name="slot-a",
+            content_dict={
+                "goal": "secret workthread goal",
+                "current_state": "secret workthread state",
+                "next_action": "secret workthread action",
+            },
+        )
+
+    assert exc.value.code == "client_encryption_required"
+    assert "local stdio" in exc.value.message
+    assert "secret workthread goal" not in exc.value.message
+    assert "secret workthread state" not in exc.value.message
+    assert "secret workthread action" not in exc.value.message
+
+
+def test_save_workthread_result_rejects_plaintext_without_echoing_body(api_client, monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("disabled route should not call WorkThread result service")
+
+    monkeypatch.setattr(workthreads_service, "save_workthread_result", fail_if_called)
     secret_content = {
         "goal": "secret workthread goal",
         "current_state": "secret workthread state",
@@ -379,4 +409,6 @@ def test_workthreads_migration_uses_skip_locked_and_separate_tables():
     assert "FOR UPDATE" in service[service.index("def _enforce_loop_guard(") : service.index("def _block_loop(")]
     assert "work_thread_messages_idempotency_unique_idx" in uniqueness_migration
     assert "work_thread_messages_content_hash_unique_idx" in uniqueness_migration
-    assert "web_context_service.save_context" in service
+    final_result_slice = service[service.index("def save_workthread_result(") : service.index("def check_workthread_updates(")]
+    assert "client_encryption_required" in final_result_slice
+    assert "web_context_service.save_context" not in final_result_slice

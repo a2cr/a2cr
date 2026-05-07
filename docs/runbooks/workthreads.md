@@ -21,9 +21,11 @@ WorkThreads are Pro-only durable handoff threads for cross-window and cross-agen
 - `create_workthread_task`
 - `claim_workthread_task`
 - `complete_workthread_task`
-- `save_workthread_result`
+- `save_workthread_result` is intentionally disabled until final-result saving has a local stdio encryption flow.
 
 Use MCP tools directly from AI clients. Do not guess or call direct HTTP API endpoints from client prompts.
+
+Do not enable WorkThread final-result saving, file attachment, URL fetch, HTML/render preview, or AI-execution features without a dedicated security review and regression tests.
 
 ## Task Leases
 

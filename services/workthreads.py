@@ -13,8 +13,6 @@ from services.config import get_web_config
 from services.crypto import decrypt, encrypt
 from services.db import web_transaction
 from services.exceptions import AppError
-from services.web_context import RequestMeta
-import services.web_context as web_context_service
 
 
 FINAL_MESSAGE_TYPES = {"decision", "handoff", "blocked", "result"}
@@ -642,39 +640,10 @@ def save_workthread_result(
     retention_seconds: int | None = None,
     detail_level: str | None = "compact",
 ) -> WorkThreadResult:
-    saved = web_context_service.save_context(
-        user_id=user_id,
-        slot_name=slot_name,
-        content_dict=content_dict,
-        original_length=original_length,
-        model_source=model_source,
-        slot_number=slot_number,
-        retention_seconds=retention_seconds,
-        detail_level=detail_level,
-        meta=RequestMeta(client_type="api"),
-    )
-    with web_transaction(user_id) as session:
-        _ensure_pro(session, user_id)
-        updated = session.execute(
-            text(
-                """
-                UPDATE public.work_threads
-                SET status = 'completed',
-                    final_slot_name = :slot_name
-                WHERE id = :thread_id
-                  AND user_id = :user_id
-                RETURNING id
-                """
-            ),
-            {"thread_id": thread_id, "user_id": str(user_id), "slot_name": slot_name},
-        ).scalar_one_or_none()
-        if updated is None:
-            raise AppError("workthread_not_found", "WorkThread not found", 404)
-    return WorkThreadResult(
-        thread_id=thread_id,
-        final_slot_name=saved.slot_name,
-        resume_context_call=saved.resume_context_call,
-        resume_prompt=saved.resume_prompt,
+    raise AppError(
+        "client_encryption_required",
+        "Saving a WorkThread result into WorkBaton requires the local stdio A2CR MCP wrapper so content is encrypted before upload. This server-side shortcut is disabled.",
+        422,
     )
 
 
