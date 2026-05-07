@@ -105,13 +105,27 @@ def test_save_slot_limit_returns_400(client):
     assert r.json()["code"] == "slot_limit_exceeded"
 
 
-def test_save_invalid_slot_name_returns_422(client):
+@pytest.mark.parametrize(
+    "slot_name",
+    [
+        "invalid name!",
+        "<script>alert('x')</script>",
+        "=HYPERLINK",
+        "+SUM",
+        "-cmd",
+        "@HYPERLINK",
+    ],
+)
+def test_save_invalid_slot_name_returns_422(client, slot_name):
     r = client.post(
         "/v1/context/save",
-        json=save_body("invalid name!"),
+        json=save_body(slot_name),
         headers=HEADERS,
     )
     assert r.status_code == 422
+    assert slot_name not in r.text
+    assert "<script>" not in r.text
+    assert "HYPERLINK" not in r.text
 
 
 def test_load_existing(client):

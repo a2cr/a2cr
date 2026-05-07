@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 from datetime import datetime
+import re
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 ModelSource = Literal["claude", "gpt", "gemini", "codex", "other"]
 EncryptionMode = Literal["client"]
+SLOT_NAME_PATTERN_TEXT = r"^[a-zA-Z0-9_][a-zA-Z0-9_-]{0,63}$"
+SLOT_NAME_PATTERN = re.compile(SLOT_NAME_PATTERN_TEXT)
+
+
+def validate_slot_name_value(v: str) -> str:
+    if not SLOT_NAME_PATTERN.fullmatch(v):
+        raise ValueError(f"slot_name must match {SLOT_NAME_PATTERN_TEXT}")
+    return v
 
 
 class ContentSchema(BaseModel):
@@ -57,10 +66,7 @@ class SaveRequest(BaseModel):
     @field_validator("slot_name")
     @classmethod
     def validate_slot_name(cls, v: str) -> str:
-        import re
-        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", v):
-            raise ValueError("slot_name must match ^[a-zA-Z0-9_-]{1,64}$")
-        return v
+        return validate_slot_name_value(v)
 
     @field_validator("slot_number")
     @classmethod
@@ -141,10 +147,7 @@ class WebContextSaveRequest(BaseModel):
     @field_validator("slot_name")
     @classmethod
     def validate_slot_name(cls, v: str) -> str:
-        import re
-        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", v):
-            raise ValueError("slot_name must match ^[a-zA-Z0-9_-]{1,64}$")
-        return v
+        return validate_slot_name_value(v)
 
     @field_validator("slot_number")
     @classmethod
@@ -398,6 +401,11 @@ class WorkThreadResultSaveRequest(BaseModel):
     slot_number: Optional[int] = None
     retention_seconds: Optional[int] = None
     detail_level: Optional[Literal["compact", "detailed"]] = "compact"
+
+    @field_validator("slot_name")
+    @classmethod
+    def validate_slot_name(cls, v: str) -> str:
+        return validate_slot_name_value(v)
 
 
 class WorkThreadResultSaveResponse(BaseModel):

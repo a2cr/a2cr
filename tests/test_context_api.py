@@ -182,8 +182,21 @@ def test_web_save_context_rejects_plaintext_without_echoing_body(client, monkeyp
     assert "sk-test-secret" not in response.text
 
 
-def test_web_save_context_rejects_hostile_slot_name_without_echoing_value(client, monkeypatch):
-    hostile_slot_name = "<script>alert('x')</script>"
+@pytest.mark.parametrize(
+    "hostile_slot_name",
+    [
+        "<script>alert('x')</script>",
+        "=HYPERLINK",
+        "+SUM",
+        "-cmd",
+        "@HYPERLINK",
+    ],
+)
+def test_web_save_context_rejects_hostile_slot_name_without_echoing_value(
+    client,
+    monkeypatch,
+    hostile_slot_name,
+):
 
     def fail_if_called(**kwargs):
         raise AssertionError("invalid slot_name should fail before service call")
@@ -201,6 +214,7 @@ def test_web_save_context_rejects_hostile_slot_name_without_echoing_value(client
     assert body["code"] == "invalid_request"
     assert hostile_slot_name not in response.text
     assert "<script>" not in response.text
+    assert "HYPERLINK" not in response.text
 
 
 def test_web_list_contexts_returns_429_when_abuse_limited(client, monkeypatch):

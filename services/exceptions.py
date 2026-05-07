@@ -37,7 +37,7 @@ class ContentTooLarge(AppError):
 
 class InvalidSlotName(AppError):
     def __init__(self):
-        super().__init__("invalid_slot_name", "slot_name must match ^[a-zA-Z0-9_-]{1,64}$", 400)
+        super().__init__("invalid_slot_name", "slot_name must match ^[a-zA-Z0-9_][a-zA-Z0-9_-]{0,63}$", 400)
 
 
 class SlotNotFound(AppError):
