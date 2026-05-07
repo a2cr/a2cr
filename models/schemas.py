@@ -132,6 +132,7 @@ class WebContextSaveRequest(BaseModel):
     content: Optional[ContentSchema] = None
     encrypted_content: Optional[EncryptedContentSchema] = None
     original_length: Optional[int] = None
+    compressed_tokens: Optional[int] = None
     model_source: Optional[ModelSource] = None
     retention_seconds: Optional[int] = None
     detail_level: Optional[Literal["compact", "detailed"]] = "compact"
@@ -161,6 +162,13 @@ class WebContextSaveRequest(BaseModel):
     def validate_retention_seconds(cls, v: Optional[int]) -> Optional[int]:
         if v is not None and v <= 0:
             raise ValueError("retention_seconds must be > 0")
+        return v
+
+    @field_validator("original_length", "compressed_tokens")
+    @classmethod
+    def validate_non_negative_metric(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("token metrics must be >= 0")
         return v
 
 

@@ -103,6 +103,7 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
     assert captured["json"]["detail_level"] == "compact"
+    assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(CONTENT)
     assert "content" not in captured["json"]
     assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
     assert CONTENT["goal"] not in captured["json"]["encrypted_content"]["ciphertext"]

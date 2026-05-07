@@ -119,6 +119,7 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
             "slot_name": "slot-a",
             "slot_number": 1,
             "encrypted_content": encrypted("slot-a"),
+            "compressed_tokens": 12,
             "model_source": "codex",
             "retention_seconds": 86400,
             "detail_level": "compact",
@@ -137,6 +138,7 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
     assert captured["user_id"] == USER_ID
     assert captured["content_dict"] is None
     assert captured["encrypted_content"]["ciphertext"] == "slot-a"
+    assert captured["compressed_tokens"] == 12
     assert captured["model_source"] == "codex"
     assert captured["retention_seconds"] == 86400
     assert captured["detail_level"] == "compact"

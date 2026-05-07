@@ -115,6 +115,7 @@ def save_context(
         content_dict=req.content.model_dump() if req.content else None,
         encrypted_content=req.encrypted_content.model_dump() if req.encrypted_content else None,
         original_length=req.original_length,
+        compressed_tokens=req.compressed_tokens,
         model_source=req.model_source,
         slot_number=req.slot_number,
         retention_seconds=req.retention_seconds,

@@ -222,6 +222,7 @@ def save_context(
     content_dict: dict | None,
     encrypted_content: dict | None = None,
     original_length: Optional[int] = None,
+    compressed_tokens: Optional[int] = None,
     model_source: Optional[str] = None,
     slot_number: Optional[int] = None,
     retention_seconds: Optional[int] = None,
@@ -243,7 +244,7 @@ def save_context(
     body_dict = encrypted_content
     content_json = json.dumps(body_dict, ensure_ascii=False, separators=(",", ":"))
     content_bytes = content_json.encode("utf-8")
-    compressed_tokens = count_tokens(content_json)
+    compressed_tokens = compressed_tokens if compressed_tokens is not None else count_tokens(content_json)
     original_tokens = original_tokens_from_length_optional(original_length)
     saved_tokens = (original_tokens - compressed_tokens) if original_tokens is not None else None
 

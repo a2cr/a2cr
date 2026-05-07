@@ -24,6 +24,17 @@ import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastmcp import FastMCP
 
+try:
+    import tiktoken
+except Exception:  # pragma: no cover - fallback for minimal MCP installs
+    tiktoken = None
+
+
+if tiktoken is not None:
+    _TOKEN_ENCODING = tiktoken.get_encoding("cl100k_base")
+else:
+    _TOKEN_ENCODING = None
+
 
 def _normalize_base_url(value: str) -> str:
     normalized = value.rstrip("/")
@@ -168,6 +179,13 @@ def _client_key(create: bool) -> bytes | None:
 
 def _key_id(key: bytes) -> str:
     return hashlib.sha256(key).hexdigest()[:16]
+
+
+def _count_workbaton_tokens(content: dict) -> int:
+    content_json = json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+    if _TOKEN_ENCODING is None:
+        return (len(content_json) + 2) // 3
+    return len(_TOKEN_ENCODING.encode(content_json))
 
 
 def _normalized_content_key(key: object) -> str:
@@ -395,6 +413,11 @@ Chained handoffs:
   Use supersedes_slots or do_not_use_slots to make stale Slots explicit.
   Keep these fields compact and never include secrets, full logs, or diffs.
 
+Token savings:
+  This wrapper sends the compact WorkBaton token count before encryption. If
+  you can estimate the original source context length, pass original_length so
+  the dashboard can calculate estimated tokens saved.
+
 Plan detail levels:
   Free/compact saves should contain only the minimum handoff needed to resume:
   goal, current_state, next_action, optional short blockers or risks,
@@ -457,6 +480,7 @@ def save_context(
         "slot_name": slot_name,
         "slot_number": slot_number,
         "original_length": original_length,
+        "compressed_tokens": _count_workbaton_tokens(content),
         "model_source": model_source,
         "detail_level": detail_level or "compact",
     }

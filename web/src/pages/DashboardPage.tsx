@@ -279,6 +279,12 @@ export function DashboardPage() {
     () => [...(data?.accessLogs || [])].sort((a, b) => newestFirst(a.created_at, b.created_at)),
     [data?.accessLogs]
   );
+  const tokensSavedValue =
+    data && data.stats.total_tokens_saved > 0
+      ? formatNumber(data.stats.total_tokens_saved)
+      : data && data.stats.total_saves > 0
+        ? t("dashboard.notCalculated")
+        : "0";
 
   if (loading) {
     return (
@@ -332,7 +338,7 @@ export function DashboardPage() {
         <Stat label={t("dashboard.totalSaves")} value={formatNumber(data?.stats.total_saves || 0)} icon={Save} />
         <Stat label={t("dashboard.totalLoads")} value={formatNumber(data?.stats.total_loads || 0)} icon={RotateCcw} />
         <Stat label={t("dashboard.totalDeletes")} value={formatNumber(data?.stats.total_deletes || 0)} icon={Activity} />
-        <Stat label={t("dashboard.tokensSaved")} value={formatNumber(data?.stats.total_tokens_saved || 0)} icon={Clock3} />
+        <Stat label={t("dashboard.tokensSaved")} value={tokensSavedValue} icon={Clock3} />
       </section>
 
       <section className="grid gap-3">
