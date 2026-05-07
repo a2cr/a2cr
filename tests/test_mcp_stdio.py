@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 
 CONTENT = {
     "goal": "client encrypt",
@@ -141,6 +143,52 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
     assert "Authorization" in captured["headers"]
     assert result["plan"] == "free"
     assert result["allowed_detail_levels"] == ["compact"]
+
+
+def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
+    monkeypatch.setenv("A2CR_API_KEY", "sk-a2cr-secret")
+    server = load_stdio_server()
+
+    class FakeResponse:
+        def raise_for_status(self):
+            request = server.httpx.Request(
+                "GET",
+                "https://a2cr.example/api/v1/account/limits",
+                headers={"Authorization": "Bearer sk-a2cr-secret"},
+            )
+            response = server.httpx.Response(
+                401,
+                request=request,
+                text="Authorization: Bearer sk-a2cr-secret request_body_secret",
+            )
+            raise server.httpx.HTTPStatusError(
+                "Authorization: Bearer sk-a2cr-secret request_body_secret",
+                request=request,
+                response=response,
+            )
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, headers, timeout):
+            assert headers["Authorization"] == "Bearer sk-a2cr-secret"
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    with pytest.raises(RuntimeError) as exc:
+        server.get_account_limits()
+
+    message = str(exc.value)
+    assert message == "A2CR HTTP request failed with status 401"
+    assert "Authorization" not in message
+    assert "Bearer" not in message
+    assert "sk-a2cr-secret" not in message
+    assert "request_body_secret" not in message
 
 
 def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():

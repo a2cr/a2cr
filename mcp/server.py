@@ -73,6 +73,14 @@ def _limits_url() -> str:
     return _url("/api/v1/account/limits")
 
 
+def _raise_for_status(response: httpx.Response) -> None:
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        status_code = exc.response.status_code
+        raise RuntimeError(f"A2CR HTTP request failed with status {status_code}") from None
+
+
 def _client_key_path() -> Path:
     override = os.environ.get("A2CR_CLIENT_KEY_FILE")
     if override:
@@ -213,7 +221,7 @@ def _load_slot(client: httpx.Client, slot_name: str) -> dict:
     r = client.get(_load_url(slot_name), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "slot_name": slot_name}
-    r.raise_for_status()
+    _raise_for_status(r)
     data = r.json()
     data["status"] = "loaded"
     data["response_language_hint"] = "current_message_language"
@@ -224,7 +232,7 @@ def _load_slot_number(client: httpx.Client, slot_number: int) -> dict:
     r = client.get(_load_slot_number_url(slot_number), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "slot_number": slot_number}
-    r.raise_for_status()
+    _raise_for_status(r)
     data = r.json()
     data["status"] = "loaded"
     data["response_language_hint"] = "current_message_language"
@@ -335,7 +343,7 @@ def save_context(
             headers=_HEADERS,
             timeout=10,
         )
-    r.raise_for_status()
+    _raise_for_status(r)
     result = r.json()
     saved_slot_number = result.get("slot_number")
     result.setdefault("resume_context_call", _resume_context_call(slot_name, saved_slot_number))
@@ -365,7 +373,7 @@ def resume_context(
             return _load_slot(client, slot_name)
 
         r = client.get(_list_url(), headers=_HEADERS, timeout=10)
-        r.raise_for_status()
+        _raise_for_status(r)
         candidates = r.json()
 
         if project:
@@ -408,7 +416,7 @@ def load_context(slot_name: str | None = None, slot_number: int | None = None) -
             r = client.get(_load_url(slot_name), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "slot_name": slot_name, "slot_number": slot_number}
-    r.raise_for_status()
+    _raise_for_status(r)
     data = r.json()
     data["status"] = "loaded"
     return _decrypt_loaded_context(data)
@@ -419,7 +427,7 @@ def list_contexts() -> list:
     """List all non-expired slots."""
     with httpx.Client() as client:
         r = client.get(_list_url(), headers=_HEADERS, timeout=10)
-    r.raise_for_status()
+    _raise_for_status(r)
     return r.json()
 
 
@@ -434,7 +442,7 @@ def get_account_limits() -> dict:
     """Return account limits for the authenticated API key."""
     with httpx.Client() as client:
         r = client.get(_limits_url(), headers=_HEADERS, timeout=10)
-    r.raise_for_status()
+    _raise_for_status(r)
     return r.json()
 
 
@@ -443,7 +451,7 @@ def delete_context(slot_name: str) -> dict:
     """Delete a named slot."""
     with httpx.Client() as client:
         r = client.delete(_delete_url(slot_name), headers=_HEADERS, timeout=10)
-    r.raise_for_status()
+    _raise_for_status(r)
     return r.json()
 
 
