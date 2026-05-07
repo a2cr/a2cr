@@ -274,6 +274,30 @@ function clientLabel(clientType: string): string {
   if (normalized === "chatgpt" || normalized === "gpt") {
     return "ChatGPT";
   }
+  if (normalized === "claude") {
+    return "Claude";
+  }
+  if (normalized === "lmstudio" || normalized === "lm-studio") {
+    return "LM Studio";
+  }
+  if (normalized === "openwebui" || normalized === "open-webui") {
+    return "Open WebUI";
+  }
+  if (normalized === "hermes" || normalized === "hermes-agent") {
+    return "Hermes Agent";
+  }
+  if (normalized === "openclaw" || normalized === "open-claw") {
+    return "OpenClaw";
+  }
+  if (normalized === "opencode" || normalized === "open-code") {
+    return "OpenCode";
+  }
+  if (normalized === "roocode" || normalized === "roo-code" || normalized === "roo-cline") {
+    return "Roo Code";
+  }
+  if (normalized === "zed") {
+    return "Zed";
+  }
   if (normalized === "dashboard") {
     return "Dashboard";
   }
@@ -317,6 +341,30 @@ function clientBadgeClass(clientType: string): string {
   }
   if (normalized === "chatgpt" || normalized === "gpt") {
     return "bg-green-100 text-green-800";
+  }
+  if (normalized === "claude") {
+    return "bg-purple-100 text-purple-800";
+  }
+  if (normalized === "lmstudio" || normalized === "lm-studio") {
+    return "bg-rose-100 text-rose-800";
+  }
+  if (normalized === "openwebui" || normalized === "open-webui") {
+    return "bg-fuchsia-100 text-fuchsia-800";
+  }
+  if (normalized === "hermes" || normalized === "hermes-agent") {
+    return "bg-amber-100 text-amber-800";
+  }
+  if (normalized === "openclaw" || normalized === "open-claw") {
+    return "bg-red-100 text-red-800";
+  }
+  if (normalized === "opencode" || normalized === "open-code") {
+    return "bg-lime-100 text-lime-800";
+  }
+  if (normalized === "roocode" || normalized === "roo-code" || normalized === "roo-cline") {
+    return "bg-pink-100 text-pink-800";
+  }
+  if (normalized === "zed") {
+    return "bg-indigo-100 text-indigo-800";
   }
   if (normalized === "dashboard") {
     return "bg-amber-100 text-amber-900";
