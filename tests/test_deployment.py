@@ -149,6 +149,50 @@ def test_expire_web_contexts_uses_only_db_expiration_function(monkeypatch):
     assert executed == ["SELECT app.expire_contexts()"]
 
 
+def test_prune_access_logs_uses_only_db_prune_function(monkeypatch):
+    executed = []
+
+    class FakeResult:
+        def scalar_one(self):
+            return 7
+
+    class FakeConnection:
+        def execute(self, statement, params=None):
+            executed.append((str(statement), params or {}))
+            return FakeResult()
+
+    class FakeBegin:
+        def __enter__(self):
+            return FakeConnection()
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeEngine:
+        def begin(self):
+            return FakeBegin()
+
+    monkeypatch.setattr(maintenance, "validate_runtime_environment", lambda: None)
+    monkeypatch.setattr(maintenance, "get_web_engine", lambda: FakeEngine())
+
+    assert maintenance.prune_access_logs(older_than_seconds=0, batch_size=50000) == 7
+    statement, params = executed[0]
+    assert "SELECT app.prune_access_logs" in statement
+    assert "DELETE FROM public.access_logs" not in statement
+    assert params == {"older_than_seconds": 1, "batch_size": 10000}
+
+
+def test_maintenance_prune_access_logs_command_prints_only_count(monkeypatch, capsys):
+    monkeypatch.setattr(maintenance, "prune_access_logs", lambda **_: 3)
+
+    assert maintenance.main(["prune-access-logs", "--older-than-seconds", "86400", "--batch-size", "250"]) == 0
+
+    output = capsys.readouterr().out
+    assert output == "pruned_access_logs=3\n"
+    assert "DATABASE_URL" not in output
+    assert "Authorization" not in output
+
+
 def test_web_context_save_expires_old_rows_before_slot_capacity_check():
     service = (ROOT / "services" / "web_context.py").read_text(encoding="utf-8")
     save_start = service.index("def save_context(")
@@ -205,6 +249,8 @@ def test_deploy_runbook_includes_migration_safety_and_readiness():
     assert "python scripts/check_migrations.py" in runbook
     assert "https://a2cr.app/api/v1/health/readiness" in runbook
     assert "access_logs(user_id, action, created_at DESC)" in runbook
+    assert "python -m services.maintenance prune-access-logs" in runbook
+    assert "pruned_access_logs=<count>" in runbook
 
 
 def test_deploy_runbook_includes_hosted_rls_pooler_smoke():

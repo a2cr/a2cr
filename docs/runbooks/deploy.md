@@ -353,13 +353,16 @@ Recommended initial schedule: every 10 minutes.
 
 The job only calls `SELECT app.expire_contexts()`. The database function logs `context.expire` with sanitized metadata and deletes only expired rows. It does not decrypt context bodies.
 
-Access logs are operational data. Prune old rows in batches with:
+Create a second protected Railway job for access log pruning:
 
-```sql
-SELECT app.prune_access_logs(interval '30 days', 1000);
+```bash
+python -m services.maintenance prune-access-logs --older-than-seconds 2592000 --batch-size 1000
 ```
 
-Run repeated batches only as needed, and confirm stats counters still represent totals rather than relying on retained raw logs.
+The job only calls `SELECT app.prune_access_logs(...)` through
+`services.maintenance`; it prints only `pruned_access_logs=<count>`. Run
+repeated batches only as needed, and confirm stats counters still represent
+totals rather than relying on retained raw logs.
 
 ## Rollback
 
