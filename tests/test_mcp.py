@@ -184,6 +184,7 @@ def test_mcp_resume_context_loads_exact_slot_number(monkeypatch):
 
     result = mcp_http.resume_context(slot_number=2)
 
+    assert captured["user_id"] == USER_ID
     assert captured["slot_number"] == 2
     assert result["mode"] == "loaded"
     assert result["context"]["slot_name"] == "slot-b"
@@ -212,10 +213,17 @@ def test_mcp_ambiguous_resume_returns_candidates_without_content(monkeypatch):
 
 def test_mcp_resume_without_selector_returns_metadata_candidates(monkeypatch):
     monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
-    monkeypatch.setattr(web_context_service, "list_contexts", lambda **_: [metadata("slot-a", 1)])
+    captured = {}
+
+    def fake_list_contexts(**kwargs):
+        captured.update(kwargs)
+        return [metadata("slot-a", 1)]
+
+    monkeypatch.setattr(web_context_service, "list_contexts", fake_list_contexts)
 
     result = mcp_http.resume_context()
 
+    assert captured["user_id"] == USER_ID
     assert result["mode"] == "candidates"
     assert result["context"] is None
     assert result["candidates"][0]["slot_name"] == "slot-a"

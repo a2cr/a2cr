@@ -1,11 +1,14 @@
 import asyncio
 import html
 import json
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from textwrap import dedent
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -42,6 +45,8 @@ SECURITY_HEADERS = {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
     "Content-Security-Policy": CONTENT_SECURITY_POLICY,
 }
+
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
 
 
 def _seo(
@@ -436,16 +441,60 @@ def app_error_handler(request: Request, exc: AppError):
     )
 
 
+def _safe_request_id(request: Request) -> str:
+    request_id = request.headers.get("x-request-id")
+    if request_id and _REQUEST_ID_PATTERN.fullmatch(request_id):
+        return request_id
+    return uuid4().hex
+
+
+@app.exception_handler(RequestValidationError)
+def request_validation_error_handler(request: Request, exc: RequestValidationError):
+    details = [
+        {
+            "loc": list(error.get("loc", [])),
+            "msg": error.get("msg", "Invalid input"),
+            "type": error.get("type", "value_error"),
+        }
+        for error in exc.errors()
+    ]
+    return JSONResponse(
+        status_code=422,
+        content={
+            "code": "invalid_request",
+            "message": "Invalid request",
+            "details": details,
+            "request_id": _safe_request_id(request),
+        },
+    )
+
+
 @app.exception_handler(SQLAlchemyError)
 def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
     classification = classify_db_error(exc)
-    content = {"code": classification.code, "message": classification.message}
+    content = {
+        "code": classification.code,
+        "message": classification.message,
+        "request_id": _safe_request_id(request),
+    }
     if classification.retry_after is not None:
         content["retry_after"] = classification.retry_after
     headers = {}
     if classification.retry_after is not None:
         headers["Retry-After"] = str(classification.retry_after)
     return JSONResponse(status_code=classification.status, content=content, headers=headers)
+
+
+@app.exception_handler(Exception)
+def unhandled_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "code": "internal_error",
+            "message": "Request failed.",
+            "request_id": _safe_request_id(request),
+        },
+    )
 
 
 app.include_router(health.router)

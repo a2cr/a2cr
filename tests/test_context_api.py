@@ -144,7 +144,13 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
 
 
 def test_web_list_contexts_returns_metadata_without_content(client, monkeypatch):
-    monkeypatch.setattr(web_context_service, "list_contexts", lambda **_: [metadata()])
+    captured = {}
+
+    def fake_list_contexts(**kwargs):
+        captured.update(kwargs)
+        return [metadata()]
+
+    monkeypatch.setattr(web_context_service, "list_contexts", fake_list_contexts)
 
     response = client.get("/api/v1/contexts", headers={"Authorization": "Bearer sk-test-secret"})
 
@@ -152,6 +158,49 @@ def test_web_list_contexts_returns_metadata_without_content(client, monkeypatch)
     body = response.json()
     assert body[0]["slot_name"] == "slot-a"
     assert "content" not in body[0]
+    assert captured["user_id"] == USER_ID
+
+
+def test_web_save_context_rejects_plaintext_without_echoing_body(client, monkeypatch):
+    def fail_if_called(**kwargs):
+        raise AssertionError("plaintext request should fail before service call")
+
+    monkeypatch.setattr(web_context_service, "save_context", fail_if_called)
+
+    response = client.post(
+        "/api/v1/context",
+        json={"slot_name": "plain", "content": CONTENT},
+        headers={"Authorization": "Bearer sk-test-secret", "X-Request-ID": "plain-req"},
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["code"] == "invalid_request"
+    assert body["request_id"] == "plain-req"
+    assert "ship web context api" not in response.text
+    assert "current_state" not in response.text
+    assert "sk-test-secret" not in response.text
+
+
+def test_web_save_context_rejects_hostile_slot_name_without_echoing_value(client, monkeypatch):
+    hostile_slot_name = "<script>alert('x')</script>"
+
+    def fail_if_called(**kwargs):
+        raise AssertionError("invalid slot_name should fail before service call")
+
+    monkeypatch.setattr(web_context_service, "save_context", fail_if_called)
+
+    response = client.post(
+        "/api/v1/context",
+        json={"slot_name": hostile_slot_name, "encrypted_content": encrypted("slot-a")},
+        headers={"Authorization": "Bearer sk-test-secret"},
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["code"] == "invalid_request"
+    assert hostile_slot_name not in response.text
+    assert "<script>" not in response.text
 
 
 def test_web_list_contexts_returns_429_when_abuse_limited(client, monkeypatch):
