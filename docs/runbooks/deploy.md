@@ -22,6 +22,8 @@ Completed:
   - `supabase/migrations/003_contexts_user_scoped_unique_repair.sql`
   - `supabase/migrations/004_contexts_encryption_mode.sql`
   - `supabase/migrations/005_contexts_client_encrypted_only.sql`
+  - `supabase/migrations/006_db_resilience_baseline.sql`
+  - `supabase/migrations/007_workthreads_message_uniqueness.sql`
 - RLS verification passed for 9 public tables:
   - `access_logs`
   - `api_keys`
@@ -160,7 +162,22 @@ npm ci
 npm run build
 ```
 
-2. Apply all Supabase migrations in order before deploying app code that depends on them:
+2. For every production migration, record this review before running SQL:
+
+- purpose
+- expected affected objects
+- expected changed row count for data changes
+- lock risk and whether user traffic should be paused
+- readiness check impact
+- forward-fix plan
+
+Prefer small migrations and non-blocking indexes. Run the SQL first on a staging-like database, then check pending migrations without printing `DATABASE_URL`:
+
+```bash
+python scripts/check_migrations.py
+```
+
+3. Apply all Supabase migrations in order before deploying app code that depends on them:
 
 ```text
 supabase/migrations/001_base_schema.sql
@@ -168,15 +185,17 @@ supabase/migrations/002_workthreads.sql
 supabase/migrations/003_contexts_user_scoped_unique_repair.sql
 supabase/migrations/004_contexts_encryption_mode.sql
 supabase/migrations/005_contexts_client_encrypted_only.sql
+supabase/migrations/006_db_resilience_baseline.sql
+supabase/migrations/007_workthreads_message_uniqueness.sql
 ```
 
-3. Create a Railway service from the GitHub repository.
+4. Create a Railway service from the GitHub repository.
 
-4. Confirm Railway uses `Dockerfile` and `railway.json`.
+5. Confirm Railway uses `Dockerfile` and `railway.json`.
 
-5. Add the variables above.
+6. Add the variables above.
 
-6. Deploy. The Dockerfile builds React first, installs Python dependencies, copies `web/dist`, then starts:
+7. Deploy. The Dockerfile builds React first, installs Python dependencies, copies `web/dist`, then starts:
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
@@ -206,12 +225,14 @@ Run after every deploy:
 
 ```bash
 curl -fsS https://a2cr.app/api/v1/health
+curl -fsS https://a2cr.app/api/v1/health/readiness
 curl -fsS https://a2cr.app/dashboard | head
 ```
 
 Expected:
 
 - health returns `{"status":"ok"}`
+- readiness returns `ready: true`; if it returns 503, apply/fix migrations before routing users to the deploy
 - `/dashboard` returns the SPA shell
 - `/api/missing` returns 404
 - direct reload of `/login`, `/settings`, and `/pricing` returns the SPA shell
@@ -220,6 +241,27 @@ Expected:
 - Dashboard can issue an API key once
 - MCP `resume_context` works from a fresh AI window
 - Dashboard context and WorkThreads responses are metadata-only
+
+## Hot Query And Index Review
+
+Review `EXPLAIN` on production-like data before public beta and after migrations
+that touch these paths:
+
+- dashboard context list, stats, and access logs
+- context save/load/resume/delete
+- hourly rate-limit counts over `access_logs`
+- WorkThreads list/read/update/wait/task claim
+
+Required index coverage:
+
+- `contexts(user_id, expires_at)`
+- `contexts(user_id, slot_number)`
+- `contexts(expires_at)`
+- `access_logs(user_id, created_at DESC)`
+- `access_logs(user_id, action, created_at DESC)`
+- WorkThreads user/thread/message/task indexes from `002_workthreads.sql`
+
+Keep user-facing list/read routes bounded by explicit limits.
 
 ## Troubleshooting Dashboard Request Failed
 
@@ -282,6 +324,14 @@ python -m services.maintenance expire-contexts
 Recommended initial schedule: every 10 minutes.
 
 The job only calls `SELECT app.expire_contexts()`. The database function logs `context.expire` with sanitized metadata and deletes only expired rows. It does not decrypt context bodies.
+
+Access logs are operational data. Prune old rows in batches with:
+
+```sql
+SELECT app.prune_access_logs(interval '30 days', 1000);
+```
+
+Run repeated batches only as needed, and confirm stats counters still represent totals rather than relying on retained raw logs.
 
 ## Rollback
 

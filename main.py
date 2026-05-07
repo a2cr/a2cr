@@ -7,10 +7,12 @@ from textwrap import dedent
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 from routers import context, dashboard, health, mcp_http, web_context, workthreads
-from services.config import is_request_origin_allowed, is_web_runtime, validate_runtime_environment
+from services.config import app_env, is_request_origin_allowed, is_web_runtime, validate_runtime_environment
 from services.context import cleanup_expired
+from services.db_errors import classify_db_error
 from services.db import init_db
 from services.exceptions import AppError
 
@@ -18,6 +20,28 @@ WEB_DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"
 WEB_PUBLIC_DIR = Path(__file__).resolve().parent / "web" / "public"
 WEB_INDEX_FILE = WEB_DIST_DIR / "index.html"
 WEB_SOURCE_INDEX_FILE = Path(__file__).resolve().parent / "web" / "index.html"
+
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'",
+        "connect-src 'self' https://*.supabase.co",
+        "img-src 'self' data: https://a2cr.app",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "form-action 'self'",
+    ]
+)
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    "Content-Security-Policy": CONTENT_SECURITY_POLICY,
+}
 
 
 def _seo(
@@ -391,6 +415,16 @@ async def same_origin_guard(request: Request, call_next):
     return await call_next(request)
 
 
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    if app_env() == "production":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
 @app.exception_handler(AppError)
 def app_error_handler(request: Request, exc: AppError):
     content = {"code": exc.code, "message": exc.message}
@@ -400,6 +434,18 @@ def app_error_handler(request: Request, exc: AppError):
         content=content,
         headers=exc.headers,
     )
+
+
+@app.exception_handler(SQLAlchemyError)
+def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
+    classification = classify_db_error(exc)
+    content = {"code": classification.code, "message": classification.message}
+    if classification.retry_after is not None:
+        content["retry_after"] = classification.retry_after
+    headers = {}
+    if classification.retry_after is not None:
+        headers["Retry-After"] = str(classification.retry_after)
+    return JSONResponse(status_code=classification.status, content=content, headers=headers)
 
 
 app.include_router(health.router)

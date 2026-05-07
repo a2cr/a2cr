@@ -106,13 +106,28 @@ Track these metrics/events:
 - cleanup job failures
 - DB connection errors
 - unexpected origin rejections
+- schema readiness failures
 - API key issue/revoke events
 
 Initial alert paths:
 
 - cleanup job failure: check Railway job logs, then run `python -m services.maintenance expire-contexts` manually
 - auth anomaly: check rate-limited/auth failure counts and rotate affected API keys if needed
-- DB errors: confirm Supabase availability, connection limit, and `a2cr_app` role permissions
+- DB errors: confirm Supabase availability, connection limit, lock contention, pending migrations, and `a2cr_app` role permissions
+
+## Database Resilience Rules
+
+The Web runtime uses bounded SQLAlchemy pool settings and transaction-local
+Postgres timeouts for statement, lock, and idle-in-transaction waits.
+
+WorkBaton save/delete mutations take a user-scoped advisory transaction lock
+before expiring old rows, checking capacity, assigning slot numbers, or deleting
+slots. Keep this critical section small and do not add network calls or AI work
+inside it.
+
+Client-facing DB errors must stay generic. Responses may include a safe code,
+safe message, and `Retry-After`; they must not include SQL text, DB URLs,
+Authorization headers, request bodies, raw exception reprs, or stack traces.
 
 ## Incident Steps
 

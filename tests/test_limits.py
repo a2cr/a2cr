@@ -1,6 +1,21 @@
 import pytest
 
-from services.exceptions import BodyTooLarge, DetailLevelNotAllowed, PlanLimitExceeded, RetentionNotAllowed
+from services.abuse_limits import (
+    AUTH_FAILURE_RULE,
+    AUTHENTICATED_RULES,
+    RateLimitRule,
+    enforce_authenticated_rate_limit,
+    ensure_auth_attempt_allowed,
+    record_auth_failure,
+    reset_abuse_limit_state,
+)
+from services.exceptions import (
+    BodyTooLarge,
+    DetailLevelNotAllowed,
+    PlanLimitExceeded,
+    RateLimitExceeded,
+    RetentionNotAllowed,
+)
 from services.limits import (
     FREE_LIMITS,
     PRO_LIMITS,
@@ -104,3 +119,34 @@ def test_ensure_active_slot_capacity_rejects_new_slot_over_limit():
         )
 
     assert exc.value.code == "slot_limit_exceeded"
+
+
+def test_invalid_auth_rate_limit_blocks_after_repeated_failures():
+    reset_abuse_limit_state()
+    ip_hash = "ip-hash"
+
+    for index in range(AUTH_FAILURE_RULE.limit):
+        ensure_auth_attempt_allowed("api.api_key", ip_hash, now=float(index))
+        record_auth_failure("api.api_key", ip_hash, now=float(index))
+
+    with pytest.raises(RateLimitExceeded) as exc:
+        ensure_auth_attempt_allowed("api.api_key", ip_hash, now=float(AUTH_FAILURE_RULE.limit))
+
+    assert exc.value.code == "invalid_auth_rate_limited"
+    assert exc.value.status == 429
+
+
+def test_authenticated_abuse_limit_uses_action_specific_rule():
+    reset_abuse_limit_state()
+    original = AUTHENTICATED_RULES["dashboard.read"]
+    AUTHENTICATED_RULES["dashboard.read"] = RateLimitRule(2, 60, "dashboard_rate_limited")
+    try:
+        enforce_authenticated_rate_limit("user-a", "dashboard.read", now=1.0)
+        enforce_authenticated_rate_limit("user-a", "dashboard.read", now=2.0)
+        with pytest.raises(RateLimitExceeded) as exc:
+            enforce_authenticated_rate_limit("user-a", "dashboard.read", now=3.0)
+    finally:
+        AUTHENTICATED_RULES["dashboard.read"] = original
+
+    assert exc.value.code == "dashboard_rate_limited"
+    assert exc.value.headers["Retry-After"] == "58"

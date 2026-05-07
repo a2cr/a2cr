@@ -69,6 +69,10 @@ def _delete_url(slot_name: str) -> str:
     return _url(f"/v1/context/{slot_name}" if API_STYLE == "legacy" else f"/api/v1/context/{slot_name}")
 
 
+def _limits_url() -> str:
+    return _url("/api/v1/account/limits")
+
+
 def _client_key_path() -> Path:
     override = os.environ.get("A2CR_CLIENT_KEY_FILE")
     if override:
@@ -248,6 +252,40 @@ Content schema (all keys are JSON):
   summary       (str)           - Short summary of long work
   failed_attempts (list[str])   - Approaches that didn't work
   references    (list[str])     - Spec URLs, file paths, doc links
+  handoff_version (int)          - Handoff schema convention, start with 1
+  previous_slot (dict)           - Slot this save continues from, if known
+  supersedes_slots (list[dict])  - Older Slots this save supersedes
+  latest_slot_hint (str)         - Which Slot should be resumed next
+  completed_since_previous (list[str]) - Work completed after prior Slot load
+  remaining_tasks_ordered (list[str])  - Ordered next tasks for the next AI
+  validation (list[dict|str])    - Tests, builds, smoke checks, manual checks
+  workspace_status (dict)        - Branch, dirty state, key changed files
+  do_not_use_slots (list[dict])  - Stale Slots and why they should be avoided
+
+Chained handoffs:
+  When saving after loading a previous Slot or after another AI window continued
+  the work, include previous_slot, completed_since_previous,
+  remaining_tasks_ordered, validation, and workspace_status when relevant.
+  Use supersedes_slots or do_not_use_slots to make stale Slots explicit.
+  Keep these fields compact and never include secrets, full logs, or diffs.
+
+Plan detail levels:
+  Free/compact saves should contain only the minimum handoff needed to resume:
+  goal, current_state, next_action, optional short blockers or risks,
+  latest_slot_hint, previous_slot, and one-line validation.
+  Avoid detailed rationale, long failed-attempt history, large workspace
+  listings, and verbose references in Free/compact saves.
+  Pro/detailed saves may include useful rationale, test results, failed
+  attempts, and file responsibility notes when they improve resume quality.
+
+Forbidden for both Free and Pro:
+  Never save local client key or recovery key material.
+  Never save API keys, access tokens, Authorization headers, cookies, or session IDs.
+  Never save private database URLs, service-role keys, .env contents, or deployment secrets.
+  Never save customer data, personal data, payment data, or raw confidential business data.
+  Never save full transcripts, long logs, generated caches, build artifacts, git diffs,
+  or large code bodies that can be read from the repository.
+  Pro allows more safe handoff context, not more sensitive data.
 
 Storage language:
   Write content in concise English by default, even if the conversation is in
@@ -279,6 +317,7 @@ def save_context(
     original_length: int | None = None,
     model_source: str | None = None,
     slot_number: int | None = None,
+    detail_level: str | None = "compact",
 ) -> dict:
     """Save context to a named slot. Optionally overwrite a fixed Slot number."""
     body = {
@@ -286,6 +325,7 @@ def save_context(
         "slot_number": slot_number,
         "original_length": original_length,
         "model_source": model_source,
+        "detail_level": detail_level or "compact",
     }
     body["encrypted_content"] = _encrypt_content(content)
     with httpx.Client() as client:
@@ -379,6 +419,21 @@ def list_contexts() -> list:
     """List all non-expired slots."""
     with httpx.Client() as client:
         r = client.get(_list_url(), headers=_HEADERS, timeout=10)
+    r.raise_for_status()
+    return r.json()
+
+
+@mcp.tool(
+    description=(
+        "Return the current account plan, Slot limit, retention choices, body size "
+        "limit, and allowed detail levels. Use this before automatic saves; Free "
+        "accounts should save compact WorkBaton content."
+    )
+)
+def get_account_limits() -> dict:
+    """Return account limits for the authenticated API key."""
+    with httpx.Client() as client:
+        r = client.get(_limits_url(), headers=_HEADERS, timeout=10)
     r.raise_for_status()
     return r.json()
 

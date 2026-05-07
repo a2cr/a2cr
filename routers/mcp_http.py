@@ -12,6 +12,11 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from models.schemas import WebContextSaveRequest
+from services.abuse_limits import (
+    enforce_authenticated_rate_limit,
+    ensure_auth_attempt_allowed,
+    record_auth_failure,
+)
 from services.auth import AuthError, AuthenticatedUser, authenticate_api_key
 from services.db import get_web_engine
 from services.exceptions import AppError, SlotNotFound
@@ -154,12 +159,18 @@ def _current_auth_context() -> tuple[AuthenticatedUser, RequestMeta]:
         raise AuthError() from exc
 
     ip = _request_ip(request)
-    with Session(get_web_engine()) as session:
-        user = authenticate_api_key(
-            session,
-            request.headers.get("authorization"),
-            ip_hash=hash_log_value(ip),
-        )
+    ip_hash = hash_log_value(ip)
+    ensure_auth_attempt_allowed("mcp.api_key", ip_hash)
+    try:
+        with Session(get_web_engine()) as session:
+            user = authenticate_api_key(
+                session,
+                request.headers.get("authorization"),
+                ip_hash=ip_hash,
+            )
+    except AuthError:
+        record_auth_failure("mcp.api_key", ip_hash)
+        raise
     return user, RequestMeta(
         client_type="mcp",
         request_id=request.headers.get("x-request-id"),
@@ -323,6 +334,7 @@ def resume_context(
     prefer_latest: bool = False,
 ) -> dict:
     user, meta = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "context.read")
     if slot_name is None and slot_number is None and project is None:
         candidates = web_context_service.list_contexts(user_id=user.user_id)
         if not candidates:
@@ -346,6 +358,7 @@ def resume_context(
 @web_mcp.tool(name="load_context", description=LOAD_CONTEXT_DESCRIPTION)
 def load_context(slot_name: str | None = None, slot_number: int | None = None) -> dict:
     user, meta = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "context.read")
     result = web_context_service.load_context(
         user_id=user.user_id,
         slot_name=slot_name,
@@ -358,12 +371,14 @@ def load_context(slot_name: str | None = None, slot_number: int | None = None) -
 @web_mcp.tool(name="list_contexts", description=LIST_CONTEXTS_DESCRIPTION)
 def list_contexts() -> list:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "context.read")
     return [_metadata_result(item) for item in web_context_service.list_contexts(user_id=user.user_id)]
 
 
 @web_mcp.tool(name="get_account_limits", description=GET_LIMITS_DESCRIPTION)
 def get_account_limits() -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "context.read")
     profile = dashboard_service.get_profile(user.user_id)
     limits = get_plan_limits(profile.plan)
     return {
@@ -393,6 +408,7 @@ def create_workthread(
     idempotency_key: str | None = None,
 ) -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.write")
     result = workthreads_service.create_workthread(
         user_id=user.user_id,
         title=title,
@@ -407,6 +423,7 @@ def create_workthread(
 @web_mcp.tool(name="list_workthreads", description="List WorkThread progress metadata only. This never returns message content.")
 def list_workthreads() -> list:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     return [_workthread_result(item) for item in workthreads_service.list_workthreads(user_id=user.user_id)]
 
 
@@ -424,6 +441,7 @@ def post_workthread_message(
     agent_name: str | None = None,
 ) -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.write")
     result = workthreads_service.post_workthread_message(
         user_id=user.user_id,
         thread_id=thread_id,
@@ -443,6 +461,7 @@ def post_workthread_message(
 @web_mcp.tool(name="read_workthread", description=READ_WORKTHREAD_DESCRIPTION)
 def read_workthread(thread_id: str, limit: int = 100) -> list:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     return [
         _workthread_message_result(item)
         for item in workthreads_service.read_workthread(user_id=user.user_id, thread_id=thread_id, limit=limit)
@@ -452,6 +471,7 @@ def read_workthread(thread_id: str, limit: int = 100) -> list:
 @web_mcp.tool(name="unread_workthread", description=WORKTHREAD_UNREAD_DESCRIPTION)
 def unread_workthread(thread_id: str, target_agent_name: str | None = None) -> list:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     return [
         _workthread_message_result(item)
         for item in workthreads_service.unread_workthread_messages(
@@ -465,6 +485,7 @@ def unread_workthread(thread_id: str, target_agent_name: str | None = None) -> l
 @web_mcp.tool(name="check_workthread_updates", description=WORKTHREAD_UPDATES_DESCRIPTION)
 def check_workthread_updates(thread_id: str, since: str | None = None) -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     parsed_since = datetime.fromisoformat(since) if since else None
     return _workthread_update_result(
         workthreads_service.check_workthread_updates(user_id=user.user_id, thread_id=thread_id, since=parsed_since)
@@ -478,6 +499,7 @@ def wait_workthread_updates(
     timeout_seconds: int = 30,
 ) -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.wait")
     parsed_since = datetime.fromisoformat(since) if since else None
     return _workthread_update_result(
         workthreads_service.wait_workthread_updates(
@@ -492,6 +514,7 @@ def wait_workthread_updates(
 @web_mcp.tool(name="create_workthread_task", description="Create a pending WorkThread task for later claim by an agent.")
 def create_workthread_task(thread_id: str, title: str) -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
     return _workthread_task_result(
         workthreads_service.create_workthread_task(user_id=user.user_id, thread_id=thread_id, title=title)
     )
@@ -507,6 +530,7 @@ def claim_workthread_task(
     lease_seconds: int = 300,
 ) -> dict | None:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
     task = workthreads_service.claim_workthread_task(
         user_id=user.user_id,
         lease_owner=lease_owner,
@@ -526,6 +550,7 @@ def complete_workthread_task(
     result_message_id: str | None = None,
 ) -> dict:
     user, _ = _current_auth_context()
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
     return _workthread_task_result(
         workthreads_service.complete_workthread_task(
             user_id=user.user_id,

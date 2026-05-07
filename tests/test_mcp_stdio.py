@@ -99,6 +99,91 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
     assert result["slot_name"] == "slot-a"
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
+    assert captured["json"]["detail_level"] == "compact"
     assert "content" not in captured["json"]
     assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
     assert CONTENT["goal"] not in captured["json"]["encrypted_content"]["ciphertext"]
+
+
+def test_mcp_stdio_get_account_limits_uses_api_key_route():
+    server = load_stdio_server()
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "plan": "free",
+                "allowed_detail_levels": ["compact"],
+                "max_body_bytes": 32768,
+            }
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, headers, timeout):
+            captured["url"] = url
+            captured["headers"] = headers
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+    server.httpx.Client = FakeClient
+
+    result = server.get_account_limits()
+
+    assert captured["url"].endswith("/api/v1/account/limits")
+    assert "Authorization" in captured["headers"]
+    assert result["plan"] == "free"
+    assert result["allowed_detail_levels"] == ["compact"]
+
+
+def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():
+    server = load_stdio_server()
+    skill = (Path(__file__).resolve().parents[1] / "docs/templates/skills/a2cr-agent/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    fields = [
+        "previous_slot",
+        "supersedes_slots",
+        "latest_slot_hint",
+        "completed_since_previous",
+        "remaining_tasks_ordered",
+        "validation",
+        "workspace_status",
+        "do_not_use_slots",
+        "Free/compact saves",
+    ]
+
+    for field in fields:
+        assert field in server.SAVE_DESCRIPTION
+        assert field in skill
+
+
+def test_mcp_stdio_and_agent_guide_document_free_pro_forbidden_material():
+    server = load_stdio_server()
+    skill = (Path(__file__).resolve().parents[1] / "docs/templates/skills/a2cr-agent/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    forbidden_terms = [
+        "Forbidden for both Free and Pro",
+        "local client key",
+        "API keys",
+        "Authorization headers",
+        "private database URLs",
+        "customer data",
+        "personal data",
+        "full transcripts",
+        "long logs",
+        "git diffs",
+        "Pro allows more safe handoff context, not more sensitive data",
+    ]
+
+    for term in forbidden_terms:
+        assert term in server.SAVE_DESCRIPTION
+        assert term in skill

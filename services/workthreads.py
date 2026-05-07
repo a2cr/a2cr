@@ -279,7 +279,15 @@ def _enforce_loop_guard(
     idempotency_key: str | None,
 ) -> str | None:
     loop_status = session.execute(
-        text("SELECT loop_status FROM public.work_threads WHERE id = :thread_id AND user_id = :user_id"),
+        text(
+            """
+            SELECT loop_status
+            FROM public.work_threads
+            WHERE id = :thread_id
+              AND user_id = :user_id
+            FOR UPDATE
+            """
+        ),
         {"thread_id": thread_id, "user_id": str(user_id)},
     ).scalar_one_or_none()
     if loop_status == "blocked" and message_type not in FINAL_MESSAGE_TYPES:

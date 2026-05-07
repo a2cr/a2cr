@@ -64,6 +64,13 @@ class WebConfig:
     app_env: str
     audit_hash_secret: str
     public_api_key_prefix: str
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_pool_timeout_seconds: float = 5.0
+    db_pool_recycle_seconds: int = 1800
+    db_statement_timeout_ms: int = 8000
+    db_lock_timeout_ms: int = 2000
+    db_idle_transaction_timeout_ms: int = 10000
 
 
 _config: Config | None = None
@@ -94,6 +101,16 @@ def _required_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"{name} is required")
     return value
+
+
+def _int_env(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    return int(value) if value else default
+
+
+def _float_env(name: str, default: float) -> float:
+    value = os.environ.get(name)
+    return float(value) if value else default
 
 
 def app_env() -> str:
@@ -176,6 +193,13 @@ def get_web_config() -> WebConfig:
         app_env=_required_env("APP_ENV"),
         audit_hash_secret=os.environ.get("AUDIT_HASH_SECRET", api_key_hash_secret),
         public_api_key_prefix=os.environ.get("A2CR_API_KEY_PREFIX", "sk-a2cr"),
+        db_pool_size=_int_env("A2CR_DB_POOL_SIZE", 5),
+        db_max_overflow=_int_env("A2CR_DB_MAX_OVERFLOW", 5),
+        db_pool_timeout_seconds=_float_env("A2CR_DB_POOL_TIMEOUT_SECONDS", 5.0),
+        db_pool_recycle_seconds=_int_env("A2CR_DB_POOL_RECYCLE_SECONDS", 1800),
+        db_statement_timeout_ms=_int_env("A2CR_DB_STATEMENT_TIMEOUT_MS", 8000),
+        db_lock_timeout_ms=_int_env("A2CR_DB_LOCK_TIMEOUT_MS", 2000),
+        db_idle_transaction_timeout_ms=_int_env("A2CR_DB_IDLE_TRANSACTION_TIMEOUT_MS", 10000),
     )
     return _web_config
 

@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from services.config import get_web_config
-from services.db import web_transaction
+from services.db import acquire_user_mutation_lock, web_transaction
 from services.exceptions import AppError, PlanLimitExceeded, SlotNameConflict, SlotNotFound
 from services.limits import (
     ensure_active_slot_capacity,
@@ -248,6 +248,7 @@ def save_context(
     saved_tokens = (original_tokens - compressed_tokens) if original_tokens is not None else None
 
     with web_transaction(user_id) as session:
+        acquire_user_mutation_lock(session, user_id)
         session.execute(text("SELECT app.expire_contexts()"))
         _delete_legacy_contexts(session, user_id)
         plan, default_retention = _get_profile(session, user_id)
@@ -529,6 +530,7 @@ def resume_context(
 def delete_context(*, user_id: UUID | str, slot_name: str, meta: RequestMeta | None = None) -> None:
     meta = meta or RequestMeta()
     with web_transaction(user_id) as session:
+        acquire_user_mutation_lock(session, user_id)
         deleted = session.execute(
             text(
                 """

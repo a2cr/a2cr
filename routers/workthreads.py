@@ -18,6 +18,7 @@ from models.schemas import (
     WorkThreadUpdateCheckResponse,
 )
 from routers.web_context import get_current_api_user
+from services.abuse_limits import enforce_authenticated_rate_limit
 from services.auth import AuthenticatedUser
 from services.exceptions import AppError
 import services.workthreads as workthreads_service
@@ -77,6 +78,7 @@ def create_workthread(
     req: WorkThreadCreateRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadMetadataResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.write")
     return _thread_response(
         workthreads_service.create_workthread(
             user_id=user.user_id,
@@ -91,6 +93,7 @@ def create_workthread(
 
 @router.get("")
 def list_workthreads(user: AuthenticatedUser = Depends(get_current_api_user)) -> list[WorkThreadMetadataResponse]:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     return [_thread_response(item) for item in workthreads_service.list_workthreads(user_id=user.user_id)]
 
 
@@ -100,6 +103,7 @@ def post_workthread_message(
     req: WorkThreadMessageRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadMessageResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.write")
     return _message_response(
         workthreads_service.post_workthread_message(
             user_id=user.user_id,
@@ -123,6 +127,7 @@ def read_workthread(
     limit: int = 100,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> list[WorkThreadMessageResponse]:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     return [
         _message_response(item)
         for item in workthreads_service.read_workthread(user_id=user.user_id, thread_id=thread_id, limit=limit)
@@ -135,6 +140,7 @@ def unread_workthread_messages(
     target_agent_name: str | None = None,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> list[WorkThreadMessageResponse]:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     return [
         _message_response(item)
         for item in workthreads_service.unread_workthread_messages(
@@ -151,6 +157,7 @@ def check_workthread_updates(
     since: datetime | None = None,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadUpdateCheckResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.read")
     result = workthreads_service.check_workthread_updates(user_id=user.user_id, thread_id=thread_id, since=since)
     return WorkThreadUpdateCheckResponse(
         thread_id=result.thread_id,
@@ -167,6 +174,7 @@ def wait_workthread_updates(
     timeout_seconds: int = 30,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadUpdateCheckResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.wait")
     result = workthreads_service.wait_workthread_updates(
         user_id=user.user_id,
         thread_id=thread_id,
@@ -187,6 +195,7 @@ def create_workthread_task(
     req: WorkThreadTaskCreateRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadTaskResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
     return _task_response(
         workthreads_service.create_workthread_task(user_id=user.user_id, thread_id=thread_id, title=req.title)
     )
@@ -197,6 +206,7 @@ def claim_workthread_task(
     req: WorkThreadTaskClaimRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadTaskResponse | None:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
     task = workthreads_service.claim_workthread_task(
         user_id=user.user_id,
         lease_owner=req.lease_owner,
@@ -212,6 +222,7 @@ def complete_workthread_task(
     req: WorkThreadTaskCompleteRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadTaskResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
     return _task_response(
         workthreads_service.complete_workthread_task(
             user_id=user.user_id,
@@ -228,6 +239,7 @@ def save_workthread_result(
     req: WorkThreadResultSaveRequest,
     user: AuthenticatedUser = Depends(get_current_api_user),
 ) -> WorkThreadResultSaveResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.write")
     raise AppError(
         "client_encryption_required",
         "Saving a WorkThread result into WorkBaton requires client-side encryption before upload.",

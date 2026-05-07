@@ -71,6 +71,54 @@ def test_production_same_origin_guard_allows_public_origin(monkeypatch):
     assert response.json() == {"status": "ok"}
 
 
+def assert_security_headers(response, *, expect_hsts: bool):
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["permissions-policy"] == "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    csp = response.headers["content-security-policy"]
+    assert "default-src 'self'" in csp
+    assert "object-src 'none'" in csp
+    assert "frame-ancestors 'none'" in csp
+    assert "connect-src 'self' https://*.supabase.co" in csp
+    if expect_hsts:
+        assert response.headers["strict-transport-security"] == "max-age=31536000; includeSubDomains"
+    else:
+        assert "strict-transport-security" not in response.headers
+
+
+def test_security_headers_are_added_to_core_routes(monkeypatch):
+    set_production_env(monkeypatch)
+
+    with TestClient(app) as client:
+        for path in ("/", "/dashboard", "/api/v1/health", "/mcp"):
+            response = client.get(path, headers={"Origin": "https://a2cr.example"})
+            assert_security_headers(response, expect_hsts=True)
+
+
+def test_hsts_is_production_only():
+    with TestClient(app) as client:
+        response = client.get("/api/v1/health")
+
+    assert_security_headers(response, expect_hsts=False)
+
+
+def test_security_headers_are_added_to_rejected_origin(monkeypatch):
+    set_production_env(monkeypatch)
+
+    with TestClient(app) as client:
+        response = client.options(
+            "/api/v1/health",
+            headers={
+                "Origin": "https://evil.example",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+
+    assert response.status_code == 403
+    assert_security_headers(response, expect_hsts=True)
+
+
 def test_expire_web_contexts_uses_only_db_expiration_function(monkeypatch):
     executed = []
 
@@ -131,3 +179,26 @@ def test_client_encrypted_only_queries_ignore_legacy_context_rows():
     assert web_context.count("encryption_mode = 'client'") >= 5
     assert dashboard.count("encryption_mode = 'client'") >= 2
     assert limits.count("encryption_mode = 'client'") >= 2
+
+
+def test_db_resilience_migration_tracks_migrations_and_retention():
+    migration = (ROOT / "supabase" / "migrations" / "006_db_resilience_baseline.sql").read_text(encoding="utf-8")
+
+    assert "CREATE TABLE IF NOT EXISTS app.schema_migrations" in migration
+    assert "006_db_resilience_baseline" in migration
+    assert "access_logs_user_action_created_idx" in migration
+    assert "CREATE OR REPLACE FUNCTION app.prune_access_logs" in migration
+    assert "LIMIT LEAST(GREATEST(p_batch_size, 1), 10000)" in migration
+    assert "SET search_path = pg_catalog, pg_temp" in migration
+
+
+def test_deploy_runbook_includes_migration_safety_and_readiness():
+    runbook = (ROOT / "docs" / "runbooks" / "deploy.md").read_text(encoding="utf-8")
+
+    assert "supabase/migrations/006_db_resilience_baseline.sql" in runbook
+    assert "supabase/migrations/007_workthreads_message_uniqueness.sql" in runbook
+    assert "lock risk" in runbook
+    assert "readiness check impact" in runbook
+    assert "python scripts/check_migrations.py" in runbook
+    assert "https://a2cr.app/api/v1/health/readiness" in runbook
+    assert "access_logs(user_id, action, created_at DESC)" in runbook

@@ -16,6 +16,9 @@ def test_env(tmp_path, monkeypatch):
     db_module._engine = None
     db_module.reset_web_engine()
 
+    import services.abuse_limits as abuse_limits
+    abuse_limits.reset_abuse_limit_state()
+
     from services.db import init_db
     init_db()
 
@@ -24,3 +27,4 @@ def test_env(tmp_path, monkeypatch):
     config_module.reset_config()
     db_module._engine = None
     db_module.reset_web_engine()
+    abuse_limits.reset_abuse_limit_state()

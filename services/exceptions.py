@@ -69,3 +69,14 @@ class PlanLimitExceeded(AppError):
             extra={"retry_after": retry_after},
             headers={"Retry-After": str(retry_after)},
         )
+
+
+class RateLimitExceeded(AppError):
+    def __init__(self, code: str, message: str = "Too many requests", retry_after: int = 60):
+        super().__init__(
+            code,
+            message,
+            429,
+            extra={"retry_after": retry_after},
+            headers={"Retry-After": str(retry_after)},
+        )

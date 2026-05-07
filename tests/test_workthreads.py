@@ -262,9 +262,15 @@ def test_workthreads_migration_uses_skip_locked_and_separate_tables():
     migration = (Path(__file__).resolve().parents[1] / "supabase/migrations/002_workthreads.sql").read_text(
         encoding="utf-8"
     )
+    uniqueness_migration = (
+        Path(__file__).resolve().parents[1] / "supabase/migrations/007_workthreads_message_uniqueness.sql"
+    ).read_text(encoding="utf-8")
     service = (Path(__file__).resolve().parents[1] / "services/workthreads.py").read_text(encoding="utf-8")
 
     assert "work_thread_messages" in migration
     assert "ENABLE ROW LEVEL SECURITY" in migration
     assert "FOR UPDATE SKIP LOCKED" in service
+    assert "FOR UPDATE" in service[service.index("def _enforce_loop_guard(") : service.index("def _block_loop(")]
+    assert "work_thread_messages_idempotency_unique_idx" in uniqueness_migration
+    assert "work_thread_messages_content_hash_unique_idx" in uniqueness_migration
     assert "web_context_service.save_context" in service

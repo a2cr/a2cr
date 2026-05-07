@@ -13,6 +13,13 @@ from models.schemas import (
     WorkThreadMetadataResponse,
 )
 from services.auth import AuthenticatedUser, extract_bearer_token, verify_supabase_jwt
+from services.auth import AuthError
+from services.abuse_limits import (
+    enforce_authenticated_rate_limit,
+    ensure_auth_attempt_allowed,
+    record_auth_failure,
+)
+from services.logs import hash_log_value
 import services.dashboard as dashboard_service
 import services.web_context as web_context_service
 import services.workthreads as workthreads_service
@@ -22,10 +29,17 @@ router = APIRouter(prefix="/api/dashboard")
 
 
 def get_current_dashboard_user(
+    request: Request,
     authorization: str | None = Header(default=None, alias="Authorization"),
 ) -> AuthenticatedUser:
-    token = extract_bearer_token(authorization)
-    return verify_supabase_jwt(token)
+    ip_hash = hash_log_value(_request_ip(request))
+    ensure_auth_attempt_allowed("dashboard.jwt", ip_hash)
+    try:
+        token = extract_bearer_token(authorization)
+        return verify_supabase_jwt(token)
+    except AuthError:
+        record_auth_failure("dashboard.jwt", ip_hash)
+        raise
 
 
 def _request_ip(request: Request) -> str | None:
@@ -100,6 +114,7 @@ def _workthread_response(item) -> WorkThreadMetadataResponse:
 
 @router.get("/profile")
 def get_profile(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> DashboardProfileResponse:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
     return _profile_response(dashboard_service.get_profile(user.user_id))
 
 
@@ -108,6 +123,7 @@ def update_profile(
     req: DashboardProfileUpdateRequest,
     user: AuthenticatedUser = Depends(get_current_dashboard_user),
 ) -> DashboardProfileResponse:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.mutate")
     return _profile_response(
         dashboard_service.update_profile(
             user_id=user.user_id,
@@ -122,6 +138,7 @@ def update_profile(
 
 @router.get("/contexts")
 def list_contexts(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> list[DashboardContextItem]:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
     return [_context_response(item) for item in dashboard_service.list_contexts(user.user_id)]
 
 
@@ -131,12 +148,14 @@ def delete_context(
     user: AuthenticatedUser = Depends(get_current_dashboard_user),
     meta: RequestMeta = Depends(request_meta),
 ) -> dict:
+    enforce_authenticated_rate_limit(user.user_id, "context.delete")
     web_context_service.delete_context(user_id=user.user_id, slot_name=slot_name, meta=meta)
     return {"message": "deleted"}
 
 
 @router.get("/workthreads")
 def list_workthreads(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> list[WorkThreadMetadataResponse]:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
     profile = dashboard_service.get_profile(user.user_id)
     if profile.plan != "pro":
         return []
@@ -145,6 +164,7 @@ def list_workthreads(user: AuthenticatedUser = Depends(get_current_dashboard_use
 
 @router.get("/stats")
 def get_stats(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> DashboardStatsResponse:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
     stats = dashboard_service.get_stats(user.user_id)
     return DashboardStatsResponse(
         total_saves=stats.total_saves,
@@ -160,6 +180,7 @@ def list_access_logs(
     limit: int = 100,
     user: AuthenticatedUser = Depends(get_current_dashboard_user),
 ) -> list[DashboardAccessLogItem]:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
     return [
         DashboardAccessLogItem(
             action=item.action,
@@ -177,6 +198,7 @@ def list_access_logs(
 
 @router.get("/api-key")
 def get_api_key(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> DashboardApiKeyResponse | None:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
     api_key = dashboard_service.get_api_key(user.user_id)
     if api_key is None:
         return None
@@ -190,6 +212,7 @@ def get_api_key(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -
 
 @router.post("/api-key", status_code=201)
 def create_api_key(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> DashboardApiKeyCreateResponse:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.api_key.mutate")
     created = dashboard_service.create_api_key(user.user_id)
     return DashboardApiKeyCreateResponse(
         api_key=created.api_key,
@@ -200,5 +223,6 @@ def create_api_key(user: AuthenticatedUser = Depends(get_current_dashboard_user)
 
 @router.delete("/api-key")
 def revoke_api_key(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> dict:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.api_key.mutate")
     dashboard_service.revoke_api_key(user.user_id)
     return {"message": "revoked"}

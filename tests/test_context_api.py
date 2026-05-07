@@ -7,12 +7,15 @@ from fastapi.testclient import TestClient
 from main import app
 from routers.web_context import get_current_api_user
 from services.auth import AuthenticatedUser
+from services.dashboard import DashboardProfile
+from services.exceptions import RateLimitExceeded
 from services.web_context import (
     WebContextMetadata,
     WebLoadResult,
     WebResumeResult,
     WebSaveResult,
 )
+import services.dashboard as dashboard_service
 import services.web_context as web_context_service
 
 
@@ -57,6 +60,21 @@ def metadata(slot_name="slot-a", slot_number=1):
         detail_level="compact",
         model_source="gpt",
         load_count=0,
+    )
+
+
+def profile(plan="free", detail="compact", retention=86400):
+    now = future_time()
+    return DashboardProfile(
+        user_id=str(USER_ID),
+        plan=plan,
+        context_detail_level=detail,
+        default_retention_seconds=retention,
+        preferred_locale="auto",
+        response_language="auto",
+        timezone="UTC",
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -134,6 +152,36 @@ def test_web_list_contexts_returns_metadata_without_content(client, monkeypatch)
     body = response.json()
     assert body[0]["slot_name"] == "slot-a"
     assert "content" not in body[0]
+
+
+def test_web_list_contexts_returns_429_when_abuse_limited(client, monkeypatch):
+    def fail_if_called(**kwargs):
+        raise AssertionError("service should not run after abuse limit")
+
+    def reject(*args, **kwargs):
+        raise RateLimitExceeded("context_read_rate_limited")
+
+    monkeypatch.setattr(web_context_service, "list_contexts", fail_if_called)
+    monkeypatch.setattr("routers.web_context.enforce_authenticated_rate_limit", reject)
+
+    response = client.get("/api/v1/contexts", headers={"Authorization": "Bearer sk-test-secret"})
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "context_read_rate_limited"
+
+
+def test_web_account_limits_returns_free_compact_plan(client, monkeypatch):
+    monkeypatch.setattr(dashboard_service, "get_profile", lambda user_id: profile())
+
+    response = client.get("/api/v1/account/limits", headers={"Authorization": "Bearer sk-test-secret"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["plan"] == "free"
+    assert body["active_slots"] == 3
+    assert body["allowed_detail_levels"] == ["compact"]
+    assert body["context_detail_level"] == "compact"
+    assert body["max_body_bytes"] == 32 * 1024
 
 
 def test_web_load_context_returns_ciphertext_for_api_key_route(client, monkeypatch):
