@@ -102,6 +102,50 @@ def task_item(status="claimed", lease_owner="codex"):
     )
 
 
+class FakeWorkThreadResult:
+    def __init__(self, *, scalar=None, rows=None):
+        self.scalar = scalar
+        self.rows = rows or []
+
+    def scalar_one_or_none(self):
+        return self.scalar
+
+    def mappings(self):
+        return self
+
+    def all(self):
+        return self.rows
+
+
+class FakeWorkThreadSession:
+    def __init__(self):
+        self.executed = []
+
+    def execute(self, statement, params=None):
+        statement_text = str(statement)
+        self.executed.append((statement_text, params or {}))
+        if "SELECT plan FROM public.user_profiles" in statement_text:
+            return FakeWorkThreadResult(scalar="pro")
+        return FakeWorkThreadResult(rows=[])
+
+
+class FakeWorkThreadTransaction:
+    def __init__(self, session):
+        self.session = session
+
+    def __enter__(self):
+        return self.session
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+def capture_workthread_session(monkeypatch):
+    session = FakeWorkThreadSession()
+    monkeypatch.setattr(workthreads_service, "web_transaction", lambda user_id: FakeWorkThreadTransaction(session))
+    return session
+
+
 def test_create_workthread_route_returns_metadata_only(api_client, monkeypatch):
     captured = {}
 
@@ -211,6 +255,46 @@ def test_task_claim_and_complete_routes(api_client, monkeypatch):
     assert claimed.json()["lease_owner"] == "codex"
     assert completed.status_code == 200
     assert completed.json()["status"] == "completed"
+
+
+def test_list_workthreads_applies_safe_limit(monkeypatch):
+    session = capture_workthread_session(monkeypatch)
+
+    assert workthreads_service.list_workthreads(user_id=USER_ID, limit=9999) == []
+
+    statement, params = session.executed[1]
+    assert "ORDER BY last_activity_at DESC LIMIT :limit" in " ".join(statement.split())
+    assert params["limit"] == workthreads_service.MAX_LIST_WORKTHREADS
+
+
+def test_unread_workthread_messages_applies_safe_limit(monkeypatch):
+    session = capture_workthread_session(monkeypatch)
+
+    assert (
+        workthreads_service.unread_workthread_messages(
+            user_id=USER_ID,
+            thread_id="11111111-1111-1111-1111-111111111111",
+            target_agent_name="codex",
+            limit=9999,
+        )
+        == []
+    )
+
+    statement, params = session.executed[1]
+    assert "LIMIT :limit" in statement
+    assert params["target_agent_name"] == "codex"
+    assert params["limit"] == workthreads_service.MAX_UNREAD_WORKTHREAD_MESSAGES
+
+
+def test_workthreads_read_paths_do_not_use_unbounded_selects():
+    service = (Path(__file__).resolve().parents[1] / "services/workthreads.py").read_text(encoding="utf-8")
+    list_slice = service[service.index("def list_workthreads(") : service.index("def _insert_message(")]
+    read_slice = service[service.index("def read_workthread(") : service.index("def unread_workthread_messages(")]
+    unread_slice = service[service.index("def unread_workthread_messages(") : service.index("def _task_row_to_model(")]
+
+    assert "LIMIT :limit" in list_slice
+    assert "LIMIT :limit" in read_slice
+    assert "LIMIT :limit" in unread_slice
 
 
 def test_save_workthread_result_rejects_plaintext_without_echoing_body(api_client):

@@ -22,6 +22,9 @@ MAX_CONSULTATION_MESSAGES = 6
 MAX_CONSULTATION_QUESTIONS = 3
 MAX_UNRESOLVED_QUESTIONS = 3
 MAX_REPEATED_WAITS = 3
+MAX_LIST_WORKTHREADS = 100
+MAX_READ_WORKTHREAD_MESSAGES = 200
+MAX_UNREAD_WORKTHREAD_MESSAGES = 100
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,10 @@ class WorkThreadUpdateCheck:
 def _content_hash(content_dict: dict) -> str:
     canonical = json.dumps(content_dict, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _safe_limit(limit: int, max_limit: int) -> int:
+    return min(max(limit, 1), max_limit)
 
 
 def _ensure_pro(session, user_id: UUID | str) -> None:
@@ -190,12 +197,13 @@ def create_workthread(
         )
 
 
-def list_workthreads(*, user_id: UUID | str) -> list[WorkThread]:
+def list_workthreads(*, user_id: UUID | str, limit: int = 100) -> list[WorkThread]:
+    safe_limit = _safe_limit(limit, MAX_LIST_WORKTHREADS)
     with web_transaction(user_id) as session:
         _ensure_pro(session, user_id)
         rows = session.execute(
-            text(_thread_select_sql("wt.user_id = :user_id") + " ORDER BY last_activity_at DESC"),
-            {"user_id": str(user_id)},
+            text(_thread_select_sql("wt.user_id = :user_id") + " ORDER BY last_activity_at DESC LIMIT :limit"),
+            {"user_id": str(user_id), "limit": safe_limit},
         ).mappings().all()
     return [_thread_row_to_model(row) for row in rows]
 
@@ -447,7 +455,7 @@ def _message_row_to_model(row, *, loop_warning: str | None = None) -> WorkThread
 
 
 def read_workthread(*, user_id: UUID | str, thread_id: str, limit: int = 100) -> list[WorkThreadMessage]:
-    safe_limit = min(max(limit, 1), 200)
+    safe_limit = _safe_limit(limit, MAX_READ_WORKTHREAD_MESSAGES)
     with web_transaction(user_id) as session:
         _ensure_pro(session, user_id)
         rows = session.execute(
@@ -472,7 +480,9 @@ def unread_workthread_messages(
     user_id: UUID | str,
     thread_id: str,
     target_agent_name: str | None = None,
+    limit: int = 100,
 ) -> list[WorkThreadMessage]:
+    safe_limit = _safe_limit(limit, MAX_UNREAD_WORKTHREAD_MESSAGES)
     target_sql = "AND (target_agent_name = :target_agent_name OR target_agent_name IS NULL)" if target_agent_name else ""
     with web_transaction(user_id) as session:
         _ensure_pro(session, user_id)
@@ -487,9 +497,15 @@ def unread_workthread_messages(
                   AND requires_response = true
                   {target_sql}
                 ORDER BY created_at ASC
+                LIMIT :limit
                 """
             ),
-            {"user_id": str(user_id), "thread_id": thread_id, "target_agent_name": target_agent_name},
+            {
+                "user_id": str(user_id),
+                "thread_id": thread_id,
+                "target_agent_name": target_agent_name,
+                "limit": safe_limit,
+            },
         ).mappings().all()
     return [_message_row_to_model(row) for row in rows]
 
