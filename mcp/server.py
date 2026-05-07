@@ -19,20 +19,38 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastmcp import FastMCP
 
-BASE_URL = os.environ.get(
-    "A2CR_BASE_URL",
-    os.environ.get("AI_CLIPBOARD_BASE_URL", "http://localhost:8000"),
-)
-SERVICE_URL = os.environ.get(
-    "A2CR_SERVICE_URL",
-    os.environ.get("AI_CLIPBOARD_SERVICE_URL", BASE_URL),
-)
-API_KEY = os.environ.get("A2CR_API_KEY", os.environ.get("AI_CLIPBOARD_API_KEY", ""))
-API_STYLE = os.environ.get("A2CR_API_STYLE", "web").lower()
+
+def _normalize_base_url(value: str) -> str:
+    normalized = value.rstrip("/")
+    if normalized.endswith("/mcp"):
+        return normalized[:-4].rstrip("/")
+    return normalized
+
+
+def _is_local_base_url(value: str) -> bool:
+    host = urlparse(value).hostname
+    return host in {"localhost", "127.0.0.1", "::1"}
+
+
+def _base_url_from_env() -> str:
+    base_url = _normalize_base_url(os.environ.get("A2CR_BASE_URL", "https://a2cr.app"))
+    if _is_local_base_url(base_url) and os.environ.get("A2CR_ALLOW_LOCAL_BASE_URL") != "1":
+        raise RuntimeError(
+            "A2CR stdio MCP refuses localhost A2CR_BASE_URL by default. "
+            "Official WorkBaton saves must use the A2CR SaaS API. "
+            "Set A2CR_ALLOW_LOCAL_BASE_URL=1 only for explicit legacy local prototype tests."
+        )
+    return base_url
+
+
+BASE_URL = _base_url_from_env()
+SERVICE_URL = os.environ.get("A2CR_SERVICE_URL", f"{BASE_URL}/mcp").rstrip("/")
+API_KEY = os.environ.get("A2CR_API_KEY", "")
 
 mcp = FastMCP("A2CR")
 
@@ -84,11 +102,7 @@ _FILE_PAYLOAD_KEYS = {
     "file_data",
 }
 
-_HEADERS = (
-    {"X-API-Key": API_KEY}
-    if API_STYLE == "legacy"
-    else {"Authorization": f"Bearer {API_KEY}"}
-)
+_HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
 
 def _url(path: str) -> str:
@@ -96,27 +110,23 @@ def _url(path: str) -> str:
 
 
 def _save_url() -> str:
-    return _url("/v1/context/save" if API_STYLE == "legacy" else "/api/v1/context")
+    return _url("/api/v1/context")
 
 
 def _list_url() -> str:
-    return _url("/v1/context/list" if API_STYLE == "legacy" else "/api/v1/contexts")
+    return _url("/api/v1/contexts")
 
 
 def _load_url(slot_name: str) -> str:
-    return _url(f"/v1/context/{slot_name}" if API_STYLE == "legacy" else f"/api/v1/context/{slot_name}")
+    return _url(f"/api/v1/context/{slot_name}")
 
 
 def _load_slot_number_url(slot_number: int) -> str:
-    return _url(
-        f"/v1/context/slot/{slot_number}"
-        if API_STYLE == "legacy"
-        else f"/api/v1/context/slot/{slot_number}"
-    )
+    return _url(f"/api/v1/context/slot/{slot_number}")
 
 
 def _delete_url(slot_name: str) -> str:
-    return _url(f"/v1/context/{slot_name}" if API_STYLE == "legacy" else f"/api/v1/context/{slot_name}")
+    return _url(f"/api/v1/context/{slot_name}")
 
 
 def _limits_url() -> str:
@@ -286,21 +296,17 @@ def _resume_context_call(slot_name: str, slot_number: int | None = None) -> str:
 
 def _resume_prompt(slot_name: str, slot_number: int | None = None) -> str:
     slot_number_hint = (
-        f"Slot番号対応済みなら resume_context(slot_number={slot_number}) "
-        "でも読み込めます。\n"
+        f"If this client supports fixed Slot numbers, resume_context(slot_number={slot_number}) is also available.\n"
         if slot_number is not None
         else ""
     )
     return (
         f"A2CR service: {SERVICE_URL}\n"
-        "A2CR MCPツールを使ってください。HTTP APIを直接推測して呼び出さないでください。\n"
-        f"まず {_resume_context_call(slot_name, slot_number)} "
-        "を実行して、A2CRから引き継ぎ文脈を読み込んでください。\n"
+        "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints.\n"
+        f"First run: {_resume_context_call(slot_name, slot_number)}\n"
         f"{slot_number_hint}"
-        "読み込み後は、作業に必要なプロジェクトファイルを通常通り参照して構いません。\n"
-        "回答はこのメッセージの言語に合わせてください。"
+        "After loading, inspect the current project files as needed and continue in the user's current language."
     )
-
 
 def _build_handoff_text(content: dict) -> str:
     sections = [

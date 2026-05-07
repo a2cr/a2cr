@@ -3,6 +3,24 @@
 This runbook defines the beta recovery baseline for A2CR. It is an operational
 checklist, not a production SLA.
 
+## Resilience Baseline
+
+For the current individual-developer beta, automatic database failover to a
+hot secondary primary is not the baseline. A2CR should first be recoverable and
+operable with simpler controls:
+
+- one production Railway app and one production Supabase project
+- Supabase managed backups or scheduled exports with restricted access
+- a restore drill into non-production before beta users rely on the service
+- Railway redeploy or rollback for bad app deploys and runtime crashes
+- basic alerts for health/readiness failures, elevated 5xx responses, cleanup
+  job failures, and database connection errors
+
+Read replicas or automatic failover can be reconsidered after backup, restore,
+and monitoring are tested, or when uptime requirements justify the added cost
+and operational complexity. A read replica is not a substitute for a tested
+backup and restore path.
+
 ## Ownership
 
 - Incident commander: decides whether to pause traffic, roll back, or continue
@@ -50,6 +68,11 @@ Primary database backup source is Supabase managed backups and/or scheduled
 exports depending on plan. If the Supabase plan does not provide the needed
 retention or point-in-time restore, add scheduled exports before beta and record
 where those exports are stored.
+
+As of the 2026-05-07 hosted dashboard check, the production Supabase project is
+on the Free plan, and the Database Backups page says project backups are not
+included. Do not treat production data as recoverable until backups or scheduled
+exports are enabled and a restore target is confirmed.
 
 Recoverable from database backup:
 

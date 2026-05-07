@@ -205,6 +205,72 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
     assert result["allowed_detail_levels"] == ["compact"]
 
 
+def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
+    monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example")
+    monkeypatch.setenv("A2CR_API_KEY", "sk-a2cr-secret")
+    monkeypatch.setenv("A2CR_API_STYLE", "legacy")
+
+    server = load_stdio_server()
+
+    assert server.BASE_URL == "https://a2cr.example"
+    assert server._save_url() == "https://a2cr.example/api/v1/context"
+    assert server._list_url() == "https://a2cr.example/api/v1/contexts"
+    assert server._load_url("slot-a") == "https://a2cr.example/api/v1/context/slot-a"
+    assert server._load_slot_number_url(2) == "https://a2cr.example/api/v1/context/slot/2"
+    assert server._delete_url("slot-a") == "https://a2cr.example/api/v1/context/slot-a"
+    assert server._HEADERS == {"Authorization": "Bearer sk-a2cr-secret"}
+
+
+def test_mcp_stdio_defaults_to_a2cr_saas(monkeypatch):
+    monkeypatch.delenv("A2CR_BASE_URL", raising=False)
+    monkeypatch.delenv("A2CR_SERVICE_URL", raising=False)
+    monkeypatch.delenv("A2CR_ALLOW_LOCAL_BASE_URL", raising=False)
+
+    server = load_stdio_server()
+
+    assert server.BASE_URL == "https://a2cr.app"
+    assert server.SERVICE_URL == "https://a2cr.app/mcp"
+
+
+def test_mcp_stdio_refuses_localhost_base_url_without_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("A2CR_BASE_URL", "http://localhost:8000")
+    monkeypatch.delenv("A2CR_ALLOW_LOCAL_BASE_URL", raising=False)
+
+    with pytest.raises(RuntimeError, match="refuses localhost A2CR_BASE_URL"):
+        load_stdio_server()
+
+
+def test_mcp_stdio_allows_localhost_base_url_for_legacy_tests(monkeypatch):
+    monkeypatch.setenv("A2CR_BASE_URL", "http://localhost:8000")
+    monkeypatch.setenv("A2CR_ALLOW_LOCAL_BASE_URL", "1")
+
+    server = load_stdio_server()
+
+    assert server.BASE_URL == "http://localhost:8000"
+
+
+def test_mcp_stdio_strips_mcp_suffix_from_base_url(monkeypatch):
+    monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example/mcp")
+
+    server = load_stdio_server()
+
+    assert server.BASE_URL == "https://a2cr.example"
+    assert server._list_url() == "https://a2cr.example/api/v1/contexts"
+
+
+def test_mcp_stdio_resume_prompt_is_slot_first_and_endpoint_safe(monkeypatch):
+    monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example/mcp")
+
+    server = load_stdio_server()
+    prompt = server._resume_prompt("slot-a", 2)
+
+    assert "A2CR service: https://a2cr.example/mcp" in prompt
+    assert "Use the A2CR MCP tool" in prompt
+    assert "Do not guess or call direct HTTP API endpoints" in prompt
+    assert 'First run: resume_context(slot_name="slot-a")' in prompt
+    assert "resume_context(slot_number=2)" in prompt
+
+
 def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
     monkeypatch.setenv("A2CR_API_KEY", "sk-a2cr-secret")
     server = load_stdio_server()

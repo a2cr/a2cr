@@ -98,7 +98,9 @@ def test_public_agent_guide_serves_static_html():
     assert '<noscript id="a2cr-static-description">' in response.text
     assert "A2CR AI Agent Guide" in response.text
     assert "Do not guess direct HTTP API calls" in response.text
-    assert "At the start of work, call list_contexts" in response.text
+    assert "local stdio MCP wrapper named a2cr" in response.text
+    assert "first call resume_context(slot_name=" in response.text
+    assert "Use list_contexts only when no Slot is provided" in response.text
     assert "Never save secrets" in response.text
     assert "The local client key is managed by the user" in response.text
     assert "old client-encrypted slots cannot be recovered" in response.text
@@ -121,9 +123,11 @@ def test_public_seo_support_files_are_served():
     assert llms.status_code == 200
     assert "Public guide (English): https://a2cr.app/en/guide" in llms.text
     assert "AI agent guide (English): https://a2cr.app/en/agent-guide" in llms.text
-    assert "MCP endpoint: https://a2cr.app/mcp" in llms.text
+    assert "MCP service URL: https://a2cr.app/mcp" in llms.text
     assert "A2CR is not an AI" in llms.text
-    assert "At the start of work, call list_contexts" in llms.text
+    assert "Official AI-agent setup is the local stdio MCP wrapper named a2cr" in llms.text
+    assert 'first call resume_context(slot_name="...")' in llms.text
+    assert "Use list_contexts only when no Slot is provided" in llms.text
     assert "local client key is managed by the user" in llms.text
     assert "old client-encrypted slots cannot be recovered" in llms.text
     assert "WorkBaton is client-encrypted only" in llms.text

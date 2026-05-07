@@ -9,15 +9,12 @@ from dotenv import load_dotenv
 _WEB_RUNTIME_ENVS = {"production", "staging"}
 _APPDATA_DIR = Path(os.environ.get("APPDATA", Path.home()))
 _DEFAULT_ENV_DIR = _APPDATA_DIR / "a2cr"
-_LEGACY_ENV_DIR = _APPDATA_DIR / "ai_clipboard"
 
 
 def _resolve_env_dir() -> Path:
-    configured = os.environ.get("A2CR_HOME") or os.environ.get("AI_CLIPBOARD_HOME")
+    configured = os.environ.get("A2CR_HOME")
     if configured:
         return Path(configured)
-    if (_LEGACY_ENV_DIR / ".env").exists():
-        return _LEGACY_ENV_DIR
     return _DEFAULT_ENV_DIR
 
 
@@ -75,6 +72,10 @@ class WebConfig:
 
 _config: Config | None = None
 _web_config: WebConfig | None = None
+
+
+def is_legacy_local_api_enabled() -> bool:
+    return os.environ.get("A2CR_ENABLE_LEGACY_LOCAL_API") == "1"
 
 
 def get_config() -> Config:

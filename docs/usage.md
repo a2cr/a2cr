@@ -1,8 +1,10 @@
 # A2CR Usage
 
-This guide covers the local prototype usage path.
+This guide covers development usage. The official AI-agent WorkBaton path is
+the local stdio MCP wrapper targeting the A2CR SaaS API. The legacy local
+SQLite `/v1/context/*` API is disabled by default.
 
-## Start Local Services
+## Local Development
 
 Install dependencies:
 
@@ -10,18 +12,20 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-On Windows:
+Run verification:
 
-```bat
-start.bat
+```bash
+python -m pytest -q
+cd web
+npm install
+npm run build
 ```
 
-Local services:
+Optional local services for development:
 
 ```text
-API:       http://localhost:8000
-Dashboard: http://localhost:8501
-Web dev:   http://localhost:5173
+API:     uvicorn main:app --host 127.0.0.1 --port 8000
+Web dev: npm run dev
 ```
 
 Health check:
@@ -38,7 +42,8 @@ Expected response:
 
 ## API Key
 
-Local API routes require `X-API-Key`.
+Legacy local API routes require `X-API-Key` and
+`A2CR_ENABLE_LEGACY_LOCAL_API=1`. Do not enable this for normal AI-agent work.
 
 Example:
 
@@ -50,7 +55,7 @@ Do not commit real API keys or local `.env` files.
 
 ## Save A WorkBaton Slot
 
-WorkBaton bodies must be encrypted before upload. Prefer the local stdio MCP wrapper. Direct API saves must send `encrypted_content`, not plaintext `content`.
+Legacy local SQLite API example. WorkBaton bodies must be encrypted before upload. Prefer the local stdio MCP wrapper targeting A2CR SaaS. Direct local API saves must send `encrypted_content`, not plaintext `content`.
 
 ```bash
 curl -X POST http://localhost:8000/v1/context/save \
@@ -104,6 +109,11 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 
 Example only:
 
+This is the only official AI-agent path for WorkBaton. Configure one MCP server
+named `a2cr` through the local stdio wrapper. Do not configure the hosted
+`/mcp` URL directly for WorkBaton, and do not use the old `AI_CLIPBOARD_*` or
+`A2CR_API_STYLE` settings for normal AI-agent setup.
+
 ```json
 {
   "mcpServers": {
@@ -112,9 +122,8 @@ Example only:
       "args": ["<project-root>/mcp/server.py"],
       "env": {
         "A2CR_API_KEY": "<your-api-key>",
-        "A2CR_API_STYLE": "legacy",
-        "A2CR_BASE_URL": "http://localhost:8000",
-        "A2CR_SERVICE_URL": "http://localhost:8000"
+        "A2CR_BASE_URL": "https://a2cr.app",
+        "A2CR_SERVICE_URL": "https://a2cr.app/mcp"
       }
     }
   }
@@ -122,6 +131,8 @@ Example only:
 ```
 
 The local stdio MCP wrapper always uses client-encrypted WorkBaton mode.
+It refuses localhost `A2CR_BASE_URL` unless `A2CR_ALLOW_LOCAL_BASE_URL=1` is
+set for explicit legacy local prototype tests.
 
 Optional environment variables:
 

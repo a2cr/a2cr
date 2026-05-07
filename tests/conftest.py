@@ -8,6 +8,7 @@ def test_env(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
     monkeypatch.setenv("API_KEY", "test-api-key-1234567890abcdef")
     monkeypatch.setenv("FERNET_KEY", Fernet.generate_key().decode())
+    monkeypatch.setenv("A2CR_ENABLE_LEGACY_LOCAL_API", "1")
 
     import services.config as config_module
     config_module.reset_config()

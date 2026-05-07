@@ -65,12 +65,13 @@ function agentPrompt(language: Language): string {
       `A2CR service: ${serviceUrl()}`,
       "A2CR MCPを作業記憶として使ってください。",
       "直接HTTP APIを推測せず、A2CR MCPツールだけを使います。",
-      "作業開始時はlist_contextsで既存Slotを確認し、関連するSlotがあればresume_contextで読み込みます。",
+      "WorkBatonの公式ルートは、a2crという名前のローカルstdio MCPラッパーです。",
+      "resume promptにSlotがある場合は、最初にresume_context(slot_name=\"...\")またはresume_context(slot_number=N)を実行します。",
+      "list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。",
       "作業中は、会話が長くなる前または重要な区切りでsave_contextします。",
       "保存する内容はgoal、current_state、next_action、必要な判断・制約・参照だけに絞ります。",
       "APIキー、Authorization header、DB URL、秘密情報、全文ログ、長い会話履歴は保存しません。",
       "自動保存前にはget_account_limitsで制限を確認します。",
-      "新しい窓では最初にresume_context(slot_name=\"...\")またはresume_context(slot_number=N)を実行します。",
       "読み込み後は、現在のユーザーの言語で続けます。"
     ].join("\n");
   }
@@ -78,12 +79,13 @@ function agentPrompt(language: Language): string {
     `A2CR service: ${serviceUrl()}`,
     "Use A2CR MCP as working memory.",
     "Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.",
-    "At the start of work, call list_contexts and resume a relevant Slot if one exists.",
+    "Use the local stdio MCP wrapper named a2cr as the official WorkBaton path.",
+    "When a resume prompt provides a Slot, first call resume_context(slot_name=\"...\") or resume_context(slot_number=N).",
+    "Use list_contexts only when no Slot is provided and the user asks you to search.",
     "During work, call save_context before the conversation gets long or at important milestones.",
     "Save only goal, current_state, next_action, and compact supporting facts.",
     "Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
     "Call get_account_limits before automatic saves.",
-    "In a new window, first call resume_context(slot_name=\"...\") or resume_context(slot_number=N).",
     "After loading, continue in the language of the current user message."
   ].join("\n");
 }
@@ -153,15 +155,15 @@ const text = {
       ["Client-encrypted only", "The local stdio MCP wrapper encrypts before upload; A2CR stores and returns ciphertext only."]
     ],
     noOverclaim:
-      "WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload.",
+      "WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload. Legacy local SQLite saves are not the official AI-agent path.",
     setupTitle: "MCP setup",
     setupBody:
       "Create an API key after signing in, then configure the local stdio MCP wrapper. The wrapper stores the local client key on your machine. Keep real API keys and key files out of repositories and logs.",
     workflowTitle: "Basic workflow",
     workflow: [
       "Sign in to A2CR and issue an API key.",
-      "Add A2CR to your MCP client.",
-      "Ask the AI agent to verify the connection with get_account_limits or list_contexts.",
+      "Add one MCP server named a2cr to your MCP client using the local stdio wrapper.",
+      "Ask the AI agent to verify the connection with get_account_limits.",
       "Save a WorkBaton before the session gets long or at a clear task boundary.",
       "Resume from the saved Slot in a new window with resume_context."
     ],
@@ -171,6 +173,8 @@ const text = {
       "Ask the user to paste the API key into the config themselves when possible.",
       "Do not print API keys, Authorization headers, or full secret configs in chat.",
       "Use MCP tools rather than guessed direct HTTP API calls.",
+      "Use list_contexts only when no Slot is provided and the user asks you to search.",
+      "Do not use the legacy local SQLite API for WorkBaton saves.",
       "Never save secrets, full transcripts, or long logs into WorkBaton."
     ],
     copyConfig: "Copy config",
@@ -247,8 +251,8 @@ const text = {
     workflowTitle: "基本の流れ",
     workflow: [
       "A2CRへログインし、APIキーを発行します。",
-      "MCPクライアントにA2CRを追加します。",
-      "AIエージェントにget_account_limitsまたはlist_contextsで接続確認してもらいます。",
+      "ローカルstdio wrapperを使い、a2crという名前のMCP serverを1つだけ追加します。",
+      "AIエージェントにget_account_limitsで接続確認してもらいます。",
       "会話が長くなる前、または作業の区切りでWorkBatonを保存します。",
       "新しい窓でresume_contextを使い、保存したSlotから再開します。"
     ],
@@ -258,6 +262,7 @@ const text = {
       "可能ならAPIキーの貼り付けはユーザー本人に行ってもらいます。",
       "APIキー、Authorization header、secretをチャットやログに表示しません。",
       "HTTP APIを推測せず、MCPツールを使います。",
+      "list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。",
       "秘密情報、全文履歴、長いログをWorkBatonに保存しません。"
     ],
     copyConfig: "設定をコピー",

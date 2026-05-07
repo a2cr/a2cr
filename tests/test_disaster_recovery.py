@@ -17,6 +17,9 @@ def test_disaster_recovery_runbook_defines_rto_rpo_and_backup_source():
     text = read_runbook()
     normalized = normalized_runbook()
 
+    assert "Resilience Baseline" in text
+    assert "automatic database failover to a hot secondary primary is not the baseline" in normalized
+    assert "A read replica is not a substitute for a tested backup and restore path." in normalized
     assert "RTO/RPO Targets" in text
     assert "Beta target" in text
     assert "Paid-production target" in text
@@ -26,6 +29,9 @@ def test_disaster_recovery_runbook_defines_rto_rpo_and_backup_source():
     assert "DB restore from backup | 4 hours | 1 hour to 24 hours depending on plan" in text
     assert "Supabase managed backups and/or scheduled exports depending on plan" in normalized
     assert "scheduled exports before beta" in text
+    assert "Free plan" in text
+    assert "project backups are not included" in normalized
+    assert "until backups or scheduled exports are enabled" in normalized
     assert "Current status: testing / early beta. No production SLA." in text
 
 

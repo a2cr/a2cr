@@ -5,7 +5,11 @@ description: Use A2CR MCP for WorkBaton checkpoints and WorkThreads shared work 
 
 # A2CR Agent Workflow
 
-Use A2CR as the shared context layer for AI-agent work. Prefer A2CR MCP tools over guessed HTTP endpoints unless the user explicitly asks for API integration work.
+Use A2CR as the shared context layer for AI-agent work. The official WorkBaton path for AI agents is the local stdio MCP wrapper named `a2cr`. Prefer A2CR MCP tools over guessed HTTP endpoints unless the user explicitly asks for API integration work.
+
+Do not configure the hosted `/mcp` URL directly for WorkBaton, and do not use old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
+
+Do not use the legacy local SQLite `/v1/context/*` API for AI-agent WorkBaton saves. It is disabled by default and exists only for explicit local prototype tests.
 
 ## Resume WorkBaton
 
@@ -23,6 +27,8 @@ When the user provides an A2CR resume prompt:
 When a loaded WorkBaton includes `latest_slot_hint`, `previous_slot`, `supersedes_slots`, or `do_not_use_slots`, use those fields to avoid resuming from stale Slots. If the loaded Slot says another active Slot is newer, ask the user before switching unless the resume prompt already authorizes the newer Slot.
 
 Do not invent missing facts when a slot is not found or expired.
+
+Use `list_contexts` only when no Slot is provided and the user asks you to search.
 
 ## Save WorkBaton
 

@@ -12,7 +12,13 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from sqlalchemy.exc import SQLAlchemyError
 
 from routers import context, dashboard, health, mcp_http, web_context, workthreads
-from services.config import app_env, is_request_origin_allowed, is_web_runtime, validate_runtime_environment
+from services.config import (
+    app_env,
+    is_legacy_local_api_enabled,
+    is_request_origin_allowed,
+    is_web_runtime,
+    validate_runtime_environment,
+)
 from services.context import cleanup_expired
 from services.db_errors import classify_db_error
 from services.db import init_db
@@ -88,7 +94,7 @@ ROUTE_SEO = {
         - Guide: https://a2cr.app/en/guide
         - AI agent guide: https://a2cr.app/en/agent-guide
         - Pricing: https://a2cr.app/pricing
-        - MCP endpoint: https://a2cr.app/mcp
+        - MCP service URL: https://a2cr.app/mcp
         - LLM notes: https://a2cr.app/llms.txt
         """,
     ),
@@ -120,7 +126,7 @@ ROUTE_SEO = {
         関連ページ:
         - AIエージェント向けガイド: https://a2cr.app/agent-guide
         - English guide: https://a2cr.app/en/guide
-        - MCP endpoint: https://a2cr.app/mcp
+        - MCP service URL: https://a2cr.app/mcp
 
         圧縮・要約機能との違い:
         - 圧縮・要約機能の目的は長い会話を短くすることです。
@@ -168,7 +174,7 @@ ROUTE_SEO = {
         Related pages:
         - AI agent guide: https://a2cr.app/en/agent-guide
         - Japanese guide: https://a2cr.app/guide
-        - MCP endpoint: https://a2cr.app/mcp
+        - MCP service URL: https://a2cr.app/mcp
 
         Compression / summarization vs A2CR / WorkBaton:
         - Compression and summarization shorten a long conversation.
@@ -197,9 +203,11 @@ ROUTE_SEO = {
         # A2CR AIエージェント向けガイド
 
         AIエージェントはA2CRをMCPツール経由の作業記憶として使います。直接HTTP APIを推測して呼ばないでください。
+        WorkBatonの公式ルートは、a2crという名前のローカルstdio MCPラッパーです。
 
         ルール:
-        - 作業開始時はlist_contextsで既存Slotを確認し、関連するSlotがあればresume_contextで読み込みます。
+        - resume promptにSlotがある場合は、最初にresume_context(slot_name="...")またはresume_context(slot_number=N)を実行します。
+        - list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。
         - 作業中は、会話が長くなる前または重要な区切りでsave_contextします。
         - 保存する内容はgoal、current_state、next_action、必要な判断、制約、参照だけに絞ります。
         - APIキー、Authorization header、DB URL、秘密情報、全文ログ、長い会話履歴は保存しません。
@@ -221,9 +229,12 @@ ROUTE_SEO = {
         # A2CR AI Agent Guide
 
         AI agents should use A2CR through MCP tools as working memory. Do not guess direct HTTP API calls.
+        The official WorkBaton path is the local stdio MCP wrapper named a2cr.
+        Do not use the legacy local SQLite API for WorkBaton saves.
 
         Rules:
-        - At the start of work, call list_contexts and resume a relevant Slot if one exists.
+        - When a resume prompt provides a Slot, first call resume_context(slot_name="...") or resume_context(slot_number=N).
+        - Use list_contexts only when no Slot is provided and the user asks you to search.
         - During work, call save_context before the conversation gets long or at important milestones.
         - Save only goal, current_state, next_action, and compact supporting facts.
         - Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
@@ -385,7 +396,7 @@ async def _cleanup_loop():
 async def lifespan(app: FastAPI):
     validate_runtime_environment()
     task = None
-    if not is_web_runtime():
+    if not is_web_runtime() and is_legacy_local_api_enabled():
         init_db()
         task = asyncio.create_task(_cleanup_loop())
     try:

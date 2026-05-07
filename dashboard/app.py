@@ -1,6 +1,6 @@
 """
-Streamlit dashboard for A2CR.
-Reads SQLite directly; delete calls the API to keep stats consistent.
+Legacy Streamlit dashboard for the local A2CR prototype.
+Reads SQLite directly; disabled unless explicitly enabled for local prototype work.
 """
 import sys
 from pathlib import Path
@@ -18,11 +18,19 @@ from sqlalchemy.orm import Session
 # Import from project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from services.config import get_config, get_data_dir
+from services.config import get_config, get_data_dir, is_legacy_local_api_enabled
 from services.db import get_engine, Context, Stats, init_db
 from services.crypto import decrypt
 
 st.set_page_config(page_title="A2CR", layout="wide")
+
+if not is_legacy_local_api_enabled():
+    st.error(
+        "The legacy local SQLite dashboard is disabled. "
+        "Use the A2CR SaaS dashboard for normal WorkBaton usage. "
+        "Set A2CR_ENABLE_LEGACY_LOCAL_API=1 only for explicit local prototype tests."
+    )
+    st.stop()
 
 st.markdown("""
 <style>
@@ -220,7 +228,7 @@ init_db()
 
 config = get_config()
 API_BASE = "http://localhost:8000"
-SERVICE_URL = os.environ.get("A2CR_SERVICE_URL", os.environ.get("AI_CLIPBOARD_SERVICE_URL", API_BASE))
+SERVICE_URL = os.environ.get("A2CR_SERVICE_URL", API_BASE)
 HEADERS = {"X-API-Key": config.api_key}
 AUTO_RELOAD_SECONDS = 300
 SLOT_SCROLL_HEIGHT = 520

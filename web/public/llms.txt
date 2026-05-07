@@ -20,7 +20,7 @@ Public guide (English): https://a2cr.app/en/guide
 AI agent guide (Japanese): https://a2cr.app/agent-guide
 AI agent guide (English): https://a2cr.app/en/agent-guide
 Pricing: https://a2cr.app/pricing
-MCP endpoint: https://a2cr.app/mcp
+MCP service URL: https://a2cr.app/mcp
 
 Use case:
 - Save compact WorkBaton checkpoints before an AI agent conversation gets too long.
@@ -33,6 +33,8 @@ Encryption notes:
 - The local stdio MCP wrapper encrypts before upload and A2CR stores and returns ciphertext only.
 - A2CR does not accept plaintext WorkBaton bodies.
 - Direct remote HTTP MCP saving is disabled for WorkBaton.
+- Official AI-agent setup is the local stdio MCP wrapper named a2cr; do not configure the remote /mcp URL directly for WorkBaton.
+- Do not use the legacy local SQLite /v1/context API for AI-agent saves.
 - The local client key is managed by the user, not by the service administrator.
 - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
 
@@ -71,11 +73,11 @@ Generic stdio JSON example:
 ```
 
 Agent rules:
-- At the start of work, call list_contexts and resume a relevant Slot if one exists.
+- When a resume prompt provides a Slot, first call resume_context(slot_name="...") or resume_context(slot_number=N).
+- Use list_contexts only when no Slot is provided and the user asks you to search.
 - During work, call save_context before the conversation gets long or at important milestones.
 - When pausing or finishing work, save the next action clearly in next_action.
 - Call get_account_limits before automatic saves.
 - Do not save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
 - Save goal, current_state, next_action, and compact supporting facts.
-- In a new window, first call resume_context(slot_name="...") or resume_context(slot_number=N).
 - If candidates are returned, choose from the candidates instead of guessing.

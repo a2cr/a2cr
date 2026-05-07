@@ -2,9 +2,13 @@
 
 This runbook describes the MVP deployment path: one Railway service serves the React/Vite SPA, FastAPI APIs, and Streamable HTTP MCP at the same public origin.
 
+Draft design notes and implementation plans are intentionally kept out of the
+active public docs tree. Current STG and restore-drill requirements are listed
+in this runbook and `docs/runbooks/disaster-recovery.md`.
+
 ## Current Hosted Setup Status
 
-Last updated: 2026-05-06
+Last updated: 2026-05-07
 
 Completed:
 
@@ -15,6 +19,12 @@ Completed:
   - Project ref: `pemqlmrochfnwthslxco`
   - Region: Northeast Asia (Tokyo)
   - Current plan for testing: Free / Nano
+  - Current dashboard shape: `main` / `PRODUCTION`
+  - No separate staging/non-production Supabase project was found in the
+    dashboard check.
+  - Database Backups confirmed that Free Plan does not include project backups;
+    upgrade to a plan with backups or add scheduled exports before beta or
+    restore testing.
 - Supabase migrations applied through SQL Editor at the initial setup:
   - `supabase/migrations/001_base_schema.sql`
   - `supabase/migrations/002_workthreads.sql`
@@ -45,12 +55,23 @@ Completed:
   - Authorized JavaScript origin: `https://a2cr.app`
   - Authorized redirect URI: `https://pemqlmrochfnwthslxco.supabase.co/auth/v1/callback`
 - Supabase Google provider is enabled.
+- Railway dashboard checked:
+  - `graceful-nurturing`: production environment, 1/1 service online
+  - `heroic-enchantment`: empty project with no services; possible
+    non-production container
 
 Still pending:
 
-- Railway project creation
-- Railway environment variables
-- Railway deployment
+- Confirm which Railway service is the canonical production deployment for
+  `a2cr.app`
+- Configure a non-production Railway service in `heroic-enchantment` or another
+  isolated staging project
+- Create a separate Supabase staging/non-production project before destructive
+  smoke tests or restore drills
+- Enable Supabase backups or scheduled exports, then confirm retention and
+  restore target
+- Railway environment variables for production and non-production
+- Confirm Railway deployment serves the expected app endpoints
 - Cloudflare DNS pointing `a2cr.app` to Railway
 - Supabase Auth URL configuration for the deployed site
 - Confirm/apply Supabase migrations `003` through `008` in the production project

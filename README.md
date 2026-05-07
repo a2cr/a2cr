@@ -2,7 +2,7 @@
 
 Agent-to-Agent Context Relay.
 
-A2CR helps AI agents save and resume work context across conversation windows, tools, and clients. The current repository is an early local prototype plus Web SaaS foundation work.
+A2CR helps AI agents save and resume work context across conversation windows, tools, and clients. The current repository is a Web SaaS foundation with a legacy local prototype kept only for development reference.
 
 ## Product Layers
 
@@ -17,7 +17,7 @@ This keeps A2CR model-neutral and keeps pricing tied to storage, requests, and c
 
 ## Current Status
 
-Implemented locally:
+Legacy local prototype retained for development reference:
 
 - FastAPI context API
 - SQLite local storage
@@ -27,6 +27,8 @@ Implemented locally:
 - Streamlit local dashboard
 - pytest coverage
 
+The legacy local SQLite WorkBaton API is disabled by default. It must not be used as the official AI-agent save path.
+
 Implemented Web SaaS foundation:
 
 - Supabase/Postgres schema, RLS, and least-privileged runtime role design
@@ -34,7 +36,7 @@ Implemented Web SaaS foundation:
 - WorkBaton Web Context API with plan limits and sanitized access logs
 - client-encrypted-only WorkBaton storage
 - Dashboard API that returns metadata, stats, logs, and API key state without saved content bodies
-- Streamable HTTP MCP `/mcp` for metadata, account limits, and WorkThreads tools; WorkBaton saving uses the local stdio wrapper for client encryption
+- Streamable HTTP MCP `/mcp` as a service surface; the official AI-agent path for WorkBaton is the local stdio MCP wrapper so client encryption happens before upload
 - React/Vite dashboard UI for login, WorkBaton metadata, settings, API key management, and pricing
 - Railway Docker build wiring, production startup guards, same-origin guard, and deployment/security runbooks
 
@@ -55,19 +57,15 @@ npm install
 npm run build
 ```
 
-On Windows, the local prototype can be started with:
-
-```bat
-start.bat
-```
-
-Local services:
+Optional local services for development:
 
 ```text
-API:       http://localhost:8000
-Dashboard: http://localhost:8501
-Web dev:   http://localhost:5173
+API:     uvicorn main:app --host 127.0.0.1 --port 8000
+Web dev: npm run dev
 ```
+
+The old one-click local SQLite prototype launcher is not part of the active
+SaaS path.
 
 ## Deployment
 
@@ -91,7 +89,7 @@ See [deploy runbook](docs/runbooks/deploy.md) and [security runbook](docs/runboo
 
 Example only. Do not commit real API keys.
 
-WorkBaton requires the local stdio wrapper so content is encrypted before upload. Direct remote HTTP MCP saving is disabled for WorkBaton.
+WorkBaton requires the local stdio wrapper so content is encrypted before upload. Configure exactly one MCP server named `a2cr` through this stdio wrapper for AI-agent work. Do not configure the remote `/mcp` URL directly for WorkBaton, do not guess REST endpoints, and do not use the old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
 
 Codex-style local stdio example:
 
@@ -148,13 +146,15 @@ Users must understand that losing the local client key makes those WorkBaton slo
 
 ## Documentation
 
-- Product spec and progress: `docs/superpowers/specs/2026-05-05-a2cr-product-spec-and-progress.md`
-- WorkBaton save/load quality spec: `docs/superpowers/specs/2026-05-05-workbaton-save-load-quality-spec.md`
-- Web SaaS design: `docs/superpowers/specs/2026-05-03-web-saas-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-05-04-web-saas-implementation-plan.md`
+- Usage guide: `docs/usage.md`
 - Deploy runbook: `docs/runbooks/deploy.md`
+- Disaster recovery runbook: `docs/runbooks/disaster-recovery.md`
 - Security runbook: `docs/runbooks/security.md`
+- Data lifecycle runbook: `docs/runbooks/data-lifecycle.md`
+- WorkThreads runbook: `docs/runbooks/workthreads.md`
+- Security/resilience baseline: `docs/superpowers/specs/2026-05-06-a2cr-security-resilience-plan.md`
 - Optional AI client Skill template: `docs/templates/skills/a2cr-agent/SKILL.md`
+- Service cost estimate: `docs/a2cr-service-cost-estimate.md`
 - GitHub publication draft: `docs/github-publication-draft.md`
 
 ## License

@@ -6,10 +6,23 @@ from fastapi.responses import JSONResponse
 
 from models.schemas import SaveRequest, SaveResponse, LoadResponse, ListItem, HandoffResponse
 import services.context as ctx_service
-from services.config import get_config
+from services.config import get_config, is_legacy_local_api_enabled
 from services.exceptions import AppError
 
-router = APIRouter()
+
+def require_legacy_local_api_enabled() -> None:
+    if not is_legacy_local_api_enabled():
+        raise AppError(
+            "legacy_local_api_disabled",
+            (
+                "The legacy local SQLite WorkBaton API is disabled. "
+                "Use the A2CR SaaS /api/v1 context API through the local stdio MCP wrapper."
+            ),
+            410,
+        )
+
+
+router = APIRouter(dependencies=[Depends(require_legacy_local_api_enabled)])
 
 
 def build_resume_context_call(slot_name: str, slot_number: Optional[int] = None) -> str:
@@ -17,10 +30,7 @@ def build_resume_context_call(slot_name: str, slot_number: Optional[int] = None)
 
 
 def get_service_url() -> str:
-    return os.environ.get(
-        "A2CR_SERVICE_URL",
-        os.environ.get("AI_CLIPBOARD_SERVICE_URL", "http://localhost:8000"),
-    )
+    return os.environ.get("A2CR_SERVICE_URL", "http://localhost:8000")
 
 
 def build_resume_prompt(
