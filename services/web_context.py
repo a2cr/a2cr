@@ -303,8 +303,6 @@ def save_context(
                     session, user_id=user_id, active_slots=limits.active_slots
                 )
             except PlanLimitExceeded:
-                if slot_number is not None:
-                    raise
                 oldest = _oldest_active_slot(session, user_id=user_id)
                 if oldest is None:
                     raise
