@@ -136,6 +136,7 @@ const resources = {
       },
       errors: {
         generic: "Request failed",
+        refreshFailedCached: "Refresh failed. Showing the last successful data.",
         unauthenticated: "Sign in again to continue"
       }
     }
@@ -274,6 +275,7 @@ const resources = {
       },
       errors: {
         generic: "リクエストに失敗しました",
+        refreshFailedCached: "更新に失敗しました。前回取得できた表示を維持しています。",
         unauthenticated: "もう一度ログインしてください"
       }
     }

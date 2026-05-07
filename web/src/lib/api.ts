@@ -29,6 +29,19 @@ export class ApiError extends Error {
   }
 }
 
+const DASHBOARD_GET_RETRY_DELAYS_MS = [250, 750];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isRetryableDashboardError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return error.status >= 500;
+  }
+  return error instanceof TypeError;
+}
+
 async function parseError(response: Response): Promise<ApiError> {
   let payload: ApiErrorPayload = {};
   try {
@@ -41,7 +54,7 @@ async function parseError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message);
 }
 
-export async function dashboardFetch<T>(
+async function dashboardFetchOnce<T>(
   path: string,
   token: string,
   options: RequestInit = {}
@@ -64,19 +77,34 @@ export async function dashboardFetch<T>(
   return (await response.json()) as T;
 }
 
+export async function dashboardFetch<T>(
+  path: string,
+  token: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const method = (options.method || "GET").toUpperCase();
+  const retryDelays = method === "GET" ? DASHBOARD_GET_RETRY_DELAYS_MS : [];
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await dashboardFetchOnce<T>(path, token, options);
+    } catch (error) {
+      const retryDelay = retryDelays[attempt];
+      if (retryDelay === undefined || !isRetryableDashboardError(error)) {
+        throw error;
+      }
+      await sleep(retryDelay);
+    }
+  }
+}
+
 export async function loadDashboardData(token: string): Promise<DashboardData> {
   const profile = await dashboardFetch<DashboardProfile>("/api/dashboard/profile", token);
-  const [contexts, stats, accessLogs] = await Promise.all([
-    dashboardFetch<DashboardContext[]>("/api/dashboard/contexts", token).catch(() => []),
-    dashboardFetch<DashboardStats>("/api/dashboard/stats", token).catch(() => ({
-      total_saves: 0,
-      total_loads: 0,
-      total_deletes: 0,
-      total_tokens_saved: 0,
-      active_slots: 0
-    })),
-    dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token).catch(() => [])
-  ]);
+  const contexts = await dashboardFetch<DashboardContext[]>("/api/dashboard/contexts", token);
+  const stats = await dashboardFetch<DashboardStats>("/api/dashboard/stats", token);
+  const accessLogs = await dashboardFetch<DashboardAccessLog[]>("/api/dashboard/access-logs?limit=25", token).catch(
+    () => []
+  );
 
   const workthreads =
     profile.plan === "pro"

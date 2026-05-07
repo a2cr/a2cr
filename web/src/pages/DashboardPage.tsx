@@ -193,6 +193,7 @@ export function DashboardPage() {
   const { t } = useTranslation();
   const { session } = useAuth();
   const refreshInFlight = useRef(false);
+  const dataRef = useRef<DashboardData | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -215,10 +216,13 @@ export function DashboardPage() {
     setError(null);
     try {
       const nextData = await loadDashboardData(session.access_token);
+      dataRef.current = nextData;
       setData(nextData);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError(t("errors.unauthenticated"));
+      } else if (dataRef.current) {
+        setError(t("errors.refreshFailedCached"));
       } else {
         setError(err instanceof Error ? err.message : t("errors.generic"));
       }
