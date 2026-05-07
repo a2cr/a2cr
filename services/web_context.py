@@ -13,7 +13,6 @@ from services.config import get_web_config
 from services.db import acquire_user_mutation_lock, web_transaction
 from services.exceptions import AppError, PlanLimitExceeded, SlotNameConflict, SlotNotFound
 from services.limits import (
-    ensure_active_slot_capacity,
     ensure_hourly_limit,
     get_plan_limits,
     validate_body_size,
@@ -168,6 +167,24 @@ def _get_existing_context_id(
     return None
 
 
+def _oldest_active_slot(session: Session, *, user_id: UUID | str) -> tuple[str, int] | None:
+    row = session.execute(
+        text(
+            """
+            SELECT id, slot_number
+            FROM public.contexts
+            WHERE user_id = :user_id
+              AND expires_at > now()
+              AND encryption_mode = 'client'
+            ORDER BY updated_at ASC
+            LIMIT 1
+            """
+        ),
+        {"user_id": str(user_id)},
+    ).mappings().first()
+    return (str(row["id"]), int(row["slot_number"])) if row else None
+
+
 def _next_slot_number(session: Session, *, user_id: UUID | str, active_slots: int) -> int:
     rows = session.execute(
         text(
@@ -269,28 +286,29 @@ def save_context(
             limit=limits.saves_per_hour,
             code="save_rate_limit_exceeded",
         )
-        ensure_active_slot_capacity(
-            session,
-            user_id=user_id,
-            slot_name=slot_name,
-            slot_number=slot_number,
-            limits=limits,
-        )
-
         existing_id = _get_existing_context_id(
             session,
             user_id=user_id,
             slot_name=slot_name,
             slot_number=slot_number,
         )
-        assigned_slot_number = slot_number or (
-            session.execute(
+        if existing_id is not None:
+            assigned_slot_number = slot_number or session.execute(
                 text("SELECT slot_number FROM public.contexts WHERE id = :id AND user_id = :user_id"),
                 {"id": existing_id, "user_id": str(user_id)},
             ).scalar_one()
-            if existing_id is not None
-            else _next_slot_number(session, user_id=user_id, active_slots=limits.active_slots)
-        )
+        else:
+            try:
+                assigned_slot_number = slot_number or _next_slot_number(
+                    session, user_id=user_id, active_slots=limits.active_slots
+                )
+            except PlanLimitExceeded:
+                if slot_number is not None:
+                    raise
+                oldest = _oldest_active_slot(session, user_id=user_id)
+                if oldest is None:
+                    raise
+                existing_id, assigned_slot_number = oldest
 
         stored_content = content_json
         params = {

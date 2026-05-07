@@ -312,7 +312,18 @@ MCP設定ファイルに長いプロンプトを埋め込む設計は避ける�
 | `resume_context_call` | 新窓で実行する最小tool call |
 | `resume_prompt` | 新窓に貼る再開指示文 |
 
-保存失敗、validation error、rate limit、slot limit超過、認証失敗の場合は `resume_prompt` を返さない。
+保存失敗、validation error、rate limit、認証失敗の場合は `resume_prompt` を返さない。
+
+## 10.1 スロット満杯時の自動退避
+
+`slot_number` を指定せずに新規スロット名で保存しようとした場合、アクティブスロットが上限に達していてもエラーにしない。代わりに `updated_at` が最も古いスロットを自動的に上書きする。
+
+| 条件 | 動作 |
+|---|---|
+| 指定スロット名が既存スロットと一致 | 従来通り上書き |
+| 空きスロットあり | 従来通り新規割り当て |
+| 空きなし、`slot_number` 未指定 | 最古スロットを自動上書き（429を返さない） |
+| 空きなし、`slot_number` 指定あり | `slot_limit_exceeded` (429) を返す |
 
 ## 11. セキュリティとプライバシー
 

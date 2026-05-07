@@ -213,16 +213,18 @@ def test_maintenance_data_lifecycle_scan_command_prints_only_counts(monkeypatch,
     assert "key_hash" not in output
 
 
-def test_web_context_save_expires_old_rows_before_slot_capacity_check():
+def test_web_context_save_expires_old_rows_before_slot_assignment():
     service = (ROOT / "services" / "web_context.py").read_text(encoding="utf-8")
     save_start = service.index("def save_context(")
 
     expire_call = service.index('session.execute(text("SELECT app.expire_contexts()"))', save_start)
-    capacity_check = service.index("ensure_active_slot_capacity(", save_start)
+    get_existing = service.index("_get_existing_context_id(", save_start)
     next_slot = service.index("_next_slot_number(", save_start)
+    oldest_slot = service.index("_oldest_active_slot(", save_start)
 
-    assert expire_call < capacity_check
+    assert expire_call < get_existing
     assert expire_call < next_slot
+    assert expire_call < oldest_slot
 
 
 def test_web_context_id_based_context_queries_remain_user_scoped():
