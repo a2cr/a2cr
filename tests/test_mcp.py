@@ -332,6 +332,6 @@ def test_mcp_get_account_limits_returns_plan_settings(monkeypatch):
     assert result["plan"] == "free"
     assert result["active_slots"] == 3
     assert 86400 in result["allowed_retention_seconds"]
-    assert result["max_body_bytes"] == 32 * 1024
+    assert result["max_body_bytes"] == 24 * 1024
     assert result["allowed_detail_levels"] == ["compact"]
     assert result["response_language"] == "auto"

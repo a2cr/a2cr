@@ -3,6 +3,7 @@ import {
   Boxes,
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   Clock3,
   Loader2,
   RefreshCw,
@@ -19,23 +20,42 @@ import { CopyButton } from "../components/CopyButton";
 import { Notice } from "../components/Notice";
 import { ApiError, deleteDashboardContext, loadDashboardData } from "../lib/api";
 import { buildSavePrompt } from "../lib/prompts";
-import type { DashboardContext, DashboardData, DashboardWorkThread } from "../lib/types";
+import type { DashboardAccessLog, DashboardContext, DashboardData, DashboardWorkThread } from "../lib/types";
 import { formatBytes, formatDateTime, formatNumber } from "../lib/format";
 import { useAuth } from "../providers/AuthProvider";
 
 function Stat({
   label,
   value,
-  icon: Icon
+  icon: Icon,
+  helpText
 }: {
   label: string;
   value: string;
   icon: ComponentType<{ className?: string }>;
+  helpText?: string;
 }) {
   return (
     <div className="rounded-md border border-neutral-200 bg-white p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-neutral-500">{label}</div>
+        <div className="flex min-w-0 items-center gap-1 text-sm text-neutral-500">
+          <span>{label}</span>
+          {helpText && (
+            <span className="group relative inline-flex">
+              <button
+                type="button"
+                aria-label={helpText}
+                title={helpText}
+                className="inline-flex size-5 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+              >
+                <CircleHelp className="size-3.5" aria-hidden="true" />
+              </button>
+              <span className="pointer-events-none absolute left-0 top-6 z-20 hidden w-72 max-w-[70vw] rounded-md border border-neutral-200 bg-white p-3 text-xs leading-relaxed text-neutral-700 shadow-lg group-focus-within:block group-hover:block">
+                {helpText}
+              </span>
+            </span>
+          )}
+        </div>
         <Icon className="size-4 text-emerald-700" aria-hidden="true" />
       </div>
       <div className="mt-2 text-2xl font-semibold tracking-normal">{value}</div>
@@ -46,12 +66,14 @@ function Stat({
 function SlotCard({
   item,
   timezone,
+  maxBodyBytes,
   isNewest,
   deleting,
   onDelete
 }: {
   item: DashboardContext;
   timezone: string;
+  maxBodyBytes: number;
   isNewest: boolean;
   deleting: boolean;
   onDelete: (slotName: string) => void;
@@ -112,7 +134,7 @@ function SlotCard({
         </div>
         <div>
           <dt className="text-neutral-500">{t("dashboard.size")}</dt>
-          <dd className="mt-1 font-medium">{formatBytes(item.size_bytes)}</dd>
+          <dd className="mt-1 font-medium">{sizeLimitLabel(item.size_bytes, maxBodyBytes)}</dd>
         </div>
         <div>
           <dt className="text-neutral-500">{t("dashboard.loads")}</dt>
@@ -120,7 +142,7 @@ function SlotCard({
         </div>
         <div>
           <dt className="text-neutral-500">{t("dashboard.tokens")}</dt>
-          <dd className="mt-1 font-medium">{formatNumber(item.compressed_tokens)}</dd>
+          <dd className="mt-1 font-medium">{tokenReductionLabel(item)}</dd>
         </div>
         <div>
           <dt className="text-neutral-500">{t("dashboard.source")}</dt>
@@ -187,6 +209,86 @@ function WorkThreadCard({ item, timezone }: { item: DashboardWorkThread; timezon
 
 function newestFirst(left: string, right: string) {
   return Date.parse(right) - Date.parse(left);
+}
+
+function bodyLimitForPlan(plan: string | undefined): number {
+  return plan === "pro" ? 64 * 1024 : 24 * 1024;
+}
+
+function formatBodyLimit(bytes: number): string {
+  if (bytes % 1024 === 0 && bytes < 1024 * 1024) {
+    return `${bytes / 1024} KB`;
+  }
+  return formatBytes(bytes);
+}
+
+function sizeLimitLabel(sizeBytes: number, maxBodyBytes: number): string {
+  return `${formatBytes(sizeBytes)} / ${formatBodyLimit(maxBodyBytes)}`;
+}
+
+function tokenReductionLabel(item: DashboardContext): string {
+  if (item.saved_tokens > 0) {
+    return `${formatNumber(item.compressed_tokens)} ← ${formatNumber(item.compressed_tokens + item.saved_tokens)}`;
+  }
+  return formatNumber(item.compressed_tokens);
+}
+
+function accessLogSlotLabel(item: DashboardAccessLog, contexts: DashboardContext[]): string {
+  if (!item.slot_name) {
+    return "-";
+  }
+  const context = contexts.find((candidate) => candidate.slot_name === item.slot_name);
+  return context ? `Slot ${context.slot_number}` : item.slot_name;
+}
+
+function clientLabel(clientType: string): string {
+  const value = clientType.trim();
+  const normalized = value.toLowerCase();
+  if (normalized === "claudecode" || normalized === "claude-code") {
+    return "Claude Code";
+  }
+  if (normalized === "codex") {
+    return "Codex";
+  }
+  if (normalized === "cursor") {
+    return "Cursor";
+  }
+  if (normalized === "dashboard") {
+    return "Dashboard";
+  }
+  if (normalized === "mcp") {
+    return "MCP";
+  }
+  if (normalized === "api") {
+    return "API";
+  }
+  return value || "-";
+}
+
+function clientBadgeClass(clientType: string): string {
+  const normalized = clientType.trim().toLowerCase();
+  if (normalized === "codex") {
+    return "bg-emerald-100 text-emerald-800";
+  }
+  if (normalized === "claudecode" || normalized === "claude-code") {
+    return "bg-violet-100 text-violet-800";
+  }
+  if (normalized === "cursor") {
+    return "bg-sky-100 text-sky-800";
+  }
+  if (normalized === "dashboard") {
+    return "bg-amber-100 text-amber-900";
+  }
+  if (normalized === "api") {
+    return "bg-neutral-100 text-neutral-700";
+  }
+  return "bg-indigo-100 text-indigo-800";
+}
+
+function resultBadgeClass(result: string): string {
+  return result.toLowerCase() === "success"
+    ? "bg-emerald-100 text-emerald-800"
+    : "bg-rose-100 text-rose-800";
 }
 
 export function DashboardPage() {
@@ -274,6 +376,7 @@ export function DashboardPage() {
   );
 
   const timezone = data?.profile.timezone || "UTC";
+  const maxBodyBytes = bodyLimitForPlan(data?.profile.plan);
   const savePrompt = useMemo(() => buildSavePrompt(data?.contexts || []), [data?.contexts]);
   const contextsByNewest = useMemo(
     () => [...(data?.contexts || [])].sort((a, b) => newestFirst(a.updated_at, b.updated_at)),
@@ -342,7 +445,12 @@ export function DashboardPage() {
         <Stat label={t("dashboard.totalSaves")} value={formatNumber(data?.stats.total_saves || 0)} icon={Save} />
         <Stat label={t("dashboard.totalLoads")} value={formatNumber(data?.stats.total_loads || 0)} icon={RotateCcw} />
         <Stat label={t("dashboard.totalDeletes")} value={formatNumber(data?.stats.total_deletes || 0)} icon={Activity} />
-        <Stat label={t("dashboard.tokensSaved")} value={tokensSavedValue} icon={Clock3} />
+        <Stat
+          label={t("dashboard.tokensSaved")}
+          value={tokensSavedValue}
+          icon={Clock3}
+          helpText={t("dashboard.tokensSavedHelp")}
+        />
       </section>
 
       <section className="grid gap-3">
@@ -369,6 +477,7 @@ export function DashboardPage() {
                   key={`${item.slot_number}-${item.slot_name}`}
                   item={item}
                   timezone={timezone}
+                  maxBodyBytes={maxBodyBytes}
                   isNewest={index === 0}
                   deleting={deletingSlotName === item.slot_name}
                   onDelete={deleteSlot}
@@ -426,7 +535,7 @@ export function DashboardPage() {
                     <tr>
                       <th className="px-3 py-2 font-semibold">{t("common.created")}</th>
                       <th className="px-3 py-2 font-semibold">{t("common.action")}</th>
-                      <th className="px-3 py-2 font-semibold">{t("common.slot")}</th>
+                      <th className="px-3 py-2 font-semibold">{t("common.slotNumber")}</th>
                       <th className="px-3 py-2 font-semibold">{t("common.client")}</th>
                       <th className="px-3 py-2 font-semibold">{t("common.status")}</th>
                     </tr>
@@ -436,10 +545,16 @@ export function DashboardPage() {
                       <tr key={`${item.created_at}-${item.action}-${item.request_id || ""}`}>
                         <td className="whitespace-nowrap px-3 py-2">{formatDateTime(item.created_at, timezone)}</td>
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{item.action}</td>
-                        <td className="whitespace-nowrap px-3 py-2">{item.slot_name || "-"}</td>
-                        <td className="whitespace-nowrap px-3 py-2">{item.client_type}</td>
                         <td className="whitespace-nowrap px-3 py-2">
-                          <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
+                          {accessLogSlotLabel(item, data?.contexts || [])}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2">
+                          <span className={`rounded px-2 py-1 text-xs font-semibold ${clientBadgeClass(item.client_type)}`}>
+                            {clientLabel(item.client_type)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2">
+                          <span className={`rounded px-2 py-1 text-xs font-semibold ${resultBadgeClass(item.result)}`}>
                             {item.result}
                           </span>
                         </td>

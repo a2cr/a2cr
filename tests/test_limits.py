@@ -71,9 +71,13 @@ def test_validate_detail_level_rejects_free_detailed():
 
 
 def test_validate_body_size_uses_plan_limits():
-    validate_body_size(32 * 1024, FREE_LIMITS)
+    validate_body_size(24 * 1024, FREE_LIMITS)
     with pytest.raises(BodyTooLarge):
-        validate_body_size(32 * 1024 + 1, FREE_LIMITS)
+        validate_body_size(24 * 1024 + 1, FREE_LIMITS)
+
+    validate_body_size(64 * 1024, PRO_LIMITS)
+    with pytest.raises(BodyTooLarge):
+        validate_body_size(64 * 1024 + 1, PRO_LIMITS)
 
 
 def test_ensure_hourly_limit_raises_with_retry_after():

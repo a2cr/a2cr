@@ -62,6 +62,7 @@ def _base_url_from_env() -> str:
 BASE_URL = _base_url_from_env()
 SERVICE_URL = os.environ.get("A2CR_SERVICE_URL", f"{BASE_URL}/mcp").rstrip("/")
 API_KEY = os.environ.get("A2CR_API_KEY", "")
+CLIENT_TYPE = os.environ.get("A2CR_CLIENT_TYPE", "mcp").strip() or "mcp"
 
 mcp = FastMCP("A2CR")
 
@@ -113,7 +114,14 @@ _FILE_PAYLOAD_KEYS = {
     "file_data",
 }
 
-_HEADERS = {"Authorization": f"Bearer {API_KEY}"}
+def _headers(client_type: str | None = None) -> dict[str, str]:
+    return {
+        "Authorization": f"Bearer {API_KEY}",
+        "X-A2CR-Client-Type": (client_type or CLIENT_TYPE).strip() or CLIENT_TYPE,
+    }
+
+
+_HEADERS = _headers()
 
 
 def _url(path: str) -> str:
@@ -489,7 +497,7 @@ def save_context(
         r = client.post(
             _save_url(),
             json=body,
-            headers=_HEADERS,
+            headers=_headers(model_source),
             timeout=10,
         )
     _raise_for_status(r)

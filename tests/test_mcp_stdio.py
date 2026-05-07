@@ -102,6 +102,7 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
     assert result["slot_name"] == "slot-a"
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
+    assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
     assert captured["json"]["detail_level"] == "compact"
     assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(CONTENT)
     assert "content" not in captured["json"]
@@ -180,7 +181,7 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
             return {
                 "plan": "free",
                 "allowed_detail_levels": ["compact"],
-                "max_body_bytes": 32768,
+                "max_body_bytes": 24576,
             }
 
     class FakeClient:
@@ -219,7 +220,10 @@ def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
     assert server._load_url("slot-a") == "https://a2cr.example/api/v1/context/slot-a"
     assert server._load_slot_number_url(2) == "https://a2cr.example/api/v1/context/slot/2"
     assert server._delete_url("slot-a") == "https://a2cr.example/api/v1/context/slot-a"
-    assert server._HEADERS == {"Authorization": "Bearer sk-a2cr-secret"}
+    assert server._HEADERS == {
+        "Authorization": "Bearer sk-a2cr-secret",
+        "X-A2CR-Client-Type": "mcp",
+    }
 
 
 def test_mcp_stdio_defaults_to_a2cr_saas(monkeypatch):

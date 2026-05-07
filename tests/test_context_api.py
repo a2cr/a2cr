@@ -145,6 +145,39 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
     assert captured["meta"].client_type == "mcp"
 
 
+def test_web_save_context_uses_model_source_as_client_type_when_header_missing(client, monkeypatch):
+    captured = {}
+
+    def fake_save_context(**kwargs):
+        captured.update(kwargs)
+        return WebSaveResult(
+            slot_name=kwargs["slot_name"],
+            slot_number=kwargs["slot_number"],
+            expires_at=future_time(),
+            compressed_tokens=12,
+            saved_tokens=8,
+            resume_context_call='resume_context(slot_name="slot-a")',
+            resume_prompt='resume_context(slot_name="slot-a")',
+        )
+
+    monkeypatch.setattr(web_context_service, "save_context", fake_save_context)
+
+    response = client.post(
+        "/api/v1/context",
+        json={
+            "slot_name": "slot-a",
+            "slot_number": 1,
+            "encrypted_content": encrypted("slot-a"),
+            "model_source": "codex",
+            "detail_level": "compact",
+        },
+        headers={"Authorization": "Bearer sk-test-secret"},
+    )
+
+    assert response.status_code == 201
+    assert captured["meta"].client_type == "codex"
+
+
 def test_web_list_contexts_returns_metadata_without_content(client, monkeypatch):
     captured = {}
 
@@ -246,7 +279,7 @@ def test_web_account_limits_returns_free_compact_plan(client, monkeypatch):
     assert body["active_slots"] == 3
     assert body["allowed_detail_levels"] == ["compact"]
     assert body["context_detail_level"] == "compact"
-    assert body["max_body_bytes"] == 32 * 1024
+    assert body["max_body_bytes"] == 24 * 1024
 
 
 def test_web_load_context_returns_ciphertext_for_api_key_route(client, monkeypatch):

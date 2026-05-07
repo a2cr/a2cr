@@ -42,7 +42,7 @@ export function PricingPage() {
   const freeRows: Array<[string, string]> = [
     [t("pricing.slots"), "3"],
     [t("pricing.retention"), "15m / 30m / 1h / 3h / 6h / 12h / 24h"],
-    [t("pricing.body"), "32KB"],
+    [t("pricing.body"), "24KB"],
     [t("pricing.detail"), t("common.compact")],
     [t("pricing.saves"), "100 / hour"],
     [t("pricing.loads"), "300 / hour"],
@@ -52,7 +52,7 @@ export function PricingPage() {
   const proRows: Array<[string, string]> = [
     [t("pricing.slots"), "100"],
     [t("pricing.retention"), "15m / 30m / 1h / 3h / 6h / 12h / 24h / 3d / 7d / 10d / 14d / 30d"],
-    [t("pricing.body"), "128KB"],
+    [t("pricing.body"), "64KB"],
     [t("pricing.detail"), "Compact / Detailed"],
     [t("pricing.saves"), "1,000 / hour"],
     [t("pricing.loads"), "3,000 / hour"],

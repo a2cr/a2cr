@@ -109,6 +109,13 @@ def save_context(
     meta: RequestMeta = Depends(request_meta),
 ) -> WebContextSaveResponse:
     enforce_authenticated_rate_limit(user.user_id, "context.write")
+    if meta.client_type == "api" and req.model_source:
+        meta = RequestMeta(
+            client_type=req.model_source,
+            request_id=meta.request_id,
+            ip=meta.ip,
+            user_agent=meta.user_agent,
+        )
     result = web_context_service.save_context(
         user_id=user.user_id,
         slot_name=req.slot_name,

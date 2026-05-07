@@ -73,6 +73,7 @@ const resources = {
         plan: "Plan",
         action: "Action",
         slot: "Slot",
+        slotNumber: "Slot number",
         client: "Client"
       },
       dashboard: {
@@ -82,6 +83,8 @@ const resources = {
         totalLoads: "Total loads",
         totalDeletes: "Deletes",
         tokensSaved: "Estimated tokens saved",
+        tokensSavedHelp:
+          "Estimate = original source context length converted to tokens minus saved WorkBaton tokens. Saves without original_length are not calculated.",
         copySavePrompt: "Copy save prompt",
         copyResumePrompt: "Copy resume prompt",
         copyResumeCall: "Copy call",
@@ -212,6 +215,7 @@ const resources = {
         plan: "プラン",
         action: "操作",
         slot: "スロット",
+        slotNumber: "スロット番号",
         client: "クライアント"
       },
       dashboard: {
@@ -221,6 +225,8 @@ const resources = {
         totalLoads: "累計ロード",
         totalDeletes: "削除",
         tokensSaved: "推定節約トークン",
+        tokensSavedHelp:
+          "元の会話量の推定値をトークン換算し、保存トークンを引いた推定値です。保存時に original_length が無いものは未計算です。",
         copySavePrompt: "保存プロンプトをコピー",
         copyResumePrompt: "再開プロンプトをコピー",
         copyResumeCall: "呼び出しをコピー",
