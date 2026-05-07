@@ -1,9 +1,13 @@
+import os
+
 from cryptography.fernet import Fernet
-from services.config import get_config
 
 
 def _get_fernet(fernet_key: str | None = None) -> Fernet:
-    return Fernet((fernet_key or get_config().fernet_key).encode())
+    key = fernet_key or os.environ.get("FERNET_KEY")
+    if not key:
+        raise RuntimeError("FERNET_KEY is required")
+    return Fernet(key.encode())
 
 
 def encrypt(plaintext: str, fernet_key: str | None = None) -> str:

@@ -17,6 +17,25 @@ The key product claim must stay precise:
 
 This is not a claim that "nothing can leak." Customer information and metadata remain normal SaaS security responsibilities.
 
+## Encryption Model per Feature
+
+### WorkBaton: client-side encryption
+
+WorkBaton uses client-side Fernet encryption. The local stdio MCP wrapper encrypts content before upload. A2CR stores and returns ciphertext only and cannot decrypt WorkBaton bodies.
+
+### WorkThreads: server-side Fernet encryption
+
+WorkThreads uses server-side Fernet encryption. This is an intentional and verified design constraint, not an oversight.
+
+WorkThreads is a cross-agent collaboration system where multiple AI agent windows read and write messages in a shared thread. Each agent window holds its own local client key. There is no mechanism to share a local client key across independent agent instances. Client-side encryption is therefore structurally impossible for WorkThreads.
+
+As a result:
+
+- WorkThread message bodies are encrypted at rest using the server-side Fernet key (`FERNET_KEY` runtime secret).
+- A2CR can decrypt WorkThread messages for authenticated API/MCP requests.
+- The Fernet key must be treated as an S1 runtime secret (see Asset Classification).
+- The security claim for WorkThreads is encryption at rest and tenant isolation, not client-side confidentiality from the service operator.
+
 ## Reference Frameworks
 
 - NIST Cybersecurity Framework 2.0: Govern, Identify, Protect, Detect, Respond, Recover.

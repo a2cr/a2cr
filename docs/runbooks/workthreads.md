@@ -2,6 +2,19 @@
 
 WorkThreads are Pro-only durable handoff threads for cross-window and cross-agent work. They are not a server-side LLM feature. A2CR stores encrypted append-only messages, task lease metadata, progress metadata, and final Slot links.
 
+## Encryption Design
+
+WorkThreads uses server-side Fernet encryption. This is intentional and has been verified as the only viable design.
+
+WorkThreads enables multiple independent AI agent windows to collaborate in a shared thread. Each agent window holds its own local client key. There is no mechanism to share a local client key across agent instances, so client-side encryption (as used by WorkBaton) is structurally impossible for WorkThreads.
+
+The security posture for WorkThreads is:
+
+- Message bodies are encrypted at rest with the server-side `FERNET_KEY`.
+- A2CR can decrypt messages for authenticated API/MCP requests.
+- Tenant isolation is enforced by RLS and `user_id` predicates.
+- The `FERNET_KEY` must never be exposed in logs, browser bundles, or client responses.
+
 ## Content Boundary
 
 - API-key and MCP routes may read decrypted WorkThread messages for the authenticated user.

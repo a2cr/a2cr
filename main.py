@@ -1,27 +1,27 @@
 import asyncio
 import html
 import json
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from textwrap import dedent
 from uuid import uuid4
+
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy.exc import SQLAlchemyError
 
-from routers import context, dashboard, health, mcp_http, web_context, workthreads
+from routers import dashboard, health, mcp_http, web_context, workthreads
 from services.config import (
     app_env,
-    is_legacy_local_api_enabled,
     is_request_origin_allowed,
     is_web_runtime,
     validate_runtime_environment,
 )
-from services.context import cleanup_expired
 from services.db_errors import classify_db_error
-from services.db import init_db
 from services.exceptions import AppError
 from services.logs import sanitize_log_request_id
 
@@ -386,25 +386,11 @@ def _render_spa_index(full_path: str) -> str:
     return document
 
 
-async def _cleanup_loop():
-    while True:
-        await asyncio.sleep(600)
-        cleanup_expired()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_runtime_environment()
-    task = None
-    if not is_web_runtime() and is_legacy_local_api_enabled():
-        init_db()
-        task = asyncio.create_task(_cleanup_loop())
-    try:
-        async with mcp_http.mcp_app.lifespan():
-            yield
-    finally:
-        if task is not None:
-            task.cancel()
+    async with mcp_http.mcp_app.lifespan():
+        yield
 
 
 app = FastAPI(
@@ -479,6 +465,7 @@ def request_validation_error_handler(request: Request, exc: RequestValidationErr
 
 @app.exception_handler(SQLAlchemyError)
 def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
+    logger.exception("DB error on %s %s", request.method, request.url.path)
     classification = classify_db_error(exc)
     content = {
         "code": classification.code,
@@ -495,6 +482,7 @@ def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
 
 @app.exception_handler(Exception)
 def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={
@@ -506,7 +494,6 @@ def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(health.router)
-app.include_router(context.router)
 app.include_router(web_context.router)
 app.include_router(dashboard.router)
 app.include_router(workthreads.router)

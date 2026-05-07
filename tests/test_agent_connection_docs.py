@@ -10,14 +10,10 @@ def read(path: str) -> str:
 
 def test_agent_connection_code_uses_official_saas_path_by_default():
     server = read("mcp/server.py")
-    config = read("services/config.py")
-    context_router = read("routers/context.py")
 
     assert '"https://a2cr.app"' in server
     assert "A2CR_ALLOW_LOCAL_BASE_URL" in server
     assert "refuses localhost A2CR_BASE_URL by default" in server
-    assert "A2CR_ENABLE_LEGACY_LOCAL_API" in config
-    assert "legacy_local_api_disabled" in context_router
 
 
 def test_public_agent_docs_prefer_slot_first_stdio_path():

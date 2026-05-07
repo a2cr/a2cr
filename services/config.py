@@ -1,51 +1,9 @@
 import os
-import secrets
 from dataclasses import dataclass
-from pathlib import Path
 from urllib.parse import urlparse
 from cryptography.fernet import Fernet
-from dotenv import load_dotenv
 
 _WEB_RUNTIME_ENVS = {"production", "staging"}
-_APPDATA_DIR = Path(os.environ.get("APPDATA", Path.home()))
-_DEFAULT_ENV_DIR = _APPDATA_DIR / "a2cr"
-
-
-def _resolve_env_dir() -> Path:
-    configured = os.environ.get("A2CR_HOME")
-    if configured:
-        return Path(configured)
-    return _DEFAULT_ENV_DIR
-
-
-_ENV_DIR = _resolve_env_dir()
-_ENV_PATH = _ENV_DIR / ".env"
-
-
-def get_data_dir() -> Path:
-    return _ENV_DIR
-
-
-def _ensure_env_file() -> None:
-    """Generate .env with random keys if it does not exist."""
-    if _ENV_PATH.exists():
-        return
-    _ENV_DIR.mkdir(parents=True, exist_ok=True)
-    api_key = "sk-" + secrets.token_hex(32)
-    fernet_key = Fernet.generate_key().decode()
-    _ENV_PATH.write_text(
-        f"API_KEY={api_key}\n"
-        f"FERNET_KEY={fernet_key}\n"
-        f"DB_PATH={_ENV_DIR / 'a2cr.db'}\n",
-        encoding="utf-8",
-    )
-
-
-@dataclass(frozen=True)
-class Config:
-    api_key: str
-    fernet_key: str
-    db_path: str
 
 
 @dataclass(frozen=True)
@@ -70,31 +28,7 @@ class WebConfig:
     db_idle_transaction_timeout_ms: int = 10000
 
 
-_config: Config | None = None
 _web_config: WebConfig | None = None
-
-
-def is_legacy_local_api_enabled() -> bool:
-    return os.environ.get("A2CR_ENABLE_LEGACY_LOCAL_API") == "1"
-
-
-def get_config() -> Config:
-    global _config
-    if _config is not None:
-        return _config
-
-    # In tests, env vars are injected via monkeypatch before this runs.
-    # In production, load from .env file.
-    if not os.environ.get("API_KEY"):
-        _ensure_env_file()
-        load_dotenv(_ENV_PATH)
-
-    _config = Config(
-        api_key=os.environ["API_KEY"],
-        fernet_key=os.environ["FERNET_KEY"],
-        db_path=os.environ.get("DB_PATH", str(_ENV_DIR / "a2cr.db")),
-    )
-    return _config
 
 
 def _required_env(name: str) -> str:
@@ -233,6 +167,5 @@ def validate_runtime_environment() -> WebConfig | None:
 
 def reset_config() -> None:
     """For testing only."""
-    global _config, _web_config
-    _config = None
+    global _web_config
     _web_config = None
