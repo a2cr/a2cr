@@ -253,6 +253,27 @@ function clientLabel(clientType: string): string {
   if (normalized === "cursor") {
     return "Cursor";
   }
+  if (normalized === "windsurf") {
+    return "Windsurf";
+  }
+  if (normalized === "cline" || normalized === "open-cline" || normalized === "opencline") {
+    return "Cline";
+  }
+  if (normalized === "copilot" || normalized === "github-copilot" || normalized === "githubcopilot") {
+    return "Copilot";
+  }
+  if (normalized === "continue") {
+    return "Continue";
+  }
+  if (normalized === "aider") {
+    return "Aider";
+  }
+  if (normalized === "gemini-cli" || normalized === "geminicli") {
+    return "Gemini CLI";
+  }
+  if (normalized === "chatgpt" || normalized === "gpt") {
+    return "ChatGPT";
+  }
   if (normalized === "dashboard") {
     return "Dashboard";
   }
@@ -267,14 +288,35 @@ function clientLabel(clientType: string): string {
 
 function clientBadgeClass(clientType: string): string {
   const normalized = clientType.trim().toLowerCase();
-  if (normalized === "codex") {
-    return "bg-emerald-100 text-emerald-800";
-  }
   if (normalized === "claudecode" || normalized === "claude-code") {
     return "bg-violet-100 text-violet-800";
   }
+  if (normalized === "codex") {
+    return "bg-emerald-100 text-emerald-800";
+  }
   if (normalized === "cursor") {
     return "bg-sky-100 text-sky-800";
+  }
+  if (normalized === "windsurf") {
+    return "bg-cyan-100 text-cyan-800";
+  }
+  if (normalized === "cline" || normalized === "open-cline" || normalized === "opencline") {
+    return "bg-orange-100 text-orange-800";
+  }
+  if (normalized === "copilot" || normalized === "github-copilot" || normalized === "githubcopilot") {
+    return "bg-slate-100 text-slate-700";
+  }
+  if (normalized === "continue") {
+    return "bg-teal-100 text-teal-800";
+  }
+  if (normalized === "aider") {
+    return "bg-yellow-100 text-yellow-800";
+  }
+  if (normalized === "gemini-cli" || normalized === "geminicli") {
+    return "bg-blue-100 text-blue-800";
+  }
+  if (normalized === "chatgpt" || normalized === "gpt") {
+    return "bg-green-100 text-green-800";
   }
   if (normalized === "dashboard") {
     return "bg-amber-100 text-amber-900";

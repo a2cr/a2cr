@@ -6,7 +6,19 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-ModelSource = Literal["claude", "gpt", "gemini", "codex", "other"]
+ModelSource = Literal[
+    "claude",
+    "gpt",
+    "gemini",
+    "codex",
+    "grok",
+    "mistral",
+    "deepseek",
+    "llama",
+    "qwen",
+    "gemma",
+    "other",
+]
 EncryptionMode = Literal["client"]
 SLOT_NAME_PATTERN_TEXT = r"^[a-zA-Z0-9_][a-zA-Z0-9_-]{0,63}$"
 SLOT_NAME_PATTERN = re.compile(SLOT_NAME_PATTERN_TEXT)
