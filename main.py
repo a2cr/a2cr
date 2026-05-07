@@ -465,7 +465,7 @@ def request_validation_error_handler(request: Request, exc: RequestValidationErr
 
 @app.exception_handler(SQLAlchemyError)
 def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
-    logger.exception("DB error on %s %s", request.method, request.url.path)
+    logger.error("DB error on %s %s", request.method, request.url.path, exc_info=exc)
     classification = classify_db_error(exc)
     content = {
         "code": classification.code,
@@ -482,7 +482,7 @@ def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
 
 @app.exception_handler(Exception)
 def unhandled_exception_handler(request: Request, exc: Exception):
-    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    logger.error("Unhandled error on %s %s", request.method, request.url.path, exc_info=exc)
     return JSONResponse(
         status_code=500,
         content={
