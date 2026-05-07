@@ -24,6 +24,7 @@ Completed:
   - `supabase/migrations/005_contexts_client_encrypted_only.sql`
   - `supabase/migrations/006_db_resilience_baseline.sql`
   - `supabase/migrations/007_workthreads_message_uniqueness.sql`
+  - `supabase/migrations/008_data_lifecycle_scan.sql`
 - RLS verification passed for 9 public tables:
   - `access_logs`
   - `api_keys`
@@ -52,7 +53,7 @@ Still pending:
 - Railway deployment
 - Cloudflare DNS pointing `a2cr.app` to Railway
 - Supabase Auth URL configuration for the deployed site
-- Confirm/apply Supabase migrations `003` through `005` in the production project
+- Confirm/apply Supabase migrations `003` through `008` in the production project
 - Hosted smoke tests for `/api/v1/health`, `/dashboard`, `/mcp`, Google login, API key issue, MCP save/resume, and WorkThreads
 - Stripe setup
 - Supabase Pro upgrade before real beta/production
@@ -190,6 +191,7 @@ supabase/migrations/004_contexts_encryption_mode.sql
 supabase/migrations/005_contexts_client_encrypted_only.sql
 supabase/migrations/006_db_resilience_baseline.sql
 supabase/migrations/007_workthreads_message_uniqueness.sql
+supabase/migrations/008_data_lifecycle_scan.sql
 ```
 
 4. Create a Railway service from the GitHub repository.
@@ -363,6 +365,17 @@ The job only calls `SELECT app.prune_access_logs(...)` through
 `services.maintenance`; it prints only `pruned_access_logs=<count>`. Run
 repeated batches only as needed, and confirm stats counters still represent
 totals rather than relying on retained raw logs.
+
+Run the global orphan/data lifecycle scan after migrations and before public beta:
+
+```bash
+python -m services.maintenance data-lifecycle-scan --old-access-logs-older-than-seconds 2592000
+```
+
+The command only calls `app.data_lifecycle_scan(...)` through
+`services.maintenance`; it prints count-only fields plus
+`total_attention_rows`. It must not print row content, API key hashes, request
+hashes, DB URLs, tokens, or Authorization headers.
 
 ## Rollback
 

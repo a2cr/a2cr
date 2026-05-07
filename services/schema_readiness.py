@@ -47,6 +47,7 @@ REQUIRED_FUNCTIONS = {
     "record_context_delete",
     "expire_contexts",
     "prune_access_logs",
+    "data_lifecycle_scan",
 }
 
 REQUIRED_USER_OWNED_TABLES = {

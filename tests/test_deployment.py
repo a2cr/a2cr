@@ -193,6 +193,26 @@ def test_maintenance_prune_access_logs_command_prints_only_count(monkeypatch, ca
     assert "Authorization" not in output
 
 
+def test_maintenance_data_lifecycle_scan_command_prints_only_counts(monkeypatch, capsys):
+    scan = type(
+        "Scan",
+        (),
+        {
+            "counts": {"expired_contexts": 2, "old_access_logs": 3},
+            "total_attention_rows": 5,
+        },
+    )()
+    monkeypatch.setattr(maintenance, "global_orphan_data_lifecycle_scan", lambda **_: scan)
+
+    assert maintenance.main(["data-lifecycle-scan", "--old-access-logs-older-than-seconds", "86400"]) == 0
+
+    output = capsys.readouterr().out
+    assert output == "expired_contexts=2\nold_access_logs=3\ntotal_attention_rows=5\n"
+    assert "DATABASE_URL" not in output
+    assert "Authorization" not in output
+    assert "key_hash" not in output
+
+
 def test_web_context_save_expires_old_rows_before_slot_capacity_check():
     service = (ROOT / "services" / "web_context.py").read_text(encoding="utf-8")
     save_start = service.index("def save_context(")
@@ -236,11 +256,25 @@ def test_db_resilience_migration_tracks_migrations_and_retention():
     assert "SET search_path = pg_catalog, pg_temp" in migration
 
 
+def test_data_lifecycle_scan_migration_tracks_count_only_scan():
+    migration = (ROOT / "supabase" / "migrations" / "008_data_lifecycle_scan.sql").read_text(encoding="utf-8")
+
+    assert "CREATE OR REPLACE FUNCTION app.data_lifecycle_scan" in migration
+    assert "008_data_lifecycle_scan" in migration
+    assert "SECURITY DEFINER" in migration
+    assert "SET search_path = pg_catalog, pg_temp" in migration
+    assert "work_thread_messages_without_thread" in migration
+    assert "work_thread_tasks_user_mismatch" in migration
+    assert "work_threads_final_slot_missing_context" in migration
+    assert "GRANT EXECUTE ON FUNCTION app.data_lifecycle_scan(interval) TO a2cr_app" in migration
+
+
 def test_deploy_runbook_includes_migration_safety_and_readiness():
     runbook = (ROOT / "docs" / "runbooks" / "deploy.md").read_text(encoding="utf-8")
 
     assert "supabase/migrations/006_db_resilience_baseline.sql" in runbook
     assert "supabase/migrations/007_workthreads_message_uniqueness.sql" in runbook
+    assert "supabase/migrations/008_data_lifecycle_scan.sql" in runbook
     assert "lock risk" in runbook
     assert "readiness check impact" in runbook
     assert "explicit transaction" in runbook
@@ -251,6 +285,9 @@ def test_deploy_runbook_includes_migration_safety_and_readiness():
     assert "access_logs(user_id, action, created_at DESC)" in runbook
     assert "python -m services.maintenance prune-access-logs" in runbook
     assert "pruned_access_logs=<count>" in runbook
+    assert "python -m services.maintenance data-lifecycle-scan" in runbook
+    assert "app.data_lifecycle_scan" in runbook
+    assert "total_attention_rows" in runbook
 
 
 def test_deploy_runbook_includes_hosted_rls_pooler_smoke():

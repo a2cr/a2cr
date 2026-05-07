@@ -4,6 +4,7 @@ import argparse
 from sqlalchemy import text
 
 from services.config import validate_runtime_environment
+from services.data_lifecycle import global_orphan_data_lifecycle_scan
 from services.db import get_web_engine
 
 
@@ -37,8 +38,9 @@ def prune_access_logs(*, older_than_seconds: int = 30 * 24 * 60 * 60, batch_size
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="A2CR maintenance commands")
-    parser.add_argument("command", choices=["expire-contexts", "prune-access-logs"])
+    parser.add_argument("command", choices=["expire-contexts", "prune-access-logs", "data-lifecycle-scan"])
     parser.add_argument("--older-than-seconds", type=int, default=30 * 24 * 60 * 60)
+    parser.add_argument("--old-access-logs-older-than-seconds", type=int, default=30 * 24 * 60 * 60)
     parser.add_argument("--batch-size", type=int, default=1000)
     args = parser.parse_args(argv)
 
@@ -52,6 +54,14 @@ def main(argv: list[str] | None = None) -> int:
             batch_size=args.batch_size,
         )
         print(f"pruned_access_logs={count}")
+        return 0
+    if args.command == "data-lifecycle-scan":
+        scan = global_orphan_data_lifecycle_scan(
+            old_access_logs_older_than_seconds=args.old_access_logs_older_than_seconds,
+        )
+        for field in scan.counts:
+            print(f"{field}={scan.counts[field]}")
+        print(f"total_attention_rows={scan.total_attention_rows}")
         return 0
     return 2
 

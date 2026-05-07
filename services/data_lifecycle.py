@@ -5,7 +5,8 @@ from uuid import UUID
 
 from sqlalchemy import text
 
-from services.db import web_transaction
+from services.config import validate_runtime_environment
+from services.db import get_web_engine, web_transaction
 from services.limits import FREE_LIMITS
 
 
@@ -19,6 +20,24 @@ ACCOUNT_DELETE_TABLES = (
     "contexts",
     "stats",
     "user_profiles",
+)
+
+GLOBAL_ORPHAN_SCAN_FIELDS = (
+    "expired_contexts",
+    "legacy_contexts",
+    "old_access_logs",
+    "contexts_without_profile",
+    "stats_without_profile",
+    "api_keys_without_profile",
+    "access_logs_without_profile",
+    "work_threads_without_profile",
+    "work_thread_messages_without_thread",
+    "work_thread_tasks_without_thread",
+    "work_thread_runs_without_thread",
+    "work_thread_messages_user_mismatch",
+    "work_thread_tasks_user_mismatch",
+    "work_thread_runs_user_mismatch",
+    "work_threads_final_slot_missing_context",
 )
 
 
@@ -42,6 +61,13 @@ class AccountDeleteDryRun:
     table_counts: dict[str, int]
     total_rows: int
     dry_run: bool = True
+
+
+@dataclass(frozen=True)
+class GlobalOrphanDataLifecycleScan:
+    old_access_logs_older_than_seconds: int
+    counts: dict[str, int]
+    total_attention_rows: int
 
 
 def _int(row, key: str) -> int:
@@ -155,3 +181,31 @@ def account_delete_dry_run(*, user_id: UUID | str) -> AccountDeleteDryRun:
 
 def account_delete_orphan_scan(*, user_id: UUID | str) -> AccountDeleteDryRun:
     return _count_user_owned_rows(user_id=user_id)
+
+
+def global_orphan_data_lifecycle_scan(
+    *,
+    old_access_logs_older_than_seconds: int = 30 * 24 * 60 * 60,
+) -> GlobalOrphanDataLifecycleScan:
+    validate_runtime_environment()
+    safe_seconds = max(int(old_access_logs_older_than_seconds), 1)
+    field_list = ", ".join(GLOBAL_ORPHAN_SCAN_FIELDS)
+    with get_web_engine().begin() as conn:
+        row = conn.execute(
+            text(
+                f"""
+                SELECT {field_list}
+                FROM app.data_lifecycle_scan(
+                  (:old_access_logs_older_than_seconds * interval '1 second')
+                )
+                """
+            ),
+            {"old_access_logs_older_than_seconds": safe_seconds},
+        ).mappings().one()
+
+    counts = {field: _int(row, field) for field in GLOBAL_ORPHAN_SCAN_FIELDS}
+    return GlobalOrphanDataLifecycleScan(
+        old_access_logs_older_than_seconds=safe_seconds,
+        counts=counts,
+        total_attention_rows=sum(counts.values()),
+    )

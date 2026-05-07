@@ -42,6 +42,30 @@ The dry-run must not select or print `contexts.content`, `api_keys.key_hash`,
 `work_thread_messages.content`, Authorization headers, tokens, DB URLs, or
 local client key material.
 
+## Global Orphan Scan
+
+Run the global orphan/data lifecycle scan after schema changes, before public
+beta, and after account cleanup work:
+
+```bash
+python -m services.maintenance data-lifecycle-scan --old-access-logs-older-than-seconds 2592000
+```
+
+The scan is count-only and runs through `app.data_lifecycle_scan(...)`. It
+reports:
+
+- expired WorkBatons still waiting for `app.expire_contexts()`
+- legacy non-client-encrypted context rows
+- access logs older than the chosen retention window
+- product rows without a user profile
+- WorkThread messages, tasks, and runs without a parent thread
+- WorkThread child rows whose `user_id` does not match the parent thread
+- WorkThread final Slot links whose referenced Slot no longer exists
+
+The scan must not select or print `contexts.content`,
+`work_thread_messages.content`, `api_keys.key_hash`, request hashes, tokens, DB
+URLs, Authorization headers, or local client key material.
+
 ## Delete Order
 
 1. Confirm user identity and legal/account request scope.

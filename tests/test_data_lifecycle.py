@@ -74,6 +74,12 @@ def assert_dry_run_sql_is_count_only(session):
         assert forbidden not in sql
 
 
+def global_scan_row(**overrides):
+    row = {field: 0 for field in lifecycle.GLOBAL_ORPHAN_SCAN_FIELDS}
+    row.update(overrides)
+    return row
+
+
 def test_downgrade_dry_run_reports_over_free_slots_without_deleting_rows(monkeypatch):
     session = use_fake_lifecycle_session(
         monkeypatch,
@@ -146,6 +152,57 @@ def test_orphan_scan_queries_all_user_owned_tables(monkeypatch):
         assert f"public.{table_name}" in sql
 
 
+def test_global_orphan_data_lifecycle_scan_uses_count_only_db_function(monkeypatch):
+    session = use_fake_lifecycle_session(
+        monkeypatch,
+        global_scan_row(
+            expired_contexts=2,
+            old_access_logs=3,
+            work_thread_messages_without_thread=4,
+            work_thread_tasks_user_mismatch=5,
+        ),
+    )
+
+    monkeypatch.setattr(lifecycle, "validate_runtime_environment", lambda: None)
+    monkeypatch.setattr(lifecycle, "get_web_engine", lambda: type("FakeEngine", (), {"begin": lambda self: FakeTransaction(session)})())
+
+    result = lifecycle.global_orphan_data_lifecycle_scan(old_access_logs_older_than_seconds=0)
+    sql = joined_sql(session)
+
+    assert result.old_access_logs_older_than_seconds == 1
+    assert result.counts["expired_contexts"] == 2
+    assert result.counts["old_access_logs"] == 3
+    assert result.counts["work_thread_messages_without_thread"] == 4
+    assert result.counts["work_thread_tasks_user_mismatch"] == 5
+    assert result.total_attention_rows == 14
+    assert "app.data_lifecycle_scan" in sql
+    assert "old_access_logs_older_than_seconds" in session.executed[0][1]
+    assert_dry_run_sql_is_count_only(session)
+
+
+def test_global_orphan_data_lifecycle_scan_migration_is_count_only():
+    migration = (
+        Path(lifecycle.__file__).resolve().parents[1] / "supabase" / "migrations" / "008_data_lifecycle_scan.sql"
+    ).read_text(encoding="utf-8")
+
+    for field in lifecycle.GLOBAL_ORPHAN_SCAN_FIELDS:
+        assert field in migration
+    assert "CREATE OR REPLACE FUNCTION app.data_lifecycle_scan" in migration
+    assert "SECURITY DEFINER" in migration
+    assert "SET search_path = pg_catalog, pg_temp" in migration
+    assert "GRANT EXECUTE ON FUNCTION app.data_lifecycle_scan(interval) TO a2cr_app" in migration
+    assert "008_data_lifecycle_scan" in migration
+    for forbidden in (
+        "contexts.content",
+        "work_thread_messages.content",
+        "api_keys.key_hash",
+        "last_used_ip_hash",
+        "ip_hash",
+        "user_agent_hash",
+    ):
+        assert forbidden not in migration
+
+
 def test_data_lifecycle_runbook_defines_downgrade_and_account_delete_order():
     runbook = Path(lifecycle.__file__).resolve().parents[1] / "docs" / "runbooks" / "data-lifecycle.md"
     text = runbook.read_text(encoding="utf-8")
@@ -158,5 +215,9 @@ def test_data_lifecycle_runbook_defines_downgrade_and_account_delete_order():
     assert "`contexts.content`" in text
     assert "`api_keys.key_hash`" in text
     assert "`work_thread_messages.content`" in text
+    assert "Global Orphan Scan" in text
+    assert "python -m services.maintenance data-lifecycle-scan" in text
+    assert "app.data_lifecycle_scan" in text
+    assert "WorkThread child rows whose `user_id` does not match the parent thread" in text
     assert "Delete the Supabase Auth user only after product cleanup and orphan scan" in text
     assert "succeed" in text
