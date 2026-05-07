@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from routers.dashboard import get_current_dashboard_user
-from services.auth import AuthenticatedUser
+from services.auth import AuthError, AuthenticatedUser
 from services.dashboard import (
     CreatedApiKey,
     DashboardAccessLog,
@@ -129,6 +129,28 @@ def test_delete_context_uses_dashboard_auth_without_returning_content(client, mo
     assert captured["slot_name"] == "slot-a"
     assert captured["meta"].client_type == "dashboard"
     assert "content" not in response.json()
+
+
+def test_dashboard_delete_auth_failure_does_not_lookup_or_leak_slot(client, monkeypatch):
+    def fail_auth():
+        raise AuthError()
+
+    def fail_if_called(**kwargs):
+        raise AssertionError("dashboard delete should not run before auth")
+
+    app.dependency_overrides[get_current_dashboard_user] = fail_auth
+    monkeypatch.setattr(web_context_service, "delete_context", fail_if_called)
+
+    response = client.delete(
+        "/api/dashboard/contexts/private-slot",
+        headers={"Authorization": "Bearer sk-test-secret"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["code"] == "invalid_auth"
+    assert "private-slot" not in response.text
+    assert "sk-test-secret" not in response.text
+    assert "Bearer" not in response.text
 
 
 def test_stats_return_no_content(client, monkeypatch):
