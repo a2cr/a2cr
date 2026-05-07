@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import DBAPIError, TimeoutError
@@ -138,9 +140,8 @@ def test_readiness_endpoint_returns_safe_not_ready(monkeypatch):
 
 
 def test_workbaton_mutations_take_user_advisory_lock():
-    source = (db.__file__).replace("\\services\\db.py", "\\services\\web_context.py")
-    with open(source, encoding="utf-8") as handle:
-        web_context_source = handle.read()
+    source = Path(db.__file__).with_name("web_context.py")
+    web_context_source = source.read_text(encoding="utf-8")
 
     save_start = web_context_source.index("def save_context(")
     delete_start = web_context_source.index("def delete_context(")
