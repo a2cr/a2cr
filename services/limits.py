@@ -138,7 +138,7 @@ def ensure_active_slot_capacity(
             WHERE user_id = :user_id
               AND expires_at > now()
               AND encryption_mode = 'client'
-              AND (slot_name = :slot_name OR (:slot_number IS NOT NULL AND slot_number = :slot_number))
+              AND (slot_name = :slot_name OR (CAST(:slot_number AS integer) IS NOT NULL AND slot_number = CAST(:slot_number AS integer)))
             LIMIT 1
             """
         ),
