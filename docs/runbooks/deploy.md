@@ -363,6 +363,9 @@ Run repeated batches only as needed, and confirm stats counters still represent 
 
 ## Rollback
 
+See `docs/runbooks/disaster-recovery.md` for RTO/RPO targets, restore drills,
+and the full rollback/forward-fix procedure.
+
 1. Roll back the Railway deployment to the previous successful image.
 2. Do not roll back database migrations unless a specific migration is proven faulty.
 3. If a secret may be exposed, revoke/rotate it before redeploying.

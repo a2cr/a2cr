@@ -215,3 +215,11 @@ def test_deploy_runbook_includes_hosted_rls_pooler_smoke():
     assert "A2CR_SMOKE_USER_B_ID" in runbook
     assert "transaction-local `app.user_id` is reset" in runbook
     assert "no DB URL, token, API key, password, or row content is printed" in runbook
+
+
+def test_deploy_runbook_links_disaster_recovery_runbook():
+    runbook = (ROOT / "docs" / "runbooks" / "deploy.md").read_text(encoding="utf-8")
+
+    assert "docs/runbooks/disaster-recovery.md" in runbook
+    assert "RTO/RPO targets" in runbook
+    assert "rollback/forward-fix procedure" in runbook
