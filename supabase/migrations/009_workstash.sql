@@ -3,7 +3,10 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS public.work_stash_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  entry_key text NOT NULL CHECK (entry_key ~ '^[A-Za-z0-9_.:-]{1,256}$'),
+  entry_key text NOT NULL CHECK (
+    length(entry_key) BETWEEN 1 AND 256
+    AND entry_key ~ '^[A-Za-z0-9_.:-]+$'
+  ),
   encrypted_value text NOT NULL,
   encryption_mode text NOT NULL DEFAULT 'client' CHECK (encryption_mode = 'client'),
   encryption_version integer NOT NULL DEFAULT 1,

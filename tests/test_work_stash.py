@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 from datetime import datetime, timedelta, timezone
 import inspect
+from pathlib import Path
 from uuid import UUID
 
 import pytest
@@ -25,6 +26,7 @@ import services.work_stash as work_stash_service
 USER_ID = UUID("00000000-0000-0000-0000-0000000000b1")
 ENTRY_KEY = "myapp_api_spec_v1"
 ENCRYPTED_VALUE = '{"version":1,"alg":"Fernet","ciphertext":"abc","key_wrap":{"type":"local-key","kid":"test"}}'
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def future_time() -> datetime:
@@ -138,6 +140,23 @@ def test_work_stash_tag_sql_binds_tags_parameter():
     assert statements
     for statement in statements:
         assert "tags" in text(statement).compile().params
+
+
+def test_work_stash_entry_key_db_check_avoids_large_regex_repetition():
+    initial = (ROOT / "supabase" / "migrations" / "009_workstash.sql").read_text(
+        encoding="utf-8"
+    )
+    repair = (
+        ROOT / "supabase" / "migrations" / "010_workstash_entry_key_check.sql"
+    ).read_text(encoding="utf-8")
+
+    for migration in (initial, repair):
+        assert "{1,256}" not in migration
+        assert "length(entry_key) BETWEEN 1 AND 256" in migration
+        assert "entry_key ~ '^[A-Za-z0-9_.:-]+$'" in migration
+
+    assert "DROP CONSTRAINT IF EXISTS work_stash_entries_entry_key_check" in repair
+    assert "work_stash_entries_entry_key_format_check" in repair
 
 
 # ---------------------------------------------------------------------------
