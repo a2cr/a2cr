@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from services.config import get_web_config
+from services.config import get_db_config, get_web_config
 
 _web_engine = None
 
@@ -15,7 +15,7 @@ _web_engine = None
 def get_web_engine():
     global _web_engine
     if _web_engine is None:
-        config = get_web_config()
+        config = get_db_config()
         _web_engine = create_engine(
             config.database_url,
             pool_pre_ping=True,
