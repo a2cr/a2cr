@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import ast
 from datetime import datetime, timedelta, timezone
+import inspect
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from main import app
 from routers.web_context import get_current_api_user
@@ -115,6 +118,26 @@ def test_get_stash_limits_returns_free_by_default():
 
 def test_get_stash_limits_returns_pro():
     assert get_stash_limits("pro").plan == "pro"
+
+
+def test_work_stash_tag_sql_binds_tags_parameter():
+    source = inspect.getsource(work_stash_service)
+    tree = ast.parse(source)
+    statements = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "text":
+            continue
+        if not node.args or not isinstance(node.args[0], ast.Constant):
+            continue
+        statement = node.args[0].value
+        if isinstance(statement, str) and ":tags" in statement:
+            statements.append(statement)
+
+    assert statements
+    for statement in statements:
+        assert "tags" in text(statement).compile().params
 
 
 # ---------------------------------------------------------------------------

@@ -154,7 +154,7 @@ def store_work_stash(
                     UPDATE public.work_stash_entries
                     SET encrypted_value = :encrypted_value,
                         size_bytes = :size_bytes,
-                        tags = :tags::text[],
+                        tags = CAST(:tags AS text[]),
                         expires_at = now() + (:ttl_seconds * interval '1 second')
                     WHERE user_id = :user_id AND entry_key = :entry_key
                     RETURNING entry_key, expires_at, size_bytes
@@ -177,7 +177,7 @@ def store_work_stash(
                       (user_id, entry_key, encrypted_value, size_bytes, tags, expires_at)
                     VALUES
                       (:user_id, :entry_key, :encrypted_value, :size_bytes,
-                       :tags::text[], now() + (:ttl_seconds * interval '1 second'))
+                       CAST(:tags AS text[]), now() + (:ttl_seconds * interval '1 second'))
                     RETURNING entry_key, expires_at, size_bytes
                     """
                 ),
@@ -303,7 +303,7 @@ def list_work_stash(
                     SELECT entry_key, size_bytes, tags, created_at, updated_at, expires_at
                     FROM public.work_stash_entries
                     WHERE user_id = :user_id AND expires_at > now()
-                      AND tags && :tags::text[]
+                      AND tags && CAST(:tags AS text[])
                     ORDER BY updated_at DESC
                     """
                 ),
