@@ -101,7 +101,10 @@ const resources = {
         noLogs: "No access logs",
         notCalculated: "Not calculated",
         emptyTitle: "No active WorkBaton slots",
-        emptyBody: "Create a checkpoint from an MCP-capable AI client and it will appear here."
+        emptyBody: "Create a checkpoint from an MCP-capable AI client and it will appear here.",
+        workStash: "WorkStash",
+        workStashStorage: "Storage",
+        workStashEntries: "Entries"
       },
       settings: {
         title: "Settings",
@@ -243,7 +246,10 @@ const resources = {
         noLogs: "アクセスログはありません",
         notCalculated: "未計算",
         emptyTitle: "有効な WorkBaton スロットはありません",
-        emptyBody: "MCP 対応 AI クライアントからチェックポイントを保存すると、ここに表示されます。"
+        emptyBody: "MCP 対応 AI クライアントからチェックポイントを保存すると、ここに表示されます。",
+        workStash: "WorkStash",
+        workStashStorage: "ストレージ",
+        workStashEntries: "エントリ数"
       },
       settings: {
         title: "設定",

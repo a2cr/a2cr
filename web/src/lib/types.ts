@@ -79,6 +79,13 @@ export type CreatedApiKey = {
   created_at: string;
 };
 
+export type WorkStashUsage = {
+  total_size_bytes: number;
+  quota_bytes: number;
+  entry_count: number;
+  entry_limit: number;
+};
+
 export type DashboardData = {
   profile: DashboardProfile;
   contexts: DashboardContext[];
@@ -86,6 +93,7 @@ export type DashboardData = {
   accessLogs: DashboardAccessLog[];
   apiKey: DashboardApiKey | null;
   workthreads: DashboardWorkThread[];
+  workStash: WorkStashUsage | null;
 };
 
 export type ProfilePatch = Partial<{

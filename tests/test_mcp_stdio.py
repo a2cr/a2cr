@@ -213,10 +213,13 @@ def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
     result = server.explain_a2cr_flows()
 
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
+    assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]
+    assert "tools lazily" in result["common_rule"]["deferred_tool_clients"]
     assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
     assert "should_save_workbaton" in result["workbaton"]["tools"]
     assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
     assert "remote MCP save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
+    assert "exact-search for save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
     assert "official WorkBaton save path" in result["workbaton"]["save_path"]
     assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
     assert result["workthreads"]["flow"] == "agent <-> WorkThread <-> agents"
@@ -242,6 +245,7 @@ def test_mcp_stdio_should_save_workbaton_advises_local_save_path():
     assert result["required_save_path"] == "local stdio A2CR MCP wrapper"
     assert result["recommended_slot_name"] == "a2cr-dashboard-refresh-test-slot3"
     assert result["call_get_account_limits_first"] is True
+    assert "tools lazily" in result["tool_visibility_note"]
     assert "local stdio save_context" in result["next_step"]
     assert "blockers" in result["optional_fields"]
 
@@ -441,3 +445,16 @@ def test_mcp_stdio_and_agent_guide_document_loaded_workbaton_safety():
     for term in safety_terms:
         assert term in server.LOADED_WORKBATON_SAFETY or term in server.SAVE_DESCRIPTION
         assert term in skill
+
+
+def test_mcp_stdio_instructs_new_agents_about_workbaton_and_deferred_tools():
+    server = load_stdio_server()
+    skill = (Path(__file__).resolve().parents[1] / "docs/templates/skills/a2cr-agent/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert server.mcp.instructions == server.MCP_INSTRUCTIONS
+    assert "WorkBaton is a compact work-state checkpoint" in server.MCP_INSTRUCTIONS
+    assert "tools lazily" in server.MCP_INSTRUCTIONS
+    assert "tools lazily" in server.SAVE_DESCRIPTION
+    assert "tools lazily" in skill

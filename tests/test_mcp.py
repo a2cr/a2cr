@@ -161,6 +161,7 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     save_tool = next(tool for tool in tools if tool["name"] == "save_context")
     assert "client-side encryption" in save_tool["description"]
     assert "local stdio" in save_tool["description"]
+    assert "tools lazily" in save_tool["description"]
     advice_tool = next(tool for tool in tools if tool["name"] == "should_save_workbaton")
     assert "required local stdio save path" in advice_tool["description"]
     check_tool = next(tool for tool in tools if tool["name"] == "check_workthread_updates")
@@ -181,11 +182,16 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
 def test_mcp_explain_a2cr_flows_documents_baton_threads_and_encryption():
     result = mcp_http.explain_a2cr_flows()
 
+    assert mcp_http.web_mcp.instructions == mcp_http.INSTRUCTIONS
+    assert "tools lazily" in mcp_http.INSTRUCTIONS
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
+    assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]
+    assert "tools lazily" in result["common_rule"]["deferred_tool_clients"]
     assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
     assert "should_save_workbaton" in result["workbaton"]["tools"]
     assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
     assert "local stdio wrapper" in result["workbaton"]["how_to_check_stdio_wrapper"]
+    assert "exact-search for save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
     assert "Remote MCP save_context is disabled" in result["workbaton"]["save_path"]
     assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
     assert result["workbaton"]["storage"] == "public.contexts"
@@ -211,6 +217,7 @@ def test_mcp_should_save_workbaton_advises_remote_stdio_path():
     assert result["required_save_path"] == "local stdio A2CR MCP wrapper"
     assert result["call_get_account_limits_first"] is True
     assert result["recommended_slot_name"] == "a2cr-main"
+    assert "tools lazily" in result["tool_visibility_note"]
     assert "remote MCP surface cannot save WorkBaton" in result["next_step"]
     assert "blockers" in result["optional_fields"]
 

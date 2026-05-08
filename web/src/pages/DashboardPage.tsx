@@ -20,7 +20,7 @@ import { CopyButton } from "../components/CopyButton";
 import { Notice } from "../components/Notice";
 import { ApiError, deleteDashboardContext, loadDashboardData } from "../lib/api";
 import { buildSavePrompt } from "../lib/prompts";
-import type { DashboardAccessLog, DashboardContext, DashboardData, DashboardWorkThread } from "../lib/types";
+import type { DashboardAccessLog, DashboardContext, DashboardData, DashboardWorkThread, WorkStashUsage } from "../lib/types";
 import { formatBytes, formatDateTime, formatNumber } from "../lib/format";
 import { useAuth } from "../providers/AuthProvider";
 
@@ -204,6 +204,59 @@ function WorkThreadCard({ item, timezone }: { item: DashboardWorkThread; timezon
         </div>
       </dl>
     </article>
+  );
+}
+
+function UsageBar({ label, used, total, formatUsed, formatTotal }: {
+  label: string;
+  used: number;
+  total: number;
+  formatUsed: (n: number) => string;
+  formatTotal: (n: number) => string;
+}) {
+  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  const barColor =
+    pct >= 90 ? "bg-rose-500" : pct >= 75 ? "bg-amber-400" : "bg-emerald-600";
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-neutral-500">{label}</span>
+        <span className="font-semibold tabular-nums">
+          {pct}%
+          <span className="ml-2 text-xs font-normal text-neutral-400">
+            {formatUsed(used)} / {formatTotal(total)}
+          </span>
+        </span>
+      </div>
+      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function WorkStashCard({ usage }: { usage: WorkStashUsage }) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-neutral-200 bg-white p-4">
+      <div className="mb-4 text-sm font-semibold text-neutral-700">{t("dashboard.workStash")}</div>
+      <div className="grid gap-4">
+        <UsageBar
+          label={t("dashboard.workStashStorage")}
+          used={usage.total_size_bytes}
+          total={usage.quota_bytes}
+          formatUsed={formatBytes}
+          formatTotal={formatBytes}
+        />
+        <UsageBar
+          label={t("dashboard.workStashEntries")}
+          used={usage.entry_count}
+          total={usage.entry_limit}
+          formatUsed={formatNumber}
+          formatTotal={formatNumber}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -542,6 +595,12 @@ export function DashboardPage() {
           helpText={t("dashboard.tokensSavedHelp")}
         />
       </section>
+
+      {data?.workStash && (
+        <section>
+          <WorkStashCard usage={data.workStash} />
+        </section>
+      )}
 
       <section className="grid gap-3">
         <h2 className="text-base font-semibold">
