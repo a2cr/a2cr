@@ -139,6 +139,13 @@ def get_web_config() -> WebConfig:
     return _web_config
 
 
+def validate_db_environment() -> None:
+    """Fail fast for DB-only maintenance tasks that don't need JWT/web config."""
+    _reject_runtime_service_role_key()
+    if not os.environ.get("DATABASE_URL"):
+        raise RuntimeError("DATABASE_URL is required")
+
+
 def validate_runtime_environment() -> WebConfig | None:
     """Fail fast for unsafe production/runtime environment choices."""
     _reject_runtime_service_role_key()

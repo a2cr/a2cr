@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from sqlalchemy import text
 
-from services.config import validate_runtime_environment
+from services.config import validate_runtime_environment, validate_db_environment
 from services.data_lifecycle import global_orphan_data_lifecycle_scan
 from services.db import get_web_engine
 
@@ -18,7 +18,7 @@ def expire_web_contexts() -> int:
 
 def expire_work_stash() -> int:
     """Expire due WorkStash entries through the narrow DB function only."""
-    validate_runtime_environment()
+    validate_db_environment()
     with get_web_engine().begin() as conn:
         result = conn.execute(text("SELECT app.expire_work_stash()"))
         return int(result.scalar_one())

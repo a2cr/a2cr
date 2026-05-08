@@ -67,6 +67,13 @@ def _validate_entry_key(entry_key: str) -> None:
         )
 
 
+def _tags_to_pg(tags: list[str]) -> str:
+    # psycopg3 + SQLAlchemy does not auto-adapt Python lists to pg arrays.
+    # Format as a PostgreSQL array literal: {"tag1","tag2"}
+    escaped = ['"' + t.replace('"', '\\"') + '"' for t in tags]
+    return "{" + ",".join(escaped) + "}"
+
+
 def store_work_stash(
     *,
     user_id: UUID | str,
@@ -158,7 +165,7 @@ def store_work_stash(
                     "entry_key": entry_key,
                     "encrypted_value": encrypted_value,
                     "size_bytes": size_bytes,
-                    "tags": tags,
+                    "tags": _tags_to_pg(tags),
                     "ttl_seconds": limits.ttl_seconds,
                 },
             ).mappings().one()
@@ -179,7 +186,7 @@ def store_work_stash(
                     "entry_key": entry_key,
                     "encrypted_value": encrypted_value,
                     "size_bytes": size_bytes,
-                    "tags": tags,
+                    "tags": _tags_to_pg(tags),
                     "ttl_seconds": limits.ttl_seconds,
                 },
             ).mappings().one()
@@ -300,7 +307,7 @@ def list_work_stash(
                     ORDER BY updated_at DESC
                     """
                 ),
-                {"user_id": str(user_id), "tags": tag_filter},
+                {"user_id": str(user_id), "tags": _tags_to_pg(tag_filter)},
             ).mappings().all()
         else:
             rows = session.execute(
