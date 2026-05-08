@@ -80,4 +80,8 @@ TO a2cr_app;
 
 GRANT EXECUTE ON FUNCTION app.expire_work_stash() TO a2cr_app;
 
+INSERT INTO app.schema_migrations (migration_id)
+VALUES ('009_workstash')
+ON CONFLICT (migration_id) DO NOTHING;
+
 COMMIT;

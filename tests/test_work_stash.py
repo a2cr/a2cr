@@ -157,6 +157,8 @@ def test_work_stash_entry_key_db_check_avoids_large_regex_repetition():
 
     assert "DROP CONSTRAINT IF EXISTS work_stash_entries_entry_key_check" in repair
     assert "work_stash_entries_entry_key_format_check" in repair
+    assert "VALUES ('009_workstash')" in initial
+    assert "VALUES ('010_workstash_entry_key_check')" in repair
 
 
 # ---------------------------------------------------------------------------

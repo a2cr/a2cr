@@ -32,4 +32,8 @@ ALTER TABLE public.work_stash_entries
     AND entry_key ~ '^[A-Za-z0-9_.:-]+$'
   );
 
+INSERT INTO app.schema_migrations (migration_id)
+VALUES ('010_workstash_entry_key_check')
+ON CONFLICT (migration_id) DO NOTHING;
+
 COMMIT;
