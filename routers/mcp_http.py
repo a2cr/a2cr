@@ -56,6 +56,12 @@ with _without_project_root_on_path():
     from fastmcp.server.dependencies import get_http_request
 
 
+DEFERRED_TOOL_VISIBILITY_RULE = (
+    "Some MCP clients expose tools lazily. If save_context is not immediately "
+    "visible, search or request the exact save_context tool name before "
+    "concluding WorkBaton saves are unavailable."
+)
+
 INSTRUCTIONS = (
     "A2CR is the MCP surface for WorkBaton checkpoints and WorkThreads coordination. "
     "If you are unsure which flow to use, call explain_a2cr_flows first. "
@@ -66,6 +72,7 @@ INSTRUCTIONS = (
     "WorkThreads messages are encrypted at rest by A2CR and are not the same secrecy boundary as WorkBaton. "
     "Use the local stdio MCP wrapper for WorkBaton saves so content is encrypted before upload. "
     "This remote MCP surface can list metadata, load ciphertext, check account limits, and work with WorkThreads. "
+    f"{DEFERRED_TOOL_VISIBILITY_RULE} "
     "Do not guess or call direct HTTP API endpoints. "
     "Never save secrets, API keys, Authorization headers, private database URLs, "
     "full transcripts, long logs, generated caches, or large code bodies that can be read from the repository."
@@ -74,6 +81,7 @@ INSTRUCTIONS = (
 SAVE_CONTEXT_DESCRIPTION = (
     "Direct remote MCP saving is disabled because WorkBaton requires client-side encryption. "
     "Use the local stdio A2CR MCP wrapper so the WorkBaton body is encrypted before it reaches A2CR. "
+    f"{DEFERRED_TOOL_VISIBILITY_RULE} "
     "Do not guess or call direct HTTP API endpoints."
 )
 
@@ -141,6 +149,13 @@ EXPLAIN_A2CR_FLOWS_DESCRIPTION = (
 A2CR_FLOW_EXPLANATION = {
     "common_rule": {
         "mcp_first": "AI agents use A2CR MCP tools. Do not guess or call direct HTTP API endpoints.",
+        "new_agent_bootstrap": (
+            "A newly connected AI can understand A2CR from MCP instructions and "
+            "tool descriptions: call explain_a2cr_flows when unsure, treat "
+            "WorkBaton as compact serial work-state handoff, and use WorkThreads "
+            "for multi-agent collaboration."
+        ),
+        "deferred_tool_clients": DEFERRED_TOOL_VISIBILITY_RULE,
         "do_not_save": [
             "secrets",
             "API keys",
@@ -164,7 +179,7 @@ A2CR_FLOW_EXPLANATION = {
         ],
         "storage": "public.contexts",
         "stdio_wrapper_required_for_save": True,
-        "how_to_check_stdio_wrapper": "If the current MCP save_context says direct remote saving is disabled, this is the remote surface and cannot save WorkBaton. The local stdio wrapper save_context says it encrypts WorkBaton content locally before upload.",
+        "how_to_check_stdio_wrapper": "If the current MCP save_context says direct remote saving is disabled, this is the remote surface and cannot save WorkBaton. The local stdio wrapper save_context says it encrypts WorkBaton content locally before upload. In deferred-tool clients, exact-search for save_context before deciding it is unavailable.",
         "save_path": "WorkBaton saves must use the local stdio A2CR MCP wrapper. Remote MCP save_context is disabled because A2CR must receive encrypted_content only.",
         "encryption": "Client-encrypted before upload by the local stdio A2CR MCP wrapper. A2CR stores ciphertext and cannot decrypt the body.",
         "agent_next_action": "Resume from goal, current_state, next_action, blockers, and compact supporting facts.",
@@ -267,6 +282,7 @@ def _workbaton_save_advice(
         "should_save": should_save,
         "can_save_here": local_stdio_available,
         "required_save_path": "local stdio A2CR MCP wrapper",
+        "tool_visibility_note": DEFERRED_TOOL_VISIBILITY_RULE,
         "call_get_account_limits_first": True,
         "recommended_slot_name": _suggest_slot_name(project, known_slot_name),
         "recommended_detail_level": "compact",

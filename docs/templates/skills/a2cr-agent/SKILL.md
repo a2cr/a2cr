@@ -9,6 +9,8 @@ Use A2CR as the shared context layer for AI-agent work. The official WorkBaton p
 
 When newly connected or unsure which A2CR flow to use, call `explain_a2cr_flows` before choosing tools. WorkBaton is serial window handoff; WorkThreads is multi-agent collaboration.
 
+Some MCP clients expose tools lazily. If `save_context` is not immediately visible, search or request the exact `save_context` tool name before concluding WorkBaton saves are unavailable.
+
 Do not configure the hosted `/mcp` URL directly for WorkBaton, and do not use old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
 
 Do not use the legacy local SQLite `/v1/context/*` API for AI-agent WorkBaton saves. It is disabled by default and exists only for explicit local prototype tests.

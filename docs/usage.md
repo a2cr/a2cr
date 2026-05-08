@@ -158,6 +158,10 @@ This means the AI learns — from the server — what A2CR is for, when to save
 a WorkBaton checkpoint, when not to save, and how to avoid confusing WorkBaton
 with WorkThreads. No extra prompting is needed.
 
+Some MCP clients expose tools lazily. If `save_context` is not immediately
+visible after connection, the AI should search or request the exact
+`save_context` tool name before concluding WorkBaton saves are unavailable.
+
 ```
 AI client connects
     ↓
