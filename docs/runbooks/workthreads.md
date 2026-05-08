@@ -21,6 +21,9 @@ The security posture for WorkThreads is:
 - Dashboard routes return metadata only: title, purpose, status, loop status, message count, task count/status, agent names, last activity, and final Slot name.
 - Dashboard and React payloads must never include `work_thread_messages.content`, prompts, or full AI responses.
 - WorkThreads must not write to Core `contexts` except through the explicit final-result save path.
+- WorkBaton is a serial checkpoint flow, while WorkThreads are a collaborative
+  coordination flow. Do not use WorkBaton as a chat log, and do not let
+  WorkThreads silently create or overwrite WorkBaton Slots.
 
 ## MCP Tools
 
@@ -59,4 +62,11 @@ Loop guard audit rows use `work_thread_runs.reason` and never store message cont
 
 ## Separation Boundary
 
-Core remains the source of truth for user id, plan, API key, and billing state. WorkThreads can be disabled by not mounting `routers.workthreads` and hiding `/api/dashboard/workthreads`; Core WorkBaton save/load/resume and `/mcp` context tools remain independent.
+Core remains the source of truth for user id, plan, API key, and billing state.
+WorkThreads can be disabled by not mounting `routers.workthreads` and hiding
+`/api/dashboard/workthreads`; Core WorkBaton save/load/resume and `/mcp`
+context tools remain independent.
+
+AI agents use MCP tools as the product contract. Direct HTTP routes are an
+implementation detail for the service and dashboard; client prompts must not
+guess or call them.

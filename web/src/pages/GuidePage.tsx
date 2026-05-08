@@ -177,6 +177,98 @@ const text = {
       "Do not use the legacy local SQLite API for WorkBaton saves.",
       "Never save secrets, full transcripts, or long logs into WorkBaton."
     ],
+    connectTitle: "Connect once, then your AI handles the rest",
+    connectBody:
+      "When your AI client connects to A2CR through MCP, the server sends it a complete set of instructions — what tools exist, when to use them, and what never to save. Your AI reads these before starting work.",
+    connectPoints: [
+      "Your AI learns WorkBaton rules from the server, not from your prompts.",
+      "One instruction at the start of a session is enough: tell the AI to save checkpoints at milestones.",
+      "Any MCP-capable AI — Claude, Codex, Gemini, Cursor — receives the same instructions.",
+      "No plugin, no custom prompt engineering, no repeated setup."
+    ],
+    connectPromptLabel: "After connecting, tell your AI once:",
+    connectPromptExample: "A2CR is connected. Save a WorkBaton checkpoint at each task milestone.",
+    cleanContextTitle: "Clean context vs. compressed context",
+    cleanContextBody:
+      "Built-in compression shrinks a long conversation. WorkBaton distills it — keeping only what the next AI needs to continue without noise.",
+    cleanContextHeaders: ["", "Auto-compression", "WorkBaton distillation"],
+    cleanContextRows: [
+      ["What it does", "Shortens everything in the conversation", "Extracts only the signal needed for the next step"],
+      ["Failed attempts", "Remain as noise, just smaller", "Saved as structured warnings that prevent repetition"],
+      ["Old assumptions", "Compressed in, still present", "Left out entirely — fresh start"],
+      ["Next AI clarity", "Must process compressed noise", "Receives only goal, state, next action, and blockers"],
+      ["Quality over time", "Degrades with each session", "Resets to clean at each checkpoint"]
+    ],
+    cleanContextNote: "Compression is a diet. WorkBaton is a fresh start.",
+    scenarioTitle: "When to use WorkBaton",
+    scenarios: [
+      {
+        title: "Session cuts off mid-task",
+        body: "Resume from the last checkpoint without re-explaining anything. The next AI knows exactly where to pick up."
+      },
+      {
+        title: "Switching AI tools or models",
+        body: "Start in Claude, continue in Codex or Gemini. WorkBaton carries the work state across tools."
+      },
+      {
+        title: "Long projects spanning multiple days",
+        body: "End each session with a checkpoint. Start the next session clean, without dragging yesterday's noise forward."
+      },
+      {
+        title: "Handing work to another agent",
+        body: "One AI completes a phase and saves a checkpoint. Another AI picks up from the next action."
+      }
+    ],
+    toolsTitle: "A2CR MCP tools",
+    toolsHeaders: ["Tool", "When to call"],
+    toolsRows: [
+      ["explain_a2cr_flows", "Call first when newly connected or unsure whether to use WorkBaton or WorkThreads."],
+      ["should_save_workbaton", "Call when unsure if a checkpoint is appropriate or whether this MCP surface can save."],
+      ["get_account_limits", "Call before automatic or large saves to confirm plan limits and detail level."],
+      ["save_context", "Call via the local stdio wrapper at task milestones, phase completions, or context pressure."],
+      ["resume_context", "Call at the start of a new window to load the last checkpoint."],
+      ["load_context", "Call when the slot name or number is already known."],
+      ["list_contexts", "Call only when the user asks to search and no slot name is provided."],
+      ["delete_context", "Call only when the user explicitly requests deletion."]
+    ],
+    saveTriggersTitle: "When to save autonomously",
+    saveTriggers: [
+      "The conversation is getting long or context window pressure is detected.",
+      "A coherent task phase or milestone is complete.",
+      "Tests, builds, or important checks just passed.",
+      "The next concrete action is clear and should survive a new window.",
+      "The user is about to switch tools, models, or windows.",
+      "A new window just resumed from a WorkBaton and state has materially changed.",
+      "There is a blocker that another window or agent should continue from later."
+    ],
+    doNotSaveTitle: "When not to save",
+    doNotSave: [
+      "Prohibited material is present: secrets, API keys, auth headers, private DB URLs, .env content, or personal data.",
+      "The only content is a full transcript, long logs, generated caches, build artifacts, or large source files.",
+      "The next_action is not yet clear — wait for a stable boundary.",
+      "The user explicitly asked not to save.",
+      "You are on the remote MCP surface only and cannot reach the local stdio wrapper."
+    ],
+    batonThreadsTitle: "WorkBaton vs WorkThreads",
+    batonThreadsBody: "A2CR has two separate flows. Use the right one for the situation.",
+    batonThreadsHeaders: ["", "WorkBaton", "WorkThreads"],
+    batonThreadsRows: [
+      ["Shape", "Serial checkpoint handoff", "Collaborative multi-agent workspace"],
+      ["Flow", "window → new window", "agent ↔ agents"],
+      ["Save path", "Local stdio wrapper only — client-encrypted before upload", "Remote MCP — encrypted at rest by A2CR"],
+      ["Primary use", "Resume work in a new session or tool", "Coordinate tasks between multiple agents"],
+      ["Key tools", "save_context / resume_context", "create_workthread / post_workthread_message"]
+    ],
+    chainedHandoffTitle: "Chained handoffs",
+    chainedHandoffBody:
+      "When continuing from a previous WorkBaton, link the chain so the next AI understands the full context:",
+    chainedHandoffPoints: [
+      "previous_slot — the slot this save continues from.",
+      "completed_since_previous — work completed after the prior slot was loaded.",
+      "remaining_tasks_ordered — ordered next tasks for the next AI.",
+      "validation — test results, build outcomes, and smoke checks.",
+      "do_not_use_slots — stale slots and why to avoid them."
+    ],
     copyConfig: "Copy config",
     copyPrompt: "Copy prompt"
   },
@@ -264,6 +356,98 @@ const text = {
       "HTTP APIを推測せず、MCPツールを使います。",
       "list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。",
       "秘密情報、全文履歴、長いログをWorkBatonに保存しません。"
+    ],
+    connectTitle: "一度接続すれば、あとはAIが自律的に動く",
+    connectBody:
+      "AIクライアントがMCPでA2CRに接続すると、サーバーはAIにツール一覧と完全な指示を送ります。どのツールをいつ使うか、何を保存してはいけないか — これをAIは作業前に読み込みます。",
+    connectPoints: [
+      "WorkBatonのルールはサーバーから届く。プロンプトに毎回書く必要はない。",
+      "セッション開始時に一言伝えるだけで十分。あとはAIが自律的に保存タイミングを判断する。",
+      "Claude、Codex、Gemini、Cursorなど、MCP対応AIなら同じ指示を受け取る。",
+      "プラグイン不要、プロンプトエンジニアリング不要、毎回のセットアップ不要。"
+    ],
+    connectPromptLabel: "接続後、AIに一度だけ伝える：",
+    connectPromptExample: "A2CRが接続されています。作業の節目でWorkBatonチェックポイントを保存してください。",
+    cleanContextTitle: "綺麗なコンテキスト vs 圧縮されたコンテキスト",
+    cleanContextBody:
+      "組み込みの圧縮機能は長い会話を短くします。WorkBatonは蒸留します — 次のAIが続きに必要な情報だけを抽出する。",
+    cleanContextHeaders: ["", "自動圧縮", "WorkBaton蒸留"],
+    cleanContextRows: [
+      ["やること", "会話の全体を短くする", "次のステップに必要なシグナルだけを抽出する"],
+      ["失敗した試行", "ノイズとして残る（小さくなるだけ）", "繰り返しを防ぐ構造化された警告として保存される"],
+      ["古い前提", "圧縮されたまま残る", "完全に取り除かれる — 新鮮なスタート"],
+      ["次のAIの明瞭さ", "圧縮されたノイズを処理しなければならない", "goal・現在地・次のアクション・ブロッカーだけを受け取る"],
+      ["品質の変化", "セッションごとに劣化する", "チェックポイントごとに綺麗にリセットされる"]
+    ],
+    cleanContextNote: "圧縮はダイエット。WorkBatonはリフレッシュ。",
+    scenarioTitle: "WorkBatonを使う場面",
+    scenarios: [
+      {
+        title: "作業中にセッションが切れた",
+        body: "最後のチェックポイントから再開。再説明は不要で、次のAIはどこから続けるか正確に把握している。"
+      },
+      {
+        title: "AIツールやモデルを切り替える",
+        body: "Claudeで始めてCodexやGeminiで続ける。WorkBatonが作業状態をツールをまたいで運ぶ。"
+      },
+      {
+        title: "複数日にわたる長いプロジェクト",
+        body: "セッション終了時にチェックポイントを保存。次のセッションは昨日のノイズを引きずらずクリーンに始まる。"
+      },
+      {
+        title: "別のエージェントへ作業を引き継ぐ",
+        body: "あるAIがフェーズを完了してチェックポイントを保存。別のAIが次のアクションから作業を開始する。"
+      }
+    ],
+    toolsTitle: "A2CR MCPツール一覧",
+    toolsHeaders: ["ツール", "呼ぶタイミング"],
+    toolsRows: [
+      ["explain_a2cr_flows", "接続直後、またはWorkBatonとWorkThreadsどちらを使うか迷ったとき最初に呼ぶ。"],
+      ["should_save_workbaton", "チェックポイントが適切か、このMCP面から保存できるか確認したいとき。"],
+      ["get_account_limits", "自動保存や大きな保存の前に、プラン制限と保存粒度を確認する。"],
+      ["save_context", "ローカルstdio wrapper経由で、作業の節目・フェーズ完了・コンテキスト圧迫時に呼ぶ。"],
+      ["resume_context", "新しいウィンドウの最初に呼んで、最後のチェックポイントを読み込む。"],
+      ["load_context", "スロット名または番号がすでに分かっている場合の直接ロード。"],
+      ["list_contexts", "ユーザーが検索を求めており、スロット名が提示されていない場合のみ使う。"],
+      ["delete_context", "ユーザーが明示的に削除を要求した場合のみ使う。"]
+    ],
+    saveTriggersTitle: "自律的に保存するタイミング",
+    saveTriggers: [
+      "会話が長くなってきた、またはコンテキストウィンドウの圧迫を感じた。",
+      "一貫した作業フェーズや区切りが完了した。",
+      "テスト・ビルド・重要な確認が通った直後。",
+      "次の具体的なアクションが明確で、新しいウィンドウに引き継ぐ価値がある。",
+      "ユーザーがツール・モデル・ウィンドウを切り替えようとしている。",
+      "新しいウィンドウがWorkBatonから再開し、状態が実質的に変化した。",
+      "別のウィンドウやエージェントが後で続けるべきブロッカーがある。"
+    ],
+    doNotSaveTitle: "保存してはいけないとき",
+    doNotSave: [
+      "禁止コンテンツが含まれる：secret、APIキー、認証ヘッダー、プライベートDB URL、.env、個人データ。",
+      "内容が会話全文・長大ログ・生成キャッシュ・ビルド成果物・大きなソースファイルのみ。",
+      "next_actionがまだ明確でない — 安定した区切りまで待つ。",
+      "ユーザーが保存しないよう明示的に指示した。",
+      "リモートMCP面のみで接続しており、ローカルstdio wrapperに届かない。"
+    ],
+    batonThreadsTitle: "WorkBaton vs WorkThreads",
+    batonThreadsBody: "A2CRには2つの独立したフローがある。状況に合ったものを使う。",
+    batonThreadsHeaders: ["", "WorkBaton", "WorkThreads"],
+    batonThreadsRows: [
+      ["形状", "シリアルチェックポイント引き継ぎ", "複数エージェントの協調ワークスペース"],
+      ["フロー", "window → 新しいwindow", "agent ↔ agents"],
+      ["保存パス", "ローカルstdio wrapperのみ（送信前にクライアント暗号化）", "リモートMCP（A2CRがサーバー側で暗号化）"],
+      ["主な用途", "新しいセッションやツールで作業を再開する", "複数エージェント間でタスクを調整する"],
+      ["主なツール", "save_context / resume_context", "create_workthread / post_workthread_message"]
+    ],
+    chainedHandoffTitle: "チェーン引き継ぎ",
+    chainedHandoffBody:
+      "前のWorkBatonから続ける場合は、以下のフィールドでチェーンをつなぐと次のAIが全体の文脈を理解できる：",
+    chainedHandoffPoints: [
+      "previous_slot — このセーブが引き継ぐ前のスロット情報。",
+      "completed_since_previous — 前のスロットをロードした後に完了した作業。",
+      "remaining_tasks_ordered — 次のAIへの優先順タスク一覧。",
+      "validation — テスト結果・ビルド成果・スモークチェックの記録。",
+      "do_not_use_slots — 陳腐化したスロットと使ってはいけない理由。"
     ],
     copyConfig: "設定をコピー",
     copyPrompt: "プロンプトをコピー"
@@ -444,6 +628,71 @@ export function GuidePage() {
             <PlainBulletList items={t.whatPoints} />
           </PlainSection>
 
+          <PlainSection eyebrow="Connect first" title={t.connectTitle} body={t.connectBody}>
+            <PlainBulletList items={t.connectPoints} />
+            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+              <div className="mb-1 text-xs font-semibold text-emerald-700">{t.connectPromptLabel}</div>
+              <pre className="whitespace-pre-wrap text-xs leading-5 text-emerald-900">{t.connectPromptExample}</pre>
+            </div>
+          </PlainSection>
+
+          <PlainSection eyebrow="Tools" title={t.toolsTitle}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200">
+                    {t.toolsHeaders.map((h) => (
+                      <th key={h} className="pb-2 pr-4 font-semibold text-neutral-950">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.toolsRows.map(([tool, when]) => (
+                    <tr key={tool} className="border-t border-neutral-100">
+                      <td className="w-56 py-2 pr-4 align-top font-mono text-xs font-semibold text-neutral-950">{tool}</td>
+                      <td className="py-2 leading-6 text-neutral-700">{when}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </PlainSection>
+
+          <PlainSection eyebrow="Save timing" title={t.saveTriggersTitle}>
+            <PlainBulletList items={t.saveTriggers} />
+          </PlainSection>
+
+          <PlainSection eyebrow="Do not save" title={t.doNotSaveTitle}>
+            <PlainBulletList items={t.doNotSave} />
+          </PlainSection>
+
+          <PlainSection eyebrow="WorkBaton vs WorkThreads" title={t.batonThreadsTitle} body={t.batonThreadsBody}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200">
+                    {t.batonThreadsHeaders.map((h, i) => (
+                      <th key={i} className="pb-2 pr-4 font-semibold text-neutral-950">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.batonThreadsRows.map(([label, baton, threads]) => (
+                    <tr key={label} className="border-t border-neutral-100">
+                      <th className="w-28 py-2 pr-4 align-top font-semibold text-neutral-950">{label}</th>
+                      <td className="py-2 pr-4 align-top leading-6 text-neutral-700">{baton}</td>
+                      <td className="py-2 leading-6 text-neutral-700">{threads}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </PlainSection>
+
+          <PlainSection eyebrow="Chained handoff" title={t.chainedHandoffTitle} body={t.chainedHandoffBody}>
+            <PlainBulletList items={t.chainedHandoffPoints} />
+          </PlainSection>
+
           <PlainSection eyebrow="Security" title={t.keyTitle} body={t.keyBody}>
             <PlainBulletList items={t.keyPoints} />
           </PlainSection>
@@ -557,6 +806,44 @@ export function GuidePage() {
                 note={t.compressionCompareNote}
               />
               <ComparisonTable title={t.subagentCompareTitle} headers={t.subagentCompareHeaders} rows={t.subagentCompareRows} />
+            </div>
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="How it works" title={t.connectTitle} body={t.connectBody}>
+            <div className="grid gap-4">
+              <BulletList items={t.connectPoints} />
+              <article className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-emerald-700">{t.connectPromptLabel}</div>
+                <pre className="whitespace-pre-wrap text-sm leading-6 text-emerald-900">{t.connectPromptExample}</pre>
+              </article>
+            </div>
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="Context quality" title={t.cleanContextTitle} body={t.cleanContextBody}>
+            <div className="grid gap-4">
+              <ComparisonTable
+                title={t.cleanContextTitle}
+                headers={t.cleanContextHeaders}
+                rows={t.cleanContextRows}
+                note={t.cleanContextNote}
+              />
+            </div>
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="Use cases" title={t.scenarioTitle}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {t.scenarios.map((s) => (
+                <article key={s.title} className="rounded-md border border-neutral-200 bg-white p-4">
+                  <h3 className="font-semibold text-neutral-950">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-700">{s.body}</p>
+                </article>
+              ))}
             </div>
           </Section>
         </section>
