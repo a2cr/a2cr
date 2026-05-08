@@ -143,6 +143,86 @@ Optional environment variables:
 
 If the local client key is lost, A2CR cannot recover client-encrypted WorkBaton bodies.
 
+## Connect Before Starting Work
+
+Connect the A2CR MCP server before beginning any task session. This is the
+single most important step for getting autonomous WorkBaton behavior.
+
+### What happens when an AI connects
+
+When an AI client connects to the A2CR MCP server, the server immediately
+sends a tool list to the AI. Each tool comes with a name, a description, and
+a parameter schema. The AI reads these before doing anything else.
+
+This means the AI learns — from the server — what A2CR is for, when to save
+a WorkBaton checkpoint, when not to save, and how to avoid confusing WorkBaton
+with WorkThreads. No extra prompting is needed.
+
+```
+AI client connects
+    ↓
+A2CR MCP server sends tool list
+    ↓
+AI reads tool names, descriptions, and parameter schemas
+    ↓
+AI understands: when to save, what to save, what to skip
+    ↓
+Work begins — AI acts autonomously at the right moments
+```
+
+### After connecting, one instruction is enough
+
+Once the MCP server is connected, tell the AI once at the start of the session:
+
+```
+A2CR is connected. Save a WorkBaton checkpoint at each task milestone.
+```
+
+The AI will handle timing, slot naming, content distillation, and showing you
+the resume prompt. You do not need to repeat this for each save.
+
+### Without a connection
+
+Without MCP, the AI has no instructions from A2CR. Every save requires a
+manual prompt from the user, the AI cannot call `should_save_workbaton` to
+check policy, and `explain_a2cr_flows` is unavailable to clarify the
+Baton/Threads boundary.
+
+### Tools the AI gains on connection
+
+| Tool | What the AI learns to do |
+|---|---|
+| `explain_a2cr_flows` | Distinguish WorkBaton serial handoff from WorkThreads collaboration |
+| `should_save_workbaton` | Check whether a checkpoint is appropriate before saving |
+| `get_account_limits` | Check plan limits before automatic or large saves |
+| `save_context` | Save a client-encrypted WorkBaton checkpoint |
+| `resume_context` | Load a checkpoint in a new window |
+| `list_contexts` | Find active slots |
+
+## MCP Flow: Baton Vs Threads
+
+AI agents interact with A2CR through MCP tools. WorkBaton and WorkThreads share
+that MCP entrypoint, but their behavior after the tool call is different.
+
+Newly connected agents should call `explain_a2cr_flows` before choosing between
+WorkBaton and WorkThreads. Agents can call `should_save_workbaton` when they
+are unsure whether an autonomous WorkBaton checkpoint is appropriate or whether
+the current MCP surface can save it.
+
+WorkBaton is a serial checkpoint flow: `window -> new window -> new window`.
+The local stdio MCP wrapper encrypts the checkpoint before upload, and A2CR
+stores ciphertext plus metadata.
+
+WorkThreads are a collaborative coordination flow: `agent <-> agents`. A2CR
+stores encrypted-at-rest append-only messages, task leases, loop guard metadata,
+and progress metadata. WorkThreads must not silently create or overwrite
+WorkBaton Slots.
+
+See `docs/runbooks/mcp-baton-vs-threads-flow.md` for the detailed flow.
+
+For autonomous checkpoint guidance, see
+`docs/runbooks/workbaton-autonomous-save-spec.md`.
+
 ## Storage Mode
 
 | Mode | Behavior |

@@ -37,6 +37,7 @@ class ContentSchema(BaseModel):
     decisions: list[str] = []
     constraints: list[str] = []
     problems: list[str] = []
+    blockers: list[str] = []
     environment: Optional[str] = None
     background: Optional[str] = None
     summary: Optional[str] = None

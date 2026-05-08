@@ -207,6 +207,60 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
     assert result["allowed_detail_levels"] == ["compact"]
 
 
+def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
+    server = load_stdio_server()
+
+    result = server.explain_a2cr_flows()
+
+    assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
+    assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
+    assert "should_save_workbaton" in result["workbaton"]["tools"]
+    assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
+    assert "remote MCP save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
+    assert "official WorkBaton save path" in result["workbaton"]["save_path"]
+    assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
+    assert result["workthreads"]["flow"] == "agent <-> WorkThread <-> agents"
+    assert "not by this local WorkBaton wrapper" in result["workthreads"]["availability"]
+    assert "Encrypted at rest by A2CR" in result["workthreads"]["encryption"]
+    assert "not WorkBaton's client-encrypted boundary" in result["workthreads"]["encryption"]
+    assert "Do not silently create or overwrite WorkBaton Slots." in result["workthreads"]["must_not"]
+
+
+def test_mcp_stdio_should_save_workbaton_advises_local_save_path():
+    server = load_stdio_server()
+
+    result = server.should_save_workbaton(
+        reason="task_phase_complete",
+        project="A2CR",
+        recent_progress="MCP flow docs were updated",
+        next_action="Run targeted tests",
+        known_slot_name="a2cr-dashboard-refresh-test-slot3",
+    )
+
+    assert result["should_save"] is True
+    assert result["can_save_here"] is True
+    assert result["required_save_path"] == "local stdio A2CR MCP wrapper"
+    assert result["recommended_slot_name"] == "a2cr-dashboard-refresh-test-slot3"
+    assert result["call_get_account_limits_first"] is True
+    assert "local stdio save_context" in result["next_step"]
+    assert "blockers" in result["optional_fields"]
+
+
+def test_mcp_stdio_should_save_workbaton_refuses_prohibited_material():
+    server = load_stdio_server()
+
+    result = server.should_save_workbaton(
+        reason="conversation_getting_long",
+        recent_progress="Prepared a handoff",
+        next_action="Save WorkBaton",
+        has_prohibited_material=True,
+    )
+
+    assert result["should_save"] is False
+    assert result["can_save_here"] is True
+    assert "prohibited material" in result["warnings"][0]
+
+
 def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
     monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example")
     monkeypatch.setenv("A2CR_API_KEY", "sk-a2cr-secret")

@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+from models.schemas import ContentSchema
 from routers import mcp_http
 from services.auth import AuthError, AuthenticatedUser
 from services.exceptions import AppError
@@ -145,10 +146,28 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     assert tools_response.status_code == 200
     tools = _sse_json(tools_response)["result"]["tools"]
     tool_names = {tool["name"] for tool in tools}
-    assert {"save_context", "resume_context", "load_context", "list_contexts", "get_account_limits"} <= tool_names
+    assert {
+        "explain_a2cr_flows",
+        "should_save_workbaton",
+        "save_context",
+        "resume_context",
+        "load_context",
+        "list_contexts",
+        "get_account_limits",
+    } <= tool_names
+    explain_tool = next(tool for tool in tools if tool["name"] == "explain_a2cr_flows")
+    assert "WorkBaton serial handoff" in explain_tool["description"]
+    assert "WorkThreads multi-agent collaboration" in explain_tool["description"]
     save_tool = next(tool for tool in tools if tool["name"] == "save_context")
     assert "client-side encryption" in save_tool["description"]
     assert "local stdio" in save_tool["description"]
+    advice_tool = next(tool for tool in tools if tool["name"] == "should_save_workbaton")
+    assert "required local stdio save path" in advice_tool["description"]
+    check_tool = next(tool for tool in tools if tool["name"] == "check_workthread_updates")
+    wait_tool = next(tool for tool in tools if tool["name"] == "wait_workthread_updates")
+    assert check_tool["description"].startswith("Non-blocking check")
+    assert wait_tool["description"].startswith("Blocking wait")
+    assert check_tool["description"] != wait_tool["description"]
     result_tool = next(tool for tool in tools if tool["name"] == "save_workthread_result")
     assert "Disabled" in result_tool["description"]
     assert "local stdio encryption flow" in result_tool["description"]
@@ -157,6 +176,72 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     result = _sse_json(save_response)["result"]
     assert result["isError"] is True
     assert "Error calling tool" in result["content"][0]["text"]
+
+
+def test_mcp_explain_a2cr_flows_documents_baton_threads_and_encryption():
+    result = mcp_http.explain_a2cr_flows()
+
+    assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
+    assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
+    assert "should_save_workbaton" in result["workbaton"]["tools"]
+    assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
+    assert "local stdio wrapper" in result["workbaton"]["how_to_check_stdio_wrapper"]
+    assert "Remote MCP save_context is disabled" in result["workbaton"]["save_path"]
+    assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
+    assert result["workbaton"]["storage"] == "public.contexts"
+    assert result["workthreads"]["flow"] == "agent <-> WorkThread <-> agents"
+    assert "remote MCP surface" in result["workthreads"]["availability"]
+    assert "Encrypted at rest by A2CR" in result["workthreads"]["encryption"]
+    assert "not WorkBaton's client-encrypted boundary" in result["workthreads"]["encryption"]
+    assert "Do not silently create or overwrite WorkBaton Slots." in result["workthreads"]["must_not"]
+    assert "save_context through the local stdio wrapper" in result["finalization"]["allowed"]
+
+
+def test_mcp_should_save_workbaton_advises_remote_stdio_path():
+    result = mcp_http.should_save_workbaton(
+        reason="conversation_getting_long",
+        project="A2CR",
+        recent_progress="WorkBaton autonomous save spec was reviewed",
+        next_action="Patch the MCP self-description",
+        context_pressure="medium",
+    )
+
+    assert result["should_save"] is True
+    assert result["can_save_here"] is False
+    assert result["required_save_path"] == "local stdio A2CR MCP wrapper"
+    assert result["call_get_account_limits_first"] is True
+    assert result["recommended_slot_name"] == "a2cr-main"
+    assert "remote MCP surface cannot save WorkBaton" in result["next_step"]
+    assert "blockers" in result["optional_fields"]
+
+
+def test_mcp_should_save_workbaton_blocks_unclear_or_prohibited_saves():
+    missing_next_action = mcp_http.should_save_workbaton(
+        reason="conversation_getting_long",
+        recent_progress="Drafted a spec",
+    )
+    prohibited = mcp_http.should_save_workbaton(
+        reason="conversation_getting_long",
+        recent_progress="Drafted a spec",
+        next_action="Continue implementation",
+        has_prohibited_material=True,
+    )
+
+    assert missing_next_action["should_save"] is False
+    assert "next_action is clear" in missing_next_action["warnings"][0]
+    assert prohibited["should_save"] is False
+    assert "prohibited material" in prohibited["warnings"][0]
+
+
+def test_workbaton_content_schema_accepts_documented_blockers():
+    content = ContentSchema(
+        goal="align schema",
+        current_state="spec mentions blockers",
+        next_action="store blockers",
+        blockers=["Claude review issue 2"],
+    )
+
+    assert content.blockers == ["Claude review issue 2"]
 
 
 def test_mcp_save_context_requires_local_stdio_wrapper(monkeypatch):

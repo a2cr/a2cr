@@ -23,7 +23,7 @@ Legacy local prototype retained for development reference:
 - SQLite local storage
 - client-encrypted WorkBaton mode through the local stdio MCP wrapper
 - fixed Slot 1-3 support
-- MCP wrapper tools: `save_context`, `resume_context`, `load_context`, `list_contexts`
+- MCP wrapper tools: `explain_a2cr_flows`, `should_save_workbaton`, `save_context`, `resume_context`, `load_context`, `list_contexts`
 - Streamlit local dashboard
 - pytest coverage
 
@@ -147,6 +147,8 @@ Users must understand that losing the local client key makes those WorkBaton slo
 ## Documentation
 
 - Usage guide: `docs/usage.md`
+- MCP Baton vs Threads flow: `docs/runbooks/mcp-baton-vs-threads-flow.md`
+- WorkBaton autonomous save spec: `docs/runbooks/workbaton-autonomous-save-spec.md`
 - Deploy runbook: `docs/runbooks/deploy.md`
 - Disaster recovery runbook: `docs/runbooks/disaster-recovery.md`
 - Security runbook: `docs/runbooks/security.md`

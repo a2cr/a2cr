@@ -7,6 +7,8 @@ description: Use A2CR MCP for WorkBaton checkpoints and WorkThreads shared work 
 
 Use A2CR as the shared context layer for AI-agent work. The official WorkBaton path for AI agents is the local stdio MCP wrapper named `a2cr`. Prefer A2CR MCP tools over guessed HTTP endpoints unless the user explicitly asks for API integration work.
 
+When newly connected or unsure which A2CR flow to use, call `explain_a2cr_flows` before choosing tools. WorkBaton is serial window handoff; WorkThreads is multi-agent collaboration.
+
 Do not configure the hosted `/mcp` URL directly for WorkBaton, and do not use old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
 
 Do not use the legacy local SQLite `/v1/context/*` API for AI-agent WorkBaton saves. It is disabled by default and exists only for explicit local prototype tests.
@@ -72,7 +74,7 @@ Forbidden for both Free and Pro:
 
 These restrictions are identical for Free and Pro. Pro allows more safe handoff context, not more sensitive data.
 
-When available, call `get_account_limits` before automatic or large saves so the checkpoint respects the user's current retention, size, and detail-level limits.
+When available, call `should_save_workbaton` before autonomous saves if the trigger, Slot, or current MCP surface is unclear. Then call `get_account_limits` before automatic or large saves so the checkpoint respects the user's current retention, size, and detail-level limits.
 
 Never save prohibited material even when the user asks for a detailed Pro handoff.
 
