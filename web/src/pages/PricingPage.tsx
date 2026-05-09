@@ -7,20 +7,27 @@ import { LanguageToggle } from "../components/LanguageToggle";
 function PlanColumn({
   name,
   price,
-  rows
+  rows,
+  badge
 }: {
   name: string;
   price: string;
   rows: Array<[string, string]>;
+  badge?: string;
 }) {
   return (
     <section className="rounded-md border border-neutral-200 bg-white p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">{name}</h2>
-          <div className="mt-1 text-2xl font-semibold">{price}</div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">{name}</h2>
+            {badge && (
+              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500">{badge}</span>
+            )}
+          </div>
+          <div className="mt-1 text-2xl font-semibold text-neutral-400">{price}</div>
         </div>
-        <WalletCards className="size-5 text-emerald-700" aria-hidden="true" />
+        <WalletCards className="size-5 text-neutral-400" aria-hidden="true" />
       </div>
       <dl className="grid gap-3 text-sm">
         {rows.map(([label, value]) => (
@@ -76,7 +83,7 @@ export function PricingPage() {
         <h1 className="text-2xl font-semibold tracking-normal">{t("pricing.title")}</h1>
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <PlanColumn name={t("pricing.freeName")} price={t("pricing.freePrice")} rows={freeRows} />
-          <PlanColumn name={t("pricing.proName")} price={t("pricing.proPrice")} rows={proRows} />
+          <PlanColumn name={t("pricing.proName")} price={t("pricing.proPrice")} rows={proRows} badge={t("pricing.comingSoon")} />
         </div>
       </main>
     </div>

@@ -22,30 +22,30 @@ const resources = {
       },
       top: {
         heroBody:
-          "A2CR keeps AI work moving across windows, models, and MCP clients with compact, inspectable WorkBaton checkpoints.",
+          "Stop re-explaining your project every session. A2CR saves compact WorkBaton checkpoints — so any AI can pick up exactly where the last one left off, across windows, models, and days.",
         ctaDashboard: "Open dashboard",
         ctaPricing: "View pricing",
         points: {
           checkpoints: {
-            title: "WorkBaton checkpoints",
-            body: "Save the state of an AI task before a window fills up, then resume it from another client."
+            title: "Your AI remembers where it stopped",
+            body: "WorkBaton saves goal, progress, and next step before the session ends. The next AI — any AI — resumes without re-explaining anything."
           },
           mcp: {
-            title: "MCP-first handoff",
-            body: "Codex, Claude, Cursor, and other MCP-capable clients can call the same shared context layer."
+            title: "Works across Claude, Codex, Cursor, and more",
+            body: "Any MCP-capable client connects to the same checkpoint layer. Start in one tool, continue in another without losing state."
           },
           inspection: {
-            title: "Built for inspection",
-            body: "The dashboard shows slots, usage, limits, and access logs without exposing saved bodies."
+            title: "You stay in control",
+            body: "The dashboard shows usage, limits, and access logs without exposing your saved content. Saved bodies are client-encrypted — A2CR cannot read them."
           }
         },
-        originTitle: "One origin for the MVP",
+        originTitle: "How A2CR works",
         originBody:
-          "The hosted app serves the dashboard, authenticated APIs, and Streamable HTTP MCP endpoint from the same A2CR origin.",
+          "A2CR runs as a hosted service. Your AI connects via MCP, saves encrypted WorkBaton checkpoints through the local stdio wrapper, and resumes from any new window or tool.",
         surfaces: {
-          dashboard: "Slots, profile, keys, limits, and access log visibility.",
-          api: "Authenticated WorkBaton ciphertext save, load, resume, and delete paths.",
-          mcp: "Shared metadata and account tools for AI clients; WorkBaton saving uses the local stdio wrapper."
+          dashboard: "View slots, usage, limits, and access logs. Saved content is never exposed.",
+          api: "Authenticated paths for WorkBaton save, load, resume, and delete.",
+          mcp: "MCP tools for AI clients. WorkBaton saving uses the local stdio wrapper for client-side encryption before upload."
         }
       },
       common: {
@@ -138,7 +138,8 @@ const resources = {
         logs: "Access logs",
         workthreads: "WorkThreads",
         notIncluded: "Not included",
-        planned: "Post-MVP"
+        planned: "Coming soon",
+        comingSoon: "Coming soon"
       },
       errors: {
         generic: "Request failed",
@@ -167,30 +168,30 @@ const resources = {
       },
       top: {
         heroBody:
-          "A2CR は、AI 作業の文脈を別の窓・モデル・MCP クライアントへ引き継ぐための、コンパクトで確認しやすい WorkBaton チェックポイントを提供します。",
+          "毎回最初から説明し直すのをやめましょう。A2CR は AI の作業状態を WorkBaton として保存し、新しいウィンドウ・別の AI・翌日からでも、続きを再開できます。",
         ctaDashboard: "ダッシュボードを開く",
         ctaPricing: "料金を見る",
         points: {
           checkpoints: {
-            title: "WorkBaton チェックポイント",
-            body: "AI 作業の状態を、コンテキストが詰まる前に保存し、別のクライアントから再開できます。"
+            title: "AI が途中を覚えている",
+            body: "WorkBaton が goal・進捗・次のステップを保存。セッションが切れても、次の AI が迷わず続きから動き始めます。"
           },
           mcp: {
-            title: "MCP 前提の引き継ぎ",
-            body: "Codex、Claude、Cursor などの MCP 対応クライアントが、同じ共有コンテキスト層を呼び出せます。"
+            title: "Claude・Codex・Cursor を横断",
+            body: "MCP 対応クライアントなら同じチェックポイント層に接続できます。ツールをまたいでも作業の続きが保たれます。"
           },
           inspection: {
-            title: "確認しやすい設計",
-            body: "ダッシュボードでは、保存本文を表示せずに、スロット、利用状況、上限、アクセスログを確認できます。"
+            title: "内容は見せずに状態を管理",
+            body: "ダッシュボードはスロット・利用状況・アクセスログを表示します。保存本文はクライアント側で暗号化され、A2CR には見えません。"
           }
         },
-        originTitle: "MVP は 1 つの origin で",
+        originTitle: "A2CR の仕組み",
         originBody:
-          "ホスト版アプリは、ダッシュボード、認証済み API、Streamable HTTP MCP エンドポイントを同じ A2CR origin から提供します。",
+          "A2CR はホスト型サービスです。AI は MCP 経由で接続し、ローカル stdio wrapper で暗号化した WorkBaton チェックポイントを保存。新しいウィンドウやツールからいつでも再開できます。",
         surfaces: {
-          dashboard: "スロット、プロフィール、キー、上限、アクセスログを確認できます。",
-          api: "認証済みの WorkBaton 暗号文保存、読込、再開、削除 API を提供します。",
-          mcp: "AI クライアント向けのメタデータ/アカウント系ツールです。WorkBaton保存はローカルstdio wrapperを使います。"
+          dashboard: "スロット・利用状況・上限・アクセスログを確認できます。保存本文は表示されません。",
+          api: "WorkBaton の保存・読込・再開・削除の認証済み API パスを提供します。",
+          mcp: "AI クライアント向けの MCP ツール群。WorkBaton 保存はローカル stdio wrapper を経由してクライアント側で暗号化してから送信します。"
         }
       },
       common: {
@@ -283,7 +284,8 @@ const resources = {
         logs: "アクセスログ",
         workthreads: "WorkThreads",
         notIncluded: "対象外",
-        planned: "MVP 後"
+        planned: "近日公開",
+        comingSoon: "近日公開"
       },
       errors: {
         generic: "リクエストに失敗しました",
