@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+  <title>A2CR — AI Agent Guide</title>
+  <meta name="description" content="Complete A2CR MCP setup and WorkBaton/WorkStash reference for AI agents. Read this once to configure and use A2CR autonomously.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      color: #111;
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    a { color: #065f46; }
+    a:hover { color: #064e3b; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 2rem;
+    }
+    header .brand { font-weight: 700; font-size: 1.1rem; color: #111; text-decoration: none; }
+    header nav { display: flex; gap: 1rem; font-size: 0.875rem; }
+    h1 { font-size: 1.875rem; font-weight: 700; margin-bottom: 0.75rem; }
+    h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.375rem; }
+    p { margin-bottom: 0.75rem; }
+    section {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 1.75rem;
+      margin-top: 1.75rem;
+    }
+    .eyebrow {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #059669;
+      margin-bottom: 0.375rem;
+    }
+    ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.375rem; }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      padding: 1rem 1.125rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      white-space: pre;
+    }
+    code {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875em;
+      background: #f1f5f9;
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+    .config-label {
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-top: 1.25rem;
+      margin-bottom: 0.25rem;
+      color: #111;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      text-align: left;
+      font-weight: 700;
+      padding: 0.5rem 0.75rem;
+      background: #f8fafc;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    td {
+      padding: 0.5rem 0.75rem;
+      vertical-align: top;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    td:first-child, th:first-child { width: 220px; }
+    td code { font-size: 0.8rem; }
+    .notice {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 0.875rem 1rem;
+      margin: 0.75rem 0;
+      font-size: 0.875rem;
+    }
+    .warn {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      padding: 0.875rem 1rem;
+      margin: 0.75rem 0;
+      font-size: 0.875rem;
+    }
+    .prompt-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem 1.125rem;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0.75rem 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="https://a2cr.app/">A2CR</a>
+  <nav>
+    <a href="https://a2cr.app/guide">Guide</a>
+    <a href="https://a2cr.app/pricing">Pricing</a>
+    <a href="https://a2cr.app/dashboard">Dashboard</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>A2CR guide for AI agents</h1>
+  <p>You are an AI agent. This page contains everything you need to configure A2CR MCP, understand WorkBaton and WorkStash, and start using them immediately. Read the tool table, save timing rules, and do-not-save list before beginning work.</p>
+
+  <!-- ── OVERVIEW ── -->
+  <section id="overview">
+    <div class="eyebrow">A2CR</div>
+    <h2>What A2CR does</h2>
+    <ul>
+      <li>WorkBaton saves only the work state the next AI needs to continue — goal, progress, next action, key decisions. Not the full chat history.</li>
+      <li>WorkStash holds detailed supporting notes separately so the checkpoint stays compact and the next AI retrieves only what it needs.</li>
+    </ul>
+  </section>
+
+  <!-- ── WORKBATON ── -->
+  <section id="workbaton">
+    <div class="eyebrow">WorkBaton</div>
+    <h2>WorkBaton</h2>
+    <p>A compact, structured snapshot of where work stands. Saved at task milestones and loaded by the next AI to continue without re-explanation.</p>
+    <ul>
+      <li>Saves goal, current progress, next action, key decisions, and blockers — nothing more than what the next AI needs.</li>
+      <li>Encrypted on your machine before upload. A2CR stores ciphertext only and cannot read the body.</li>
+      <li>Any MCP-capable AI — Claude, Codex, Cursor, Gemini — can resume from the same checkpoint.</li>
+      <li>Session cuts, model switches, and multi-day projects all become routine handoffs instead of lost work.</li>
+    </ul>
+  </section>
+
+  <!-- ── WORKSTASH ── -->
+  <section id="workstash">
+    <div class="eyebrow">WorkStash</div>
+    <h2>WorkStash — supporting memory for WorkBaton</h2>
+    <p>WorkBaton stays compact by design. When detailed notes — confirmed file paths, API findings, failed approaches, or intermediate results — would bloat the checkpoint, store them in WorkStash instead. Record the <code>entry_key</code> in the WorkBaton <code>references</code> field so the next window retrieves only what it needs.</p>
+    <ul>
+      <li>Store supporting notes with <code>store_work_stash</code> and record the <code>entry_key</code> in WorkBaton <code>references</code> or <code>next_action</code>.</li>
+      <li>Retrieve only the entries needed for the current task with <code>get_work_stash(entry_key)</code>.</li>
+      <li>Delete entries with <code>delete_work_stash</code> when a task phase completes and the note is no longer useful.</li>
+      <li>Never store secrets, API keys, auth headers, private database URLs, full transcripts, or large source files in WorkStash.</li>
+      <li>WorkStash is temporary supporting memory — not a durable knowledge base or file store.</li>
+    </ul>
+  </section>
+
+  <!-- ── TOGETHER ── -->
+  <section id="together">
+    <div class="eyebrow">Together</div>
+    <h2>WorkBaton + WorkStash together</h2>
+    <p>WorkBaton is the spine. WorkStash is the detail. Together they give you an AI that arrives at each new session knowing exactly where to go and what it already learned.</p>
+    <ul>
+      <li>The WorkBaton stays compact because detailed notes live in WorkStash — fast to load, focused on direction.</li>
+      <li>The next AI reads the checkpoint first, then retrieves only the WorkStash entries it actually needs.</li>
+      <li>Failed approaches stored in WorkStash prevent the next window from repeating the same mistake.</li>
+      <li>Every session starts with clean context and peak performance — no re-explanation from the user.</li>
+      <li>Selective retrieval means fewer tokens per session, so subscription limits go further.</li>
+    </ul>
+  </section>
+
+  <!-- ── SETUP ── -->
+  <section id="setup">
+    <div class="eyebrow">Setup</div>
+    <h2>MCP setup — step by step</h2>
+    <p>Follow these steps in order. The API key must be entered by the user — never ask them to share it in chat, never generate or guess one.</p>
+    <ol>
+      <li>Tell the user to sign in at <a href="https://a2cr.app/">https://a2cr.app/</a> and go to <strong>Settings → API key → Issue new key</strong>.</li>
+      <li>Ask the user to copy the key and paste it into the MCP config themselves. Do not ask them to share it in chat.</li>
+      <li>Clone the A2CR repository so that <code>mcp/server.py</code> is available on the user's machine.</li>
+      <li>Add exactly one MCP server named <code>a2cr</code> using the config snippet below that matches the user's client.</li>
+      <li>Call <code>get_account_limits</code> to verify the connection is working.</li>
+      <li>Confirm to the user: "A2CR is connected. I will save WorkBaton checkpoints at task milestones automatically."</li>
+    </ol>
+
+    <div class="config-label">Codex — <code>config.toml</code></div>
+<pre>[mcp_servers."a2cr"]
+command = "python"
+args = ["&lt;A2CR_REPO&gt;/mcp/server.py"]
+
+[mcp_servers."a2cr".env]
+A2CR_API_KEY = "&lt;A2CR_API_KEY&gt;"
+A2CR_BASE_URL = "https://a2cr.app"
+A2CR_SERVICE_URL = "https://a2cr.app/mcp"
+# Optional: A2CR_CLIENT_KEY_FILE = "&lt;path-to-workbaton.key&gt;"</pre>
+
+    <div class="config-label">Claude / Cursor / Generic MCP — <code>mcp.json</code></div>
+<pre>{
+  "mcpServers": {
+    "a2cr": {
+      "command": "python",
+      "args": ["&lt;A2CR_REPO&gt;/mcp/server.py"],
+      "env": {
+        "A2CR_API_KEY": "&lt;A2CR_API_KEY&gt;",
+        "A2CR_BASE_URL": "https://a2cr.app",
+        "A2CR_SERVICE_URL": "https://a2cr.app/mcp",
+        "A2CR_CLIENT_KEY_FILE": "&lt;optional-path-to-workbaton.key&gt;"
+      }
+    }
+  }
+}</pre>
+  </section>
+
+  <!-- ── PROJECT MEMORY FILES ── -->
+  <section id="project-memory">
+    <div class="eyebrow">Project memory</div>
+    <h2>Make it automatic with project memory files</h2>
+    <p>Add the snippet below to the project's memory file and you will read it automatically at the start of every session — no user reminder needed. This is the most reliable way to use both WorkBaton and WorkStash proactively on every project.</p>
+    <table>
+      <thead>
+        <tr><th>AI / Tool</th><th>File</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Claude Code</td><td><code>CLAUDE.md</code></td></tr>
+        <tr><td>Gemini CLI</td><td><code>GEMINI.md</code></td></tr>
+        <tr><td>ChatGPT / Codex CLI</td><td><code>AGENTS.md</code></td></tr>
+        <tr><td>Cursor (v0.43+)</td><td><code>.cursor/rules/a2cr.mdc</code></td></tr>
+        <tr><td>Cursor (legacy)</td><td><code>.cursorrules</code></td></tr>
+        <tr><td>Windsurf</td><td><code>.windsurfrules</code></td></tr>
+        <tr><td>Cline</td><td><code>.clinerules</code></td></tr>
+        <tr><td>Roo Code</td><td><code>.roorules</code></td></tr>
+        <tr><td>GitHub Copilot</td><td><code>.github/copilot-instructions.md</code></td></tr>
+        <tr><td>Aider</td><td><code>CONVENTIONS.md</code></td></tr>
+      </tbody>
+    </table>
+    <p>The snippet content is the same for every AI — only the filename differs.</p>
+    <pre>## A2CR WorkBaton + WorkStash
+
+A2CR MCP is connected. Follow these rules every session:
+
+WorkBaton — save work state:
+- Save a WorkBaton checkpoint at task milestones, phase completions, or when context pressure is detected. Call should_save_workbaton if unsure, then save_context.
+
+WorkStash — save supporting details:
+- Proactively store detailed notes (file paths, API findings, failed attempts, intermediate results) with store_work_stash before they are needed by a future session.
+- Record the returned entry_key in WorkBaton references or next_action so the next window can retrieve it.
+
+Both:
+- Never save secrets, API keys, Authorization headers, full transcripts, or large source files.</pre>
+  </section>
+
+  <!-- ── WORKFLOW ── -->
+  <section id="workflow">
+    <div class="eyebrow">Workflow</div>
+    <h2>Basic workflow</h2>
+    <ol>
+      <li>Sign in to A2CR and issue an API key.</li>
+      <li>Add one MCP server named <code>a2cr</code> to your MCP client using the local stdio wrapper.</li>
+      <li>Ask the AI agent to verify the connection with <code>get_account_limits</code>.</li>
+      <li>Save a WorkBaton before the session gets long or at a clear task boundary.</li>
+      <li>Resume from the saved Slot in a new window with <code>resume_context</code>.</li>
+    </ol>
+  </section>
+
+  <!-- ── CONNECT ── -->
+  <section id="connect">
+    <div class="eyebrow">Connect first</div>
+    <h2>Connect once, then your AI handles the rest</h2>
+    <p>When your AI client connects to A2CR through MCP, the server sends it a complete set of instructions — what tools exist, when to use them, and what never to save. Your AI reads these before starting work.</p>
+    <ul>
+      <li>Your AI learns WorkBaton rules from the server, not from your prompts.</li>
+      <li>One instruction at the start of a session is enough: tell the AI to save checkpoints at milestones.</li>
+      <li>Any MCP-capable AI — Claude, Codex, Gemini, Cursor — receives the same instructions.</li>
+      <li>No plugin, no custom prompt engineering, no repeated setup.</li>
+    </ul>
+    <div class="notice">
+      <strong>After connecting, tell your AI once:</strong><br>
+      A2CR is connected. Save a WorkBaton checkpoint at each task milestone.
+    </div>
+  </section>
+
+  <!-- ── TOOLS ── -->
+  <section id="tools">
+    <div class="eyebrow">Tools</div>
+    <h2>A2CR MCP tools</h2>
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>When to call</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>explain_a2cr_flows</code></td><td>Call first when newly connected or unsure which flow applies.</td></tr>
+        <tr><td><code>should_save_workbaton</code></td><td>Call when unsure if a checkpoint is appropriate or whether this MCP surface can save.</td></tr>
+        <tr><td><code>get_account_limits</code></td><td>Call before automatic or large saves to confirm plan limits and detail level.</td></tr>
+        <tr><td><code>save_context</code></td><td>Call via the local stdio wrapper at task milestones, phase completions, or context pressure.</td></tr>
+        <tr><td><code>resume_context</code></td><td>Call at the start of a new window to load the last checkpoint.</td></tr>
+        <tr><td><code>load_context</code></td><td>Call when the slot name or number is already known.</td></tr>
+        <tr><td><code>list_contexts</code></td><td>Call only when the user asks to search and no slot name is provided.</td></tr>
+        <tr><td><code>delete_context</code></td><td>Call only when the user explicitly requests deletion.</td></tr>
+        <tr><td><code>should_use_work_stash</code></td><td>Call when unsure whether a note belongs in WorkStash or inline in the WorkBaton.</td></tr>
+        <tr><td><code>store_work_stash</code></td><td>Call to save detailed supporting notes that would bloat the WorkBaton — file paths, API findings, failed approaches. Record the returned <code>entry_key</code> in WorkBaton <code>references</code> or <code>next_action</code>.</td></tr>
+        <tr><td><code>get_work_stash</code></td><td>Call to retrieve a specific stash entry by <code>entry_key</code>. Fetch only what the current task needs.</td></tr>
+        <tr><td><code>list_work_stash</code></td><td>Call to locate a stash entry when the <code>entry_key</code> is not in the WorkBaton references.</td></tr>
+        <tr><td><code>delete_work_stash</code></td><td>Call after a task phase completes to remove stash entries that are no longer needed.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── SAVE TIMING ── -->
+  <section id="save-timing">
+    <div class="eyebrow">Save timing</div>
+    <h2>When to save autonomously</h2>
+    <ul>
+      <li>The conversation is getting long or context window pressure is detected.</li>
+      <li>A coherent task phase or milestone is complete.</li>
+      <li>Tests, builds, or important checks just passed.</li>
+      <li>The next concrete action is clear and should survive a new window.</li>
+      <li>The user is about to switch tools, models, or windows.</li>
+      <li>A new window just resumed from a WorkBaton and state has materially changed.</li>
+      <li>There is a blocker that another window or agent should continue from later.</li>
+    </ul>
+  </section>
+
+  <!-- ── DO NOT SAVE ── -->
+  <section id="do-not-save">
+    <div class="eyebrow">Do not save</div>
+    <h2>When not to save</h2>
+    <ul>
+      <li>Prohibited material is present: secrets, API keys, auth headers, private DB URLs, <code>.env</code> content, or personal data.</li>
+      <li>The only content is a full transcript, long logs, generated caches, build artifacts, or large source files.</li>
+      <li>The <code>next_action</code> is not yet clear — wait for a stable boundary.</li>
+      <li>The user explicitly asked not to save.</li>
+      <li>You are on the remote MCP surface only and cannot reach the local stdio wrapper.</li>
+    </ul>
+  </section>
+
+  <!-- ── WORKTHREADS ── -->
+  <section id="workthreads">
+    <div class="eyebrow">WorkBaton vs WorkThreads</div>
+    <h2>WorkBaton vs WorkThreads</h2>
+    <p>A2CR has two flows. WorkBaton is available now. WorkThreads is planned for a future release.</p>
+    <table>
+      <thead>
+        <tr><th></th><th>WorkBaton</th><th>WorkThreads</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Shape</strong></td><td>Serial checkpoint handoff</td><td>Collaborative multi-agent workspace</td></tr>
+        <tr><td><strong>Flow</strong></td><td>window → new window</td><td>agent ↔ agents</td></tr>
+        <tr><td><strong>Save path</strong></td><td>Local stdio wrapper only — client-encrypted before upload</td><td>Remote MCP — encrypted at rest by A2CR</td></tr>
+        <tr><td><strong>Primary use</strong></td><td>Resume work in a new session or tool</td><td>Coordinate tasks between multiple agents</td></tr>
+        <tr><td><strong>Key tools</strong></td><td><code>save_context</code> / <code>resume_context</code></td><td><code>create_workthread</code> / <code>post_workthread_message</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── CHAINED HANDOFF ── -->
+  <section id="chained-handoff">
+    <div class="eyebrow">Chained handoff</div>
+    <h2>Chained handoffs</h2>
+    <p>When continuing from a previous WorkBaton, link the chain so the next AI understands the full context:</p>
+    <ul>
+      <li><code>previous_slot</code> — the slot this save continues from.</li>
+      <li><code>completed_since_previous</code> — work completed after the prior slot was loaded.</li>
+      <li><code>remaining_tasks_ordered</code> — ordered next tasks for the next AI.</li>
+      <li><code>validation</code> — test results, build outcomes, and smoke checks.</li>
+      <li><code>do_not_use_slots</code> — stale slots and why to avoid them.</li>
+    </ul>
+  </section>
+
+  <!-- ── SECURITY ── -->
+  <section id="security">
+    <div class="eyebrow">Security</div>
+    <h2>Important: local client key</h2>
+    <p>WorkBaton requires the local stdio MCP wrapper. The wrapper creates a local client key on the user's machine and encrypts WorkBaton content before sending it to A2CR.</p>
+    <ul>
+      <li>The local client key is managed by the user, not by the service administrator.</li>
+      <li>A2CR stores and returns ciphertext for client-encrypted WorkBaton slots and cannot decrypt those bodies.</li>
+      <li>If the local client key is lost, older client-encrypted slots cannot be recovered by A2CR.</li>
+      <li>Creating a new local client key works for future saves, but it cannot decrypt old slots saved with the previous key.</li>
+    </ul>
+  </section>
+
+  <!-- ── ENCRYPTION ── -->
+  <section id="encryption">
+    <div class="eyebrow">Encryption</div>
+    <h2>Storage modes</h2>
+    <p>WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload.</p>
+    <table>
+      <tbody>
+        <tr>
+          <td><strong>Client-encrypted only</strong></td>
+          <td>The local stdio MCP wrapper encrypts before upload; A2CR stores and returns ciphertext only.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── AGENT RULES ── -->
+  <section id="agent-rules">
+    <div class="eyebrow">Agent</div>
+    <h2>Rules for AI agents</h2>
+    <ul>
+      <li>Preserve existing MCP server settings. Do not delete unrelated servers.</li>
+      <li>Ask the user to paste the API key into the config themselves when possible.</li>
+      <li>Do not print API keys, Authorization headers, or full secret configs in chat.</li>
+      <li>Use MCP tools rather than guessed direct HTTP API calls.</li>
+      <li>Use <code>list_contexts</code> only when no Slot is provided and the user asks you to search.</li>
+      <li>Do not use the legacy local SQLite API for WorkBaton saves.</li>
+      <li>Never save secrets, full transcripts, or long logs into WorkBaton.</li>
+      <li>Use WorkStash for detailed notes that would bloat the WorkBaton — store the returned <code>entry_key</code> in WorkBaton <code>references</code>.</li>
+    </ul>
+  </section>
+
+  <!-- ── PROMPT ── -->
+  <section id="prompt">
+    <div class="eyebrow">Prompt</div>
+    <h2>Semi-automation prompt</h2>
+    <p>Paste this into your AI's system prompt or first message to configure A2CR behaviour:</p>
+    <div class="prompt-box">A2CR service: https://a2cr.app/mcp
+Use A2CR MCP as working memory.
+Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.
+Use the local stdio MCP wrapper named a2cr as the official WorkBaton path.
+When a resume prompt provides a Slot, first call resume_context(slot_name="...") or resume_context(slot_number=N).
+Use list_contexts only when no Slot is provided and the user asks you to search.
+During work, call save_context before the conversation gets long or at important milestones.
+Save only goal, current_state, next_action, and compact supporting facts.
+Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
+Call get_account_limits before automatic saves.
+After loading, continue in the language of the current user message.</div>
+  </section>
+
+</main>
+
+</body>
+</html>

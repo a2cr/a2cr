@@ -1,5 +1,6 @@
 import { Bot, CheckCircle2, LayoutDashboard, LogIn, PlugZap, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -7,6 +8,10 @@ import { CopyButton } from "../components/CopyButton";
 import { LanguageToggle } from "../components/LanguageToggle";
 import { serviceUrl } from "../lib/format";
 import { useAuth } from "../providers/AuthProvider";
+
+// Note: agentPrompt and related agent-guide JSX have been removed.
+// The AI agent guide is now served as a plain static HTML file at /agent-guide.html
+// so that AI agents can read it via WebFetch without JavaScript rendering.
 
 type Language = "en" | "ja";
 type GuideKind = "human" | "agent";
@@ -57,37 +62,6 @@ function mcpConfigSnippet(client: ClientKey): string {
     null,
     2
   );
-}
-
-function agentPrompt(language: Language): string {
-  if (language === "ja") {
-    return [
-      `A2CR service: ${serviceUrl()}`,
-      "A2CR MCPを作業記憶として使ってください。",
-      "直接HTTP APIを推測せず、A2CR MCPツールだけを使います。",
-      "WorkBatonの公式ルートは、a2crという名前のローカルstdio MCPラッパーです。",
-      "resume promptにSlotがある場合は、最初にresume_context(slot_name=\"...\")またはresume_context(slot_number=N)を実行します。",
-      "list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。",
-      "作業中は、会話が長くなる前または重要な区切りでsave_contextします。",
-      "保存する内容はgoal、current_state、next_action、必要な判断・制約・参照だけに絞ります。",
-      "APIキー、Authorization header、DB URL、秘密情報、全文ログ、長い会話履歴は保存しません。",
-      "自動保存前にはget_account_limitsで制限を確認します。",
-      "読み込み後は、現在のユーザーの言語で続けます。"
-    ].join("\n");
-  }
-  return [
-    `A2CR service: ${serviceUrl()}`,
-    "Use A2CR MCP as working memory.",
-    "Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.",
-    "Use the local stdio MCP wrapper named a2cr as the official WorkBaton path.",
-    "When a resume prompt provides a Slot, first call resume_context(slot_name=\"...\") or resume_context(slot_number=N).",
-    "Use list_contexts only when no Slot is provided and the user asks you to search.",
-    "During work, call save_context before the conversation gets long or at important milestones.",
-    "Save only goal, current_state, next_action, and compact supporting facts.",
-    "Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
-    "Call get_account_limits before automatic saves.",
-    "After loading, continue in the language of the current user message."
-  ].join("\n");
 }
 
 const text = {
@@ -310,8 +284,27 @@ const text = {
       "validation — test results, build outcomes, and smoke checks.",
       "do_not_use_slots — stale slots and why to avoid them."
     ],
+    memoryFileTitle: "Make it automatic with project memory files",
+    memoryFileBody:
+      "Add the snippet below to your project's memory file and the AI reads it at the start of every session — no need to remind it each time. This is the most reliable way to make any AI use both WorkBaton and WorkStash proactively.",
+    memoryFileFiles: [
+      ["Claude Code", "CLAUDE.md"],
+      ["Gemini CLI", "GEMINI.md"],
+      ["ChatGPT / Codex CLI", "AGENTS.md"],
+      ["Cursor (v0.43+)", ".cursor/rules/a2cr.mdc"],
+      ["Cursor (legacy)", ".cursorrules"],
+      ["Windsurf", ".windsurfrules"],
+      ["Cline", ".clinerules"],
+      ["Roo Code", ".roorules"],
+      ["GitHub Copilot", ".github/copilot-instructions.md"],
+      ["Aider", "CONVENTIONS.md"]
+    ] as [string, string][],
+    memoryFileNote: "The snippet content is the same for every AI — only the filename differs.",
+    memoryFileSnippet:
+      "## A2CR WorkBaton + WorkStash\n\nA2CR MCP is connected. Follow these rules every session:\n\nWorkBaton — save work state:\n- Save a WorkBaton checkpoint at task milestones, phase completions, or when context pressure is detected. Call should_save_workbaton if unsure, then save_context.\n\nWorkStash — save supporting details:\n- Proactively store detailed notes (file paths, API findings, failed attempts, intermediate results) with store_work_stash before they are needed by a future session.\n- Record the returned entry_key in WorkBaton references or next_action so the next window can retrieve it.\n\nBoth:\n- Never save secrets, API keys, Authorization headers, full transcripts, or large source files.",
     copyConfig: "Copy config",
-    copyPrompt: "Copy prompt"
+    copyPrompt: "Copy prompt",
+    copySnippet: "Copy snippet"
   },
   ja: {
     navHuman: "ガイド",
@@ -531,15 +524,34 @@ const text = {
       "validation — テスト結果・ビルド成果・スモークチェックの記録。",
       "do_not_use_slots — 陳腐化したスロットと使ってはいけない理由。"
     ],
+    memoryFileTitle: "プロジェクトのメモリファイルで自動化する",
+    memoryFileBody:
+      "下のスニペットをプロジェクトのメモリファイルに追記すると、AIはセッション開始時に自動で読み込みます。毎回指示しなくても WorkBaton と WorkStash の両方を積極的に使ってくれる、最も確実な方法です。",
+    memoryFileFiles: [
+      ["Claude Code", "CLAUDE.md"],
+      ["Gemini CLI", "GEMINI.md"],
+      ["ChatGPT / Codex CLI", "AGENTS.md"],
+      ["Cursor (v0.43以降)", ".cursor/rules/a2cr.mdc"],
+      ["Cursor (旧形式)", ".cursorrules"],
+      ["Windsurf", ".windsurfrules"],
+      ["Cline", ".clinerules"],
+      ["Roo Code", ".roorules"],
+      ["GitHub Copilot", ".github/copilot-instructions.md"],
+      ["Aider", "CONVENTIONS.md"]
+    ] as [string, string][],
+    memoryFileNote: "スニペットの内容はどのAIでも同じです。ファイル名だけが異なります。",
+    memoryFileSnippet:
+      "## A2CR WorkBaton + WorkStash\n\nA2CR MCP が接続されています。毎回のセッションで以下のルールに従ってください。\n\nWorkBaton — 作業状態の保存：\n- 作業の節目・フェーズ完了・コンテキスト圧迫を検知したら WorkBaton チェックポイントを保存する。迷ったら should_save_workbaton を呼んでから save_context を実行する。\n\nWorkStash — 詳細メモの保存：\n- ファイルパス・API調査・失敗した試み・中間結果など、将来のセッションで必要になる詳細メモは store_work_stash で積極的に保存する。\n- 返ってきた entry_key を WorkBaton の references または next_action に記録し、次のウィンドウが取り出せるようにする。\n\n共通：\n- シークレット・APIキー・認証ヘッダー・全文履歴・大きなソースファイルは保存しない。",
     copyConfig: "設定をコピー",
-    copyPrompt: "プロンプトをコピー"
+    copyPrompt: "プロンプトをコピー",
+    copySnippet: "スニペットをコピー"
   }
 };
 
 function PublicHeader({ language, kind }: { language: Language; kind: GuideKind }) {
   const { session } = useAuth();
   const humanPath = language === "ja" ? "/guide" : "/en/guide";
-  const agentPath = language === "ja" ? "/agent-guide" : "/en/agent-guide";
+  const agentPath = "/agent-guide.html";
   const t = text[language];
 
   return (
@@ -556,12 +568,12 @@ function PublicHeader({ language, kind }: { language: Language; kind: GuideKind 
           >
             {t.navHuman}
           </Link>
-          <Link
-            to={agentPath}
+          <a
+            href={agentPath}
             className={`rounded-md px-3 py-2 text-sm font-medium ${kind === "agent" ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-neutral-100"}`}
           >
             {t.navAgent}
-          </Link>
+          </a>
           <Link to="/pricing" className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
             {t.pricing}
           </Link>
@@ -692,156 +704,19 @@ export function GuidePage() {
   const language: Language = location.pathname.startsWith("/en/") ? "en" : i18n.language.startsWith("ja") ? "ja" : "en";
   const kind: GuideKind = location.pathname.includes("agent-guide") ? "agent" : "human";
   const t = text[language];
-  const title = kind === "agent" ? t.agentTitle : t.humanTitle;
-  const body = kind === "agent" ? t.agentBody : t.humanBody;
-  const prompt = agentPrompt(language);
+
+  // Agent guide is a plain static HTML file so AI agents can read it via WebFetch.
+  // Redirect any React-routed /agent-guide hit to the static file.
+  useEffect(() => {
+    if (kind === "agent") {
+      window.location.replace("/agent-guide.html");
+    }
+  }, [kind]);
 
   if (kind === "agent") {
     return (
-      <div className="min-h-screen bg-white text-neutral-950">
-        <PublicHeader language={language} kind={kind} />
-        <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-          <div className="pb-8">
-            <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-neutral-700">{body}</p>
-          </div>
-
-          <PlainSection eyebrow="A2CR" title={t.whatTitle}>
-            <PlainBulletList items={t.whatPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="WorkBaton" title={t.workbatonSectionTitle} body={t.workbatonSectionBody}>
-            <PlainBulletList items={t.workbatonPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="WorkStash" title={t.workstashSectionTitle} body={t.workstashSectionBody}>
-            <PlainBulletList items={t.workstashPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Together" title={t.combinedTitle} body={t.combinedBody}>
-            <PlainBulletList items={t.combinedPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Setup" title={t.agentSetupTitle} body={t.agentSetupBody}>
-            <PlainBulletList items={t.agentSetupSteps} />
-            <div className="mt-4 grid gap-3">
-              {(Object.keys(clientLabels) as ClientKey[]).map((client) => {
-                const snippet = mcpConfigSnippet(client);
-                return (
-                  <div key={client}>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <div className="text-sm font-semibold text-neutral-950">{clientLabels[client]}</div>
-                      <CopyButton value={snippet} label={t.copyConfig} compact />
-                    </div>
-                    <pre className="overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50">{snippet}</pre>
-                  </div>
-                );
-              })}
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Workflow" title={t.workflowTitle}>
-            <PlainBulletList items={t.workflow} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Connect first" title={t.connectTitle} body={t.connectBody}>
-            <PlainBulletList items={t.connectPoints} />
-            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3">
-              <div className="mb-1 text-xs font-semibold text-emerald-700">{t.connectPromptLabel}</div>
-              <pre className="whitespace-pre-wrap text-xs leading-5 text-emerald-900">{t.connectPromptExample}</pre>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Tools" title={t.toolsTitle}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    {t.toolsHeaders.map((h) => (
-                      <th key={h} className="pb-2 pr-4 font-semibold text-neutral-950">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {t.toolsRows.map(([tool, when]) => (
-                    <tr key={tool} className="border-t border-neutral-100">
-                      <td className="w-56 py-2 pr-4 align-top font-mono text-xs font-semibold text-neutral-950">{tool}</td>
-                      <td className="py-2 leading-6 text-neutral-700">{when}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Save timing" title={t.saveTriggersTitle}>
-            <PlainBulletList items={t.saveTriggers} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Do not save" title={t.doNotSaveTitle}>
-            <PlainBulletList items={t.doNotSave} />
-          </PlainSection>
-
-          <PlainSection eyebrow="WorkBaton vs WorkThreads" title={t.batonThreadsTitle} body={t.batonThreadsBody}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    {t.batonThreadsHeaders.map((h, i) => (
-                      <th key={i} className="pb-2 pr-4 font-semibold text-neutral-950">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {t.batonThreadsRows.map(([label, baton, threads]) => (
-                    <tr key={label} className="border-t border-neutral-100">
-                      <th className="w-28 py-2 pr-4 align-top font-semibold text-neutral-950">{label}</th>
-                      <td className="py-2 pr-4 align-top leading-6 text-neutral-700">{baton}</td>
-                      <td className="py-2 leading-6 text-neutral-700">{threads}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Chained handoff" title={t.chainedHandoffTitle} body={t.chainedHandoffBody}>
-            <PlainBulletList items={t.chainedHandoffPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Security" title={t.keyTitle} body={t.keyBody}>
-            <PlainBulletList items={t.keyPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Encryption" title={t.encryptionTitle} body={t.noOverclaim}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <tbody>
-                  {t.storageRows.map(([mode, description]) => (
-                    <tr key={mode} className="border-t border-neutral-200 first:border-t-0">
-                      <th className="w-48 py-3 pr-4 font-semibold text-neutral-950">{mode}</th>
-                      <td className="py-3 leading-6 text-neutral-700">{description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Agent" title={t.agentRulesTitle}>
-            <PlainBulletList items={t.agentRules} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Prompt" title="Semi-automation prompt">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold">A2CR MCP</div>
-              <CopyButton value={prompt} label={t.copyPrompt} compact />
-            </div>
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap border border-neutral-200 bg-neutral-50 p-3 text-xs leading-5 text-neutral-800">
-              {prompt}
-            </pre>
-          </PlainSection>
-        </main>
+      <div className="flex min-h-screen items-center justify-center bg-white text-neutral-950">
+        <p className="text-sm text-neutral-500">Redirecting…</p>
       </div>
     );
   }
@@ -854,8 +729,8 @@ export function GuidePage() {
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div>
               <img src="/brand/a2cr-logo.png" alt="A2CR" className="mb-6 w-full max-w-md object-contain" />
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">{title}</h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{body}</p>
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">{t.humanTitle}</h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{t.humanBody}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   to={session ? "/dashboard" : "/login"}
@@ -864,13 +739,13 @@ export function GuidePage() {
                   {session ? <LayoutDashboard className="size-4" /> : <LogIn className="size-4" />}
                   {session ? t.dashboard : t.signIn}
                 </Link>
-                <Link
-                  to={language === "ja" ? "/agent-guide" : "/en/agent-guide"}
+                <a
+                  href="/agent-guide.html"
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-100"
                 >
                   <Bot className="size-4" aria-hidden="true" />
                   {t.navAgent}
-                </Link>
+                </a>
               </div>
             </div>
             <div className="grid gap-3">
@@ -895,12 +770,12 @@ export function GuidePage() {
                   <div>
                     <h2 className="font-semibold text-neutral-950">{t.agentTeaserTitle}</h2>
                     <p className="mt-2 text-sm leading-6 text-neutral-700">{t.agentTeaserBody}</p>
-                    <Link
-                      to={language === "ja" ? "/agent-guide" : "/en/agent-guide"}
+                    <a
+                      href="/agent-guide.html"
                       className="mt-3 inline-flex text-sm font-semibold text-emerald-800 hover:text-emerald-900"
                     >
                       {t.agentTeaserLink}
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </article>
@@ -1021,9 +896,39 @@ export function GuidePage() {
             </div>
           </Section>
         </section>
+
         <Section eyebrow="Workflow" title={t.workflowTitle}>
           <BulletList items={t.workflow} />
         </Section>
+
+        <section className="border-y border-neutral-200 bg-emerald-50">
+          <Section eyebrow="Project memory" title={t.memoryFileTitle} body={t.memoryFileBody}>
+            <div className="mb-4 overflow-hidden rounded-md border border-neutral-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200 bg-neutral-50">
+                    <th className="px-4 py-2 font-semibold text-neutral-950">AI / Tool</th>
+                    <th className="px-4 py-2 font-semibold text-neutral-950">File</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.memoryFileFiles.map(([ai, file]) => (
+                    <tr key={file} className="border-t border-neutral-100">
+                      <td className="px-4 py-2 text-neutral-700">{ai}</td>
+                      <td className="px-4 py-2 font-mono text-xs text-neutral-900">{file}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mb-3 text-sm text-neutral-600">{t.memoryFileNote}</p>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-sm font-semibold text-neutral-950">snippet</span>
+              <CopyButton value={t.memoryFileSnippet} label={t.copySnippet} compact />
+            </div>
+            <pre className="overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50 whitespace-pre-wrap">{t.memoryFileSnippet}</pre>
+          </Section>
+        </section>
       </main>
     </div>
   );
