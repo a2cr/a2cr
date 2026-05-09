@@ -161,7 +161,7 @@ const text = {
       "Never save secrets, full transcripts, or long logs into WorkBaton.",
       "Use WorkStash for detailed notes that would bloat the WorkBaton — store the returned entry_key in WorkBaton references."
     ],
-    connectTitle: "Connect once, then your AI handles the rest",
+    connectTitle: "Connect once per session, then your AI handles the rest",
     connectBody:
       "When your AI client connects to A2CR through MCP, the server sends it a complete set of instructions — what tools exist, when to use them, and what never to save. Your AI reads these before starting work.",
     connectPoints: [
@@ -401,7 +401,7 @@ const text = {
       "秘密情報、全文履歴、長いログをWorkBatonに保存しません。",
       "WorkBatonを肥大化させる詳細メモはWorkStashに保存し、WorkBatonのreferencesにentry_keyを記録する。"
     ],
-    connectTitle: "一度接続すれば、あとはAIが自律的に動く",
+    connectTitle: "ウィンドウで一度接続してしまえば、あとはAIが自律的に動く",
     connectBody:
       "AIクライアントがMCPでA2CRに接続すると、サーバーはAIにツール一覧と完全な指示を送ります。どのツールをいつ使うか、何を保存してはいけないか — これをAIは作業前に読み込みます。",
     connectPoints: [
@@ -831,6 +831,35 @@ export function GuidePage() {
           </Section>
         </section>
 
+        <section className="border-y border-neutral-200 bg-emerald-50">
+          <Section eyebrow="Project memory" title={t.memoryFileTitle} body={t.memoryFileBody}>
+            <div className="mb-4 overflow-hidden rounded-md border border-neutral-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200 bg-neutral-50">
+                    <th className="px-4 py-2 font-semibold text-neutral-950">AI / Tool</th>
+                    <th className="px-4 py-2 font-semibold text-neutral-950">File</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.memoryFileFiles.map(([ai, file]) => (
+                    <tr key={file} className="border-t border-neutral-100">
+                      <td className="px-4 py-2 text-neutral-700">{ai}</td>
+                      <td className="px-4 py-2 font-mono text-xs text-neutral-900">{file}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mb-3 text-sm text-neutral-600">{t.memoryFileNote}</p>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-sm font-semibold text-neutral-950">snippet</span>
+              <CopyButton value={t.memoryFileSnippet} label={t.copySnippet} compact />
+            </div>
+            <pre className="overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50 whitespace-pre-wrap">{t.memoryFileSnippet}</pre>
+          </Section>
+        </section>
+
         <section className="border-y border-neutral-200 bg-white">
           <Section eyebrow="Context quality" title={t.cleanContextTitle} body={t.cleanContextBody}>
             <div className="grid gap-4">
@@ -901,34 +930,6 @@ export function GuidePage() {
           <BulletList items={t.workflow} />
         </Section>
 
-        <section className="border-y border-neutral-200 bg-emerald-50">
-          <Section eyebrow="Project memory" title={t.memoryFileTitle} body={t.memoryFileBody}>
-            <div className="mb-4 overflow-hidden rounded-md border border-neutral-200 bg-white">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200 bg-neutral-50">
-                    <th className="px-4 py-2 font-semibold text-neutral-950">AI / Tool</th>
-                    <th className="px-4 py-2 font-semibold text-neutral-950">File</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {t.memoryFileFiles.map(([ai, file]) => (
-                    <tr key={file} className="border-t border-neutral-100">
-                      <td className="px-4 py-2 text-neutral-700">{ai}</td>
-                      <td className="px-4 py-2 font-mono text-xs text-neutral-900">{file}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mb-3 text-sm text-neutral-600">{t.memoryFileNote}</p>
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <span className="text-sm font-semibold text-neutral-950">snippet</span>
-              <CopyButton value={t.memoryFileSnippet} label={t.copySnippet} compact />
-            </div>
-            <pre className="overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50 whitespace-pre-wrap">{t.memoryFileSnippet}</pre>
-          </Section>
-        </section>
       </main>
     </div>
   );
