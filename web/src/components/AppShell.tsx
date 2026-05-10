@@ -1,5 +1,5 @@
 import { LayoutDashboard, LogOut, Settings, WalletCards } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -26,17 +26,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-neutral-100 text-neutral-950">
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <div className="grid size-9 place-items-center rounded-md bg-emerald-700 font-semibold text-white">
-                A2
-              </div>
-              <div className="min-w-0">
-                <div className="truncate text-base font-semibold">{t("appName")}</div>
-                <div className="truncate text-xs text-neutral-500">{t("appSubtitle")}</div>
-              </div>
-            </div>
-          </div>
+          <Link to="/">
+            <img src="/brand/a2cr-logo.png" alt="A2CR" className="h-9 w-auto object-contain" />
+          </Link>
           <div className="flex items-center gap-2">
             <LanguageToggle />
             <button
