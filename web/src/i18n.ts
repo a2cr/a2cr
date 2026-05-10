@@ -137,6 +137,7 @@ const resources = {
         loads: "Loads",
         logs: "Access logs",
         workthreads: "WorkThreads",
+        workStash: "WorkStash storage",
         notIncluded: "Not included",
         planned: "Coming soon",
         comingSoon: "Coming soon"
@@ -283,6 +284,7 @@ const resources = {
         loads: "ロード",
         logs: "アクセスログ",
         workthreads: "WorkThreads",
+        workStash: "WorkStash ストレージ",
         notIncluded: "対象外",
         planned: "近日公開",
         comingSoon: "近日公開"
