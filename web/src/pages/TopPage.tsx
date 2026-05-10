@@ -220,6 +220,31 @@ export function TopPage() {
             {t("nav.pricing")}
           </Link>
           <LanguageToggle />
+          {session ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-emerald-500 px-4 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+            >
+              <LayoutDashboard className="size-4" aria-hidden="true" />
+              {t("nav.dashboard")}
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="inline-flex h-9 items-center rounded-md px-4 text-sm font-medium text-neutral-200 hover:bg-white/10"
+              >
+                {lang === "ja" ? "ログイン" : "Log in"}
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex h-9 items-center gap-2 rounded-md bg-emerald-500 px-4 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+              >
+                <LogIn className="size-4" aria-hidden="true" />
+                {lang === "ja" ? "無料で始める" : "Get started"}
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
