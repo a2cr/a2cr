@@ -37,7 +37,7 @@ export function LoginPage() {
       </div>
       <main className="mx-auto mt-16 grid max-w-md gap-5 rounded-md border border-neutral-200 bg-white p-6 shadow-sm">
         <div>
-          <img src="/brand/a2cr-logo.png" alt="A2CR" className="mb-5 h-12 w-auto object-contain" />
+          <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="mb-5 h-12 w-auto object-contain" />
           <h1 className="text-2xl font-semibold tracking-normal">{t("auth.title")}</h1>
           <p className="mt-2 text-sm text-neutral-600">{t("appSubtitle")}</p>
         </div>
