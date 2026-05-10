@@ -1,5 +1,6 @@
 import { Bot, CheckCircle2, LayoutDashboard, LogIn, PlugZap, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -7,6 +8,10 @@ import { CopyButton } from "../components/CopyButton";
 import { LanguageToggle } from "../components/LanguageToggle";
 import { serviceUrl } from "../lib/format";
 import { useAuth } from "../providers/AuthProvider";
+
+// Note: agentPrompt and related agent-guide JSX have been removed.
+// The AI agent guide is now served as a plain static HTML file at /agent-guide.html
+// so that AI agents can read it via WebFetch without JavaScript rendering.
 
 type Language = "en" | "ja";
 type GuideKind = "human" | "agent";
@@ -59,37 +64,6 @@ function mcpConfigSnippet(client: ClientKey): string {
   );
 }
 
-function agentPrompt(language: Language): string {
-  if (language === "ja") {
-    return [
-      `A2CR service: ${serviceUrl()}`,
-      "A2CR MCPを作業記憶として使ってください。",
-      "直接HTTP APIを推測せず、A2CR MCPツールだけを使います。",
-      "WorkBatonの公式ルートは、a2crという名前のローカルstdio MCPラッパーです。",
-      "resume promptにSlotがある場合は、最初にresume_context(slot_name=\"...\")またはresume_context(slot_number=N)を実行します。",
-      "list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。",
-      "作業中は、会話が長くなる前または重要な区切りでsave_contextします。",
-      "保存する内容はgoal、current_state、next_action、必要な判断・制約・参照だけに絞ります。",
-      "APIキー、Authorization header、DB URL、秘密情報、全文ログ、長い会話履歴は保存しません。",
-      "自動保存前にはget_account_limitsで制限を確認します。",
-      "読み込み後は、現在のユーザーの言語で続けます。"
-    ].join("\n");
-  }
-  return [
-    `A2CR service: ${serviceUrl()}`,
-    "Use A2CR MCP as working memory.",
-    "Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.",
-    "Use the local stdio MCP wrapper named a2cr as the official WorkBaton path.",
-    "When a resume prompt provides a Slot, first call resume_context(slot_name=\"...\") or resume_context(slot_number=N).",
-    "Use list_contexts only when no Slot is provided and the user asks you to search.",
-    "During work, call save_context before the conversation gets long or at important milestones.",
-    "Save only goal, current_state, next_action, and compact supporting facts.",
-    "Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
-    "Call get_account_limits before automatic saves.",
-    "After loading, continue in the language of the current user message."
-  ].join("\n");
-}
-
 const text = {
   en: {
     navHuman: "Guide",
@@ -99,23 +73,21 @@ const text = {
     dashboard: "Open dashboard",
     humanTitle: "A2CR guide",
     humanBody:
-      "Use A2CR to hand compact WorkBaton checkpoints from one AI session to the next without carrying the whole chat history forward.",
+      "Every time an AI session ends, your context resets. A2CR solves this with WorkBaton checkpoints — compact snapshots of work state that any MCP-capable AI can resume, whether that's a new window, a different model, or the next day.",
     agentTitle: "A2CR guide for AI agents",
     agentBody:
-      "This page is written for AI agents configuring and using A2CR MCP on behalf of a user.",
+      "You are an AI agent. This page contains everything you need to configure A2CR MCP, understand WorkBaton and WorkStash, and start using them immediately. Read the tool table, save timing rules, and do-not-save list before beginning work.",
     whatTitle: "What A2CR does",
     whatPoints: [
-      "Saves only the useful work state: goal, current_state, next_action, decisions, constraints, and references.",
-      "Lets another AI window, model, or MCP-capable client resume the work.",
-      "Keeps dashboards focused on metadata rather than saved body content.",
-      "Does not run LLM inference on the server."
+      "WorkBaton saves only the work state the next AI needs to continue — goal, progress, next action, key decisions. Not the full chat history.",
+      "WorkStash holds detailed supporting notes separately so the checkpoint stays compact and the next AI retrieves only what it needs."
     ],
     comparisonTitle: "What A2CR is different from",
     comparisonBody:
-      "A2CR is not a chat summarizer or a sub-agent feature. It is a WorkBaton for handing useful work state across sessions, models, and tools.",
+      "A2CR is not a chat summarizer, a file store, or a sub-agent feature. WorkBaton is a structured work-state handoff — carrying only what the next AI needs to continue, not the whole conversation.",
     agentTeaserTitle: "Let your AI read it",
     agentTeaserBody:
-      "Show the AI agent guide to the AI agent you already use and ask it to explain A2CR. The guide is written for agents, so it can turn the app's role, limits, and setup into plain guidance for your situation.",
+      "Show the AI agent guide to the AI you already use and ask it to explain A2CR in your context. The guide covers tools, rules, save timing, and what never to save — all in a format your AI can act on directly.",
     agentTeaserLink: "Open AI agent guide",
     compressionCompareTitle: "Compression / summarization vs A2CR / WorkBaton",
     compressionCompareHeaders: ["Comparison", "Compression / summarization", "A2CR / WorkBaton"],
@@ -158,7 +130,18 @@ const text = {
       "WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload. Legacy local SQLite saves are not the official AI-agent path.",
     setupTitle: "MCP setup",
     setupBody:
-      "Create an API key after signing in, then configure the local stdio MCP wrapper. The wrapper stores the local client key on your machine. Keep real API keys and key files out of repositories and logs.",
+      "Sign in to A2CR, issue an API key from Settings, then add the local stdio wrapper to your MCP client using the config below. Paste the API key into the config file yourself — never share it in chat. The wrapper creates and manages a local client key on your machine.",
+    agentSetupTitle: "MCP setup — step by step",
+    agentSetupBody:
+      "Follow these steps in order. The API key must be entered by the user — never ask them to share it in chat, never generate or guess one.",
+    agentSetupSteps: [
+      "Tell the user to sign in at https://a2cr.app/ and go to Settings → API key → Issue new key.",
+      "Ask the user to copy the key and paste it into the MCP config themselves. Do not ask them to share it in chat.",
+      "Clone the A2CR repository so that mcp/server.py is available on the user's machine.",
+      "Add exactly one MCP server named a2cr using the config snippet below that matches the user's client.",
+      "Call get_account_limits to verify the connection is working.",
+      "Confirm to the user: 'A2CR is connected. I will save WorkBaton checkpoints at task milestones automatically.'"
+    ],
     workflowTitle: "Basic workflow",
     workflow: [
       "Sign in to A2CR and issue an API key.",
@@ -175,9 +158,10 @@ const text = {
       "Use MCP tools rather than guessed direct HTTP API calls.",
       "Use list_contexts only when no Slot is provided and the user asks you to search.",
       "Do not use the legacy local SQLite API for WorkBaton saves.",
-      "Never save secrets, full transcripts, or long logs into WorkBaton."
+      "Never save secrets, full transcripts, or long logs into WorkBaton.",
+      "Use WorkStash for detailed notes that would bloat the WorkBaton — store the returned entry_key in WorkBaton references."
     ],
-    connectTitle: "Connect once, then your AI handles the rest",
+    connectTitle: "Connect once per session, then your AI handles the rest",
     connectBody:
       "When your AI client connects to A2CR through MCP, the server sends it a complete set of instructions — what tools exist, when to use them, and what never to save. Your AI reads these before starting work.",
     connectPoints: [
@@ -212,24 +196,29 @@ const text = {
       },
       {
         title: "Long projects spanning multiple days",
-        body: "End each session with a checkpoint. Start the next session clean, without dragging yesterday's noise forward."
+        body: "End each session with a WorkBaton checkpoint. Store detailed notes in WorkStash so the core checkpoint stays compact. Start the next session clean, without dragging yesterday's noise forward."
       },
       {
         title: "Handing work to another agent",
-        body: "One AI completes a phase and saves a checkpoint. Another AI picks up from the next action."
+        body: "One AI completes a phase, stores key findings in WorkStash, and saves a WorkBaton pointing to them. Another AI picks up from the next action."
       }
     ],
     toolsTitle: "A2CR MCP tools",
     toolsHeaders: ["Tool", "When to call"],
     toolsRows: [
-      ["explain_a2cr_flows", "Call first when newly connected or unsure whether to use WorkBaton or WorkThreads."],
+      ["explain_a2cr_flows", "Call first when newly connected or unsure which flow applies."],
       ["should_save_workbaton", "Call when unsure if a checkpoint is appropriate or whether this MCP surface can save."],
       ["get_account_limits", "Call before automatic or large saves to confirm plan limits and detail level."],
       ["save_context", "Call via the local stdio wrapper at task milestones, phase completions, or context pressure."],
       ["resume_context", "Call at the start of a new window to load the last checkpoint."],
       ["load_context", "Call when the slot name or number is already known."],
       ["list_contexts", "Call only when the user asks to search and no slot name is provided."],
-      ["delete_context", "Call only when the user explicitly requests deletion."]
+      ["delete_context", "Call only when the user explicitly requests deletion."],
+      ["should_use_work_stash", "Call when unsure whether a note belongs in WorkStash or inline in the WorkBaton."],
+      ["store_work_stash", "Call to save detailed supporting notes that would bloat the WorkBaton — file paths, API findings, failed approaches. Record the returned entry_key in WorkBaton references or next_action."],
+      ["get_work_stash", "Call to retrieve a specific stash entry by entry_key. Fetch only what the current task needs."],
+      ["list_work_stash", "Call to locate a stash entry when the entry_key is not in the WorkBaton references."],
+      ["delete_work_stash", "Call after a task phase completes to remove stash entries that are no longer needed."]
     ],
     saveTriggersTitle: "When to save autonomously",
     saveTriggers: [
@@ -249,8 +238,34 @@ const text = {
       "The user explicitly asked not to save.",
       "You are on the remote MCP surface only and cannot reach the local stdio wrapper."
     ],
+    workbatonSectionTitle: "WorkBaton",
+    workbatonSectionBody: "A compact, structured snapshot of where work stands. Saved at task milestones and loaded by the next AI to continue without re-explanation.",
+    workbatonPoints: [
+      "Saves goal, current progress, next action, key decisions, and blockers — nothing more than what the next AI needs.",
+      "Encrypted on your machine before upload. A2CR stores ciphertext only and cannot read the body.",
+      "Any MCP-capable AI — Claude, Codex, Cursor, Gemini — can resume from the same checkpoint.",
+      "Session cuts, model switches, and multi-day projects all become routine handoffs instead of lost work."
+    ],
+    workstashSectionTitle: "WorkStash — supporting memory for WorkBaton",
+    workstashSectionBody: "WorkBaton stays compact by design. When detailed notes — confirmed file paths, API findings, failed approaches, or intermediate results — would bloat the checkpoint, store them in WorkStash instead. Record the entry_key in the WorkBaton references field so the next window retrieves only what it needs.",
+    workstashPoints: [
+      "Store supporting notes with store_work_stash and record the entry_key in WorkBaton references or next_action.",
+      "Retrieve only the entries needed for the current task with get_work_stash(entry_key).",
+      "Delete entries with delete_work_stash when a task phase completes and the note is no longer useful.",
+      "Never store secrets, API keys, auth headers, private database URLs, full transcripts, or large source files in WorkStash.",
+      "WorkStash is temporary supporting memory — not a durable knowledge base or file store."
+    ],
+    combinedTitle: "WorkBaton + WorkStash together",
+    combinedBody: "WorkBaton is the spine. WorkStash is the detail. Together they give you an AI that arrives at each new session knowing exactly where to go and what it already learned.",
+    combinedPoints: [
+      "The WorkBaton stays compact because detailed notes live in WorkStash — fast to load, focused on direction.",
+      "The next AI reads the checkpoint first, then retrieves only the WorkStash entries it actually needs.",
+      "Failed approaches stored in WorkStash prevent the next window from repeating the same mistake.",
+      "Every session starts with clean context and peak performance — no re-explanation from the user.",
+      "Selective retrieval means fewer tokens per session, so subscription limits go further."
+    ],
     batonThreadsTitle: "WorkBaton vs WorkThreads",
-    batonThreadsBody: "A2CR has two separate flows. Use the right one for the situation.",
+    batonThreadsBody: "A2CR has two flows. WorkBaton is available now. WorkThreads is planned for a future release.",
     batonThreadsHeaders: ["", "WorkBaton", "WorkThreads"],
     batonThreadsRows: [
       ["Shape", "Serial checkpoint handoff", "Collaborative multi-agent workspace"],
@@ -269,8 +284,27 @@ const text = {
       "validation — test results, build outcomes, and smoke checks.",
       "do_not_use_slots — stale slots and why to avoid them."
     ],
+    memoryFileTitle: "Make it automatic with project memory files",
+    memoryFileBody:
+      "Add the snippet below to your project's memory file and the AI reads it at the start of every session — no need to remind it each time. This is the most reliable way to make any AI use both WorkBaton and WorkStash proactively.",
+    memoryFileFiles: [
+      ["Claude Code", "CLAUDE.md"],
+      ["Gemini CLI", "GEMINI.md"],
+      ["ChatGPT / Codex CLI", "AGENTS.md"],
+      ["Cursor (v0.43+)", ".cursor/rules/a2cr.mdc"],
+      ["Cursor (legacy)", ".cursorrules"],
+      ["Windsurf", ".windsurfrules"],
+      ["Cline", ".clinerules"],
+      ["Roo Code", ".roorules"],
+      ["GitHub Copilot", ".github/copilot-instructions.md"],
+      ["Aider", "CONVENTIONS.md"]
+    ] as [string, string][],
+    memoryFileNote: "The snippet content is the same for every AI — only the filename differs.",
+    memoryFileSnippet:
+      "## A2CR WorkBaton + WorkStash\n\nA2CR MCP is connected. Follow these rules every session:\n\nWorkBaton — save work state:\n- Save a WorkBaton checkpoint at task milestones, phase completions, or when context pressure is detected. Call should_save_workbaton if unsure, then save_context.\n\nWorkStash — save supporting details:\n- Proactively store detailed notes (file paths, API findings, failed attempts, intermediate results) with store_work_stash before they are needed by a future session.\n- Record the returned entry_key in WorkBaton references or next_action so the next window can retrieve it.\n\nBoth:\n- Never save secrets, API keys, Authorization headers, full transcripts, or large source files.",
     copyConfig: "Copy config",
-    copyPrompt: "Copy prompt"
+    copyPrompt: "Copy prompt",
+    copySnippet: "Copy snippet"
   },
   ja: {
     navHuman: "ガイド",
@@ -280,23 +314,21 @@ const text = {
     dashboard: "ダッシュボード",
     humanTitle: "A2CR ガイド",
     humanBody:
-      "A2CRは、長いチャット履歴をそのまま引きずらず、必要な作業状態だけをWorkBatonとして次のAIセッションへ渡すためのサービスです。",
+      "AIのセッションが終わるたびに、積み上げた文脈がリセットされます。A2CRはWorkBatonチェックポイントでこれを解決します。作業状態をコンパクトなスナップショットとして保存し、新しいウィンドウ・別モデル・翌日から、どのMCP対応AIでも続きを再開できます。",
     agentTitle: "A2CR AIエージェント向けガイド",
     agentBody:
-      "このページは、ユーザーの代わりにA2CR MCPを設定・利用するAIエージェント向けの手順です。",
+      "あなたはAIエージェントです。このページにはA2CR MCPの設定、WorkBatonとWorkStashの使い方、即座に利用を開始するために必要なことが全て記載されています。作業を始める前に、ツール一覧・保存タイミング・保存禁止事項を確認してください。",
     whatTitle: "A2CRがすること",
     whatPoints: [
-      "goal、current_state、next_action、判断、制約、参照など、作業再開に必要な状態だけを保存します。",
-      "別のAI窓、別モデル、MCP対応クライアントから作業を再開できます。",
-      "ダッシュボードは本文ではなくメタデータ中心に表示します。",
-      "A2CRサーバー自体はLLM推論を実行しません。"
+      "WorkBatonは次のAIが続きに必要な作業状態だけを保存します。goal・進捗・次のアクション・判断事項。会話履歴全体ではありません。",
+      "WorkStashが詳細な補助メモを別に保管するので、チェックポイントはコンパクトに保たれ、次のAIは必要なものだけを取り出せます。"
     ],
     comparisonTitle: "A2CRが何と違うか",
     comparisonBody:
-      "A2CRは、チャット要約機能でもサブエージェント機能でもありません。別チャット、別AI、別ツールへ作業状態を渡すためのWorkBatonです。",
+      "A2CRはチャット要約でも、ファイル保存機能でも、サブエージェント機能でもありません。WorkBatonは構造化された作業状態の引き継ぎ — 次のAIが続きに必要なものだけを渡します。",
     agentTeaserTitle: "読むより、AIに読ませる",
     agentTeaserBody:
-      "AI向けガイドを、ふだん使っているAIエージェントに見せて「このアプリを説明して」と頼んでください。A2CRが何を渡し、何を保存しないのかまで、あなた向けにかみ砕いて説明できます。",
+      "AI向けガイドを、ふだん使っているAIに見せて「このアプリを説明して」と頼んでください。ツール一覧・保存ルール・タイミング・禁止事項まで、そのままAIが動けるフォーマットで書かれています。",
     agentTeaserLink: "AI向けガイドを見る",
     compressionCompareTitle: "圧縮・要約機能との違い",
     compressionCompareHeaders: ["比較", "圧縮・要約機能", "A2CR / WorkBaton"],
@@ -339,7 +371,18 @@ const text = {
       "A2CRはWorkBaton本文の平文保存を受け付けません。直接HTTP MCPからの保存は無効化し、ローカルstdio wrapperで暗号化してから送る前提です。",
     setupTitle: "MCP設定",
     setupBody:
-      "ログイン後にAPIキーを発行し、ローカルstdio MCP wrapperをMCPクライアントに設定します。wrapperがlocal client keyを端末上に保存します。実際のAPIキーやkeyファイルはリポジトリやログに入れないでください。",
+      "A2CRにサインインし、設定からAPIキーを発行後、下の設定スニペットを使いMCPクライアントにローカルstdio wrapperを追加します。APIキーはご自身で設定ファイルに貼り付けてください。チャットでは共有しないでください。wrapperがlocal client keyを端末上に作成・管理します。",
+    agentSetupTitle: "MCP設定 — 手順",
+    agentSetupBody:
+      "以下の手順を順番に実行します。APIキーはユーザー本人が貼り付けます。チャットで共有させず、生成・推測も禁止です。",
+    agentSetupSteps: [
+      "ユーザーに https://a2cr.app/ でサインインし、設定 → APIキー → 新しいキーを発行 を行ってもらいます。",
+      "コピーしたAPIキーをMCPの設定ファイルに自分で貼り付けてもらいます。チャットでは共有させないでください。",
+      "A2CRリポジトリをクローンし、mcp/server.py がユーザーの端末上に用意されるようにします。",
+      "下の設定スニペットを使い、ユーザーのクライアント（Codex または Generic）に合わせてa2crという名前のMCPサーバーを1つ追加します。",
+      "get_account_limits を呼び出して接続を確認します。",
+      "ユーザーに伝えます：「A2CRが接続されました。作業の節目でWorkBatonチェックポイントを自動的に保存します。」"
+    ],
     workflowTitle: "基本の流れ",
     workflow: [
       "A2CRへログインし、APIキーを発行します。",
@@ -355,9 +398,10 @@ const text = {
       "APIキー、Authorization header、secretをチャットやログに表示しません。",
       "HTTP APIを推測せず、MCPツールを使います。",
       "list_contextsは、Slotが提示されておらず、ユーザーが検索を求めた場合だけ使います。",
-      "秘密情報、全文履歴、長いログをWorkBatonに保存しません。"
+      "秘密情報、全文履歴、長いログをWorkBatonに保存しません。",
+      "WorkBatonを肥大化させる詳細メモはWorkStashに保存し、WorkBatonのreferencesにentry_keyを記録する。"
     ],
-    connectTitle: "一度接続すれば、あとはAIが自律的に動く",
+    connectTitle: "ウィンドウで一度接続してしまえば、あとはAIが自律的に動く",
     connectBody:
       "AIクライアントがMCPでA2CRに接続すると、サーバーはAIにツール一覧と完全な指示を送ります。どのツールをいつ使うか、何を保存してはいけないか — これをAIは作業前に読み込みます。",
     connectPoints: [
@@ -392,24 +436,29 @@ const text = {
       },
       {
         title: "複数日にわたる長いプロジェクト",
-        body: "セッション終了時にチェックポイントを保存。次のセッションは昨日のノイズを引きずらずクリーンに始まる。"
+        body: "セッション終了時にWorkBatonチェックポイントを保存。詳細メモはWorkStashに保管してコアを軽く保ちます。次のセッションは昨日のノイズを引きずらずクリーンに始まります。"
       },
       {
         title: "別のエージェントへ作業を引き継ぐ",
-        body: "あるAIがフェーズを完了してチェックポイントを保存。別のAIが次のアクションから作業を開始する。"
+        body: "あるAIがフェーズを完了し、調査結果をWorkStashに保存してそれを参照するWorkBatonを作成。別のAIが次のアクションから作業を開始する。"
       }
     ],
     toolsTitle: "A2CR MCPツール一覧",
     toolsHeaders: ["ツール", "呼ぶタイミング"],
     toolsRows: [
-      ["explain_a2cr_flows", "接続直後、またはWorkBatonとWorkThreadsどちらを使うか迷ったとき最初に呼ぶ。"],
+      ["explain_a2cr_flows", "接続直後、またはどのフローを使うか迷ったとき最初に呼ぶ。"],
       ["should_save_workbaton", "チェックポイントが適切か、このMCP面から保存できるか確認したいとき。"],
       ["get_account_limits", "自動保存や大きな保存の前に、プラン制限と保存粒度を確認する。"],
       ["save_context", "ローカルstdio wrapper経由で、作業の節目・フェーズ完了・コンテキスト圧迫時に呼ぶ。"],
       ["resume_context", "新しいウィンドウの最初に呼んで、最後のチェックポイントを読み込む。"],
       ["load_context", "スロット名または番号がすでに分かっている場合の直接ロード。"],
       ["list_contexts", "ユーザーが検索を求めており、スロット名が提示されていない場合のみ使う。"],
-      ["delete_context", "ユーザーが明示的に削除を要求した場合のみ使う。"]
+      ["delete_context", "ユーザーが明示的に削除を要求した場合のみ使う。"],
+      ["should_use_work_stash", "メモをWorkStashに保存すべきか、WorkBatonにインラインで書くべきか迷ったとき。"],
+      ["store_work_stash", "WorkBatonを肥大化させる詳細メモ（ファイルパス・API調査・失敗した試み）を保存する。返ったentry_keyをWorkBatonのreferencesまたはnext_actionに記録する。"],
+      ["get_work_stash", "entry_keyを指定して特定のスタッシュエントリを取り出す。現在のタスクに必要なものだけ取得する。"],
+      ["list_work_stash", "entry_keyが分からないときにスタッシュエントリを探す。"],
+      ["delete_work_stash", "タスクフェーズ完了後、不要になったスタッシュエントリを削除する。"]
     ],
     saveTriggersTitle: "自律的に保存するタイミング",
     saveTriggers: [
@@ -429,8 +478,34 @@ const text = {
       "ユーザーが保存しないよう明示的に指示した。",
       "リモートMCP面のみで接続しており、ローカルstdio wrapperに届かない。"
     ],
+    workbatonSectionTitle: "WorkBaton",
+    workbatonSectionBody: "作業の現在地をコンパクトに構造化したスナップショット。作業の節目に保存し、次のAIが再説明なしに続きから動けます。",
+    workbatonPoints: [
+      "goal・現在の進捗・次のアクション・判断事項・ブロッカーだけを保存。次のAIが必要な情報のみです。",
+      "アップロード前にあなたの端末で暗号化されます。A2CRは暗号文のみを保存し、本文を読むことはできません。",
+      "MCP対応のAI（Claude・Codex・Cursor・Geminiなど）なら、同じチェックポイントから再開できます。",
+      "セッション切れ・モデル切り替え・複数日プロジェクトが、いずれも失われた作業ではなく通常の引き継ぎになります。"
+    ],
+    workstashSectionTitle: "WorkStash — WorkBatonを補う一時メモ",
+    workstashSectionBody: "WorkBatonはコンパクトさが前提です。確認済みファイルパス・API調査結果・失敗した試み・中間結果など、チェックポイントを肥大化させる詳細メモはWorkStashに保管します。entry_keyをWorkBatonのreferencesまたはnext_actionに記録し、次のウィンドウが必要なものだけ取り出せるようにします。",
+    workstashPoints: [
+      "store_work_stashで補助メモを保存し、entry_keyをWorkBatonのreferencesまたはnext_actionに記録する。",
+      "get_work_stash(entry_key)で、現在のタスクに必要なエントリだけを取り出す。",
+      "タスクフェーズが完了してメモが不要になったらdelete_work_stashで削除する。",
+      "シークレット・APIキー・認証ヘッダー・プライベートDB URL・全文履歴・大きなソースファイルはWorkStashに保存しない。",
+      "WorkStashは一時的な補助メモであり、永続的なナレッジベースやファイル保存場所ではない。"
+    ],
+    combinedTitle: "WorkBaton + WorkStash を組み合わせると",
+    combinedBody: "WorkBatonが骨格で、WorkStashが詳細です。組み合わせることで、新しいセッションに来たAIは「どこへ向かうか」と「すでに何を調べたか」の両方を持っています。",
+    combinedPoints: [
+      "詳細メモはWorkStashに分離されるので、WorkBatonは常に軽くすぐに読み込める。",
+      "次のAIはまずチェックポイントで方向を確認し、実際に必要なWorkStashエントリだけを取り出して動く。",
+      "WorkStashに記録した失敗した試みが、次のウィンドウが同じ過ちを繰り返すことを防ぐ。",
+      "毎回クリーンなコンテキストでスタート。ピークのパフォーマンス、ユーザーからの再説明ゼロ。",
+      "選択的な取得でセッションあたりのトークン消費が抑えられ、サブスクの使用量が節約できる。"
+    ],
     batonThreadsTitle: "WorkBaton vs WorkThreads",
-    batonThreadsBody: "A2CRには2つの独立したフローがある。状況に合ったものを使う。",
+    batonThreadsBody: "A2CRには2つのフローがある。WorkBatonは現在利用可能。WorkThreadsは将来のリリースで提供予定。",
     batonThreadsHeaders: ["", "WorkBaton", "WorkThreads"],
     batonThreadsRows: [
       ["形状", "シリアルチェックポイント引き継ぎ", "複数エージェントの協調ワークスペース"],
@@ -449,15 +524,34 @@ const text = {
       "validation — テスト結果・ビルド成果・スモークチェックの記録。",
       "do_not_use_slots — 陳腐化したスロットと使ってはいけない理由。"
     ],
+    memoryFileTitle: "プロジェクトのメモリファイルで自動化する",
+    memoryFileBody:
+      "下のスニペットをプロジェクトのメモリファイルに追記すると、AIはセッション開始時に自動で読み込みます。毎回指示しなくても WorkBaton と WorkStash の両方を積極的に使ってくれる、最も確実な方法です。",
+    memoryFileFiles: [
+      ["Claude Code", "CLAUDE.md"],
+      ["Gemini CLI", "GEMINI.md"],
+      ["ChatGPT / Codex CLI", "AGENTS.md"],
+      ["Cursor (v0.43以降)", ".cursor/rules/a2cr.mdc"],
+      ["Cursor (旧形式)", ".cursorrules"],
+      ["Windsurf", ".windsurfrules"],
+      ["Cline", ".clinerules"],
+      ["Roo Code", ".roorules"],
+      ["GitHub Copilot", ".github/copilot-instructions.md"],
+      ["Aider", "CONVENTIONS.md"]
+    ] as [string, string][],
+    memoryFileNote: "スニペットの内容はどのAIでも同じです。ファイル名だけが異なります。",
+    memoryFileSnippet:
+      "## A2CR WorkBaton + WorkStash\n\nA2CR MCP が接続されています。毎回のセッションで以下のルールに従ってください。\n\nWorkBaton — 作業状態の保存：\n- 作業の節目・フェーズ完了・コンテキスト圧迫を検知したら WorkBaton チェックポイントを保存する。迷ったら should_save_workbaton を呼んでから save_context を実行する。\n\nWorkStash — 詳細メモの保存：\n- ファイルパス・API調査・失敗した試み・中間結果など、将来のセッションで必要になる詳細メモは store_work_stash で積極的に保存する。\n- 返ってきた entry_key を WorkBaton の references または next_action に記録し、次のウィンドウが取り出せるようにする。\n\n共通：\n- シークレット・APIキー・認証ヘッダー・全文履歴・大きなソースファイルは保存しない。",
     copyConfig: "設定をコピー",
-    copyPrompt: "プロンプトをコピー"
+    copyPrompt: "プロンプトをコピー",
+    copySnippet: "スニペットをコピー"
   }
 };
 
 function PublicHeader({ language, kind }: { language: Language; kind: GuideKind }) {
   const { session } = useAuth();
   const humanPath = language === "ja" ? "/guide" : "/en/guide";
-  const agentPath = language === "ja" ? "/agent-guide" : "/en/agent-guide";
+  const agentPath = "/agent-guide.html";
   const t = text[language];
 
   return (
@@ -474,12 +568,12 @@ function PublicHeader({ language, kind }: { language: Language; kind: GuideKind 
           >
             {t.navHuman}
           </Link>
-          <Link
-            to={agentPath}
+          <a
+            href={agentPath}
             className={`rounded-md px-3 py-2 text-sm font-medium ${kind === "agent" ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-neutral-100"}`}
           >
             {t.navAgent}
-          </Link>
+          </a>
           <Link to="/pricing" className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
             {t.pricing}
           </Link>
@@ -610,122 +704,19 @@ export function GuidePage() {
   const language: Language = location.pathname.startsWith("/en/") ? "en" : i18n.language.startsWith("ja") ? "ja" : "en";
   const kind: GuideKind = location.pathname.includes("agent-guide") ? "agent" : "human";
   const t = text[language];
-  const title = kind === "agent" ? t.agentTitle : t.humanTitle;
-  const body = kind === "agent" ? t.agentBody : t.humanBody;
-  const prompt = agentPrompt(language);
+
+  // Agent guide is a plain static HTML file so AI agents can read it via WebFetch.
+  // Redirect any React-routed /agent-guide hit to the static file.
+  useEffect(() => {
+    if (kind === "agent") {
+      window.location.replace("/agent-guide.html");
+    }
+  }, [kind]);
 
   if (kind === "agent") {
     return (
-      <div className="min-h-screen bg-white text-neutral-950">
-        <PublicHeader language={language} kind={kind} />
-        <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-          <div className="pb-8">
-            <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-neutral-700">{body}</p>
-          </div>
-
-          <PlainSection eyebrow="A2CR" title={t.whatTitle}>
-            <PlainBulletList items={t.whatPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Connect first" title={t.connectTitle} body={t.connectBody}>
-            <PlainBulletList items={t.connectPoints} />
-            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3">
-              <div className="mb-1 text-xs font-semibold text-emerald-700">{t.connectPromptLabel}</div>
-              <pre className="whitespace-pre-wrap text-xs leading-5 text-emerald-900">{t.connectPromptExample}</pre>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Tools" title={t.toolsTitle}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    {t.toolsHeaders.map((h) => (
-                      <th key={h} className="pb-2 pr-4 font-semibold text-neutral-950">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {t.toolsRows.map(([tool, when]) => (
-                    <tr key={tool} className="border-t border-neutral-100">
-                      <td className="w-56 py-2 pr-4 align-top font-mono text-xs font-semibold text-neutral-950">{tool}</td>
-                      <td className="py-2 leading-6 text-neutral-700">{when}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Save timing" title={t.saveTriggersTitle}>
-            <PlainBulletList items={t.saveTriggers} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Do not save" title={t.doNotSaveTitle}>
-            <PlainBulletList items={t.doNotSave} />
-          </PlainSection>
-
-          <PlainSection eyebrow="WorkBaton vs WorkThreads" title={t.batonThreadsTitle} body={t.batonThreadsBody}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    {t.batonThreadsHeaders.map((h, i) => (
-                      <th key={i} className="pb-2 pr-4 font-semibold text-neutral-950">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {t.batonThreadsRows.map(([label, baton, threads]) => (
-                    <tr key={label} className="border-t border-neutral-100">
-                      <th className="w-28 py-2 pr-4 align-top font-semibold text-neutral-950">{label}</th>
-                      <td className="py-2 pr-4 align-top leading-6 text-neutral-700">{baton}</td>
-                      <td className="py-2 leading-6 text-neutral-700">{threads}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Chained handoff" title={t.chainedHandoffTitle} body={t.chainedHandoffBody}>
-            <PlainBulletList items={t.chainedHandoffPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Security" title={t.keyTitle} body={t.keyBody}>
-            <PlainBulletList items={t.keyPoints} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Encryption" title={t.encryptionTitle} body={t.noOverclaim}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <tbody>
-                  {t.storageRows.map(([mode, description]) => (
-                    <tr key={mode} className="border-t border-neutral-200 first:border-t-0">
-                      <th className="w-48 py-3 pr-4 font-semibold text-neutral-950">{mode}</th>
-                      <td className="py-3 leading-6 text-neutral-700">{description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PlainSection>
-
-          <PlainSection eyebrow="Agent" title={t.agentRulesTitle}>
-            <PlainBulletList items={t.agentRules} />
-          </PlainSection>
-
-          <PlainSection eyebrow="Prompt" title="Semi-automation prompt">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold">A2CR MCP</div>
-              <CopyButton value={prompt} label={t.copyPrompt} compact />
-            </div>
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap border border-neutral-200 bg-neutral-50 p-3 text-xs leading-5 text-neutral-800">
-              {prompt}
-            </pre>
-          </PlainSection>
-        </main>
+      <div className="flex min-h-screen items-center justify-center bg-white text-neutral-950">
+        <p className="text-sm text-neutral-500">Redirecting…</p>
       </div>
     );
   }
@@ -738,8 +729,8 @@ export function GuidePage() {
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div>
               <img src="/brand/a2cr-logo.png" alt="A2CR" className="mb-6 w-full max-w-md object-contain" />
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">{title}</h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{body}</p>
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">{t.humanTitle}</h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{t.humanBody}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   to={session ? "/dashboard" : "/login"}
@@ -748,13 +739,13 @@ export function GuidePage() {
                   {session ? <LayoutDashboard className="size-4" /> : <LogIn className="size-4" />}
                   {session ? t.dashboard : t.signIn}
                 </Link>
-                <Link
-                  to={language === "ja" ? "/agent-guide" : "/en/agent-guide"}
+                <a
+                  href="/agent-guide.html"
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-100"
                 >
                   <Bot className="size-4" aria-hidden="true" />
                   {t.navAgent}
-                </Link>
+                </a>
               </div>
             </div>
             <div className="grid gap-3">
@@ -779,12 +770,12 @@ export function GuidePage() {
                   <div>
                     <h2 className="font-semibold text-neutral-950">{t.agentTeaserTitle}</h2>
                     <p className="mt-2 text-sm leading-6 text-neutral-700">{t.agentTeaserBody}</p>
-                    <Link
-                      to={language === "ja" ? "/agent-guide" : "/en/agent-guide"}
+                    <a
+                      href="/agent-guide.html"
                       className="mt-3 inline-flex text-sm font-semibold text-emerald-800 hover:text-emerald-900"
                     >
                       {t.agentTeaserLink}
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </article>
@@ -795,6 +786,24 @@ export function GuidePage() {
         <Section eyebrow="A2CR" title={t.whatTitle}>
           <BulletList items={t.whatPoints} />
         </Section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="WorkBaton" title={t.workbatonSectionTitle} body={t.workbatonSectionBody}>
+            <BulletList items={t.workbatonPoints} />
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="WorkStash" title={t.workstashSectionTitle} body={t.workstashSectionBody}>
+            <BulletList items={t.workstashPoints} />
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-emerald-50">
+          <Section eyebrow="Together" title={t.combinedTitle} body={t.combinedBody}>
+            <BulletList items={t.combinedPoints} />
+          </Section>
+        </section>
 
         <section className="border-y border-neutral-200 bg-white">
           <Section eyebrow="Compare" title={t.comparisonTitle} body={t.comparisonBody}>
@@ -819,6 +828,35 @@ export function GuidePage() {
                 <pre className="whitespace-pre-wrap text-sm leading-6 text-emerald-900">{t.connectPromptExample}</pre>
               </article>
             </div>
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-emerald-50">
+          <Section eyebrow="Project memory" title={t.memoryFileTitle} body={t.memoryFileBody}>
+            <div className="mb-4 overflow-hidden rounded-md border border-neutral-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200 bg-neutral-50">
+                    <th className="px-4 py-2 font-semibold text-neutral-950">AI / Tool</th>
+                    <th className="px-4 py-2 font-semibold text-neutral-950">File</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.memoryFileFiles.map(([ai, file]) => (
+                    <tr key={file} className="border-t border-neutral-100">
+                      <td className="px-4 py-2 text-neutral-700">{ai}</td>
+                      <td className="px-4 py-2 font-mono text-xs text-neutral-900">{file}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mb-3 text-sm text-neutral-600">{t.memoryFileNote}</p>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-sm font-semibold text-neutral-950">snippet</span>
+              <CopyButton value={t.memoryFileSnippet} label={t.copySnippet} compact />
+            </div>
+            <pre className="overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50 whitespace-pre-wrap">{t.memoryFileSnippet}</pre>
           </Section>
         </section>
 
@@ -887,9 +925,11 @@ export function GuidePage() {
             </div>
           </Section>
         </section>
+
         <Section eyebrow="Workflow" title={t.workflowTitle}>
           <BulletList items={t.workflow} />
         </Section>
+
       </main>
     </div>
   );

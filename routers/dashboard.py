@@ -23,6 +23,7 @@ from services.logs import hash_log_value
 import services.dashboard as dashboard_service
 import services.web_context as web_context_service
 import services.workthreads as workthreads_service
+import services.work_stash as work_stash_service
 from services.web_context import RequestMeta
 
 router = APIRouter(prefix="/api/dashboard")
@@ -226,3 +227,15 @@ def revoke_api_key(user: AuthenticatedUser = Depends(get_current_dashboard_user)
     enforce_authenticated_rate_limit(user.user_id, "dashboard.api_key.mutate")
     dashboard_service.revoke_api_key(user.user_id)
     return {"message": "revoked"}
+
+
+@router.get("/work-stash")
+def get_work_stash_usage(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> dict:
+    enforce_authenticated_rate_limit(user.user_id, "dashboard.read")
+    result = work_stash_service.list_work_stash(user_id=user.user_id, tag_filter=None)
+    return {
+        "total_size_bytes": result.total_size_bytes,
+        "quota_bytes": result.quota_bytes,
+        "entry_count": result.entry_count,
+        "entry_limit": result.entry_limit,
+    }

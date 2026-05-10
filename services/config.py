@@ -28,6 +28,15 @@ class WebConfig:
     db_idle_transaction_timeout_ms: int = 10000
 
 
+@dataclass(frozen=True)
+class DbConfig:
+    database_url: str
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_pool_timeout_seconds: float = 5.0
+    db_pool_recycle_seconds: int = 1800
+
+
 _web_config: WebConfig | None = None
 
 
@@ -137,6 +146,25 @@ def get_web_config() -> WebConfig:
         db_idle_transaction_timeout_ms=_int_env("A2CR_DB_IDLE_TRANSACTION_TIMEOUT_MS", 10000),
     )
     return _web_config
+
+
+def get_db_config() -> DbConfig:
+    """Return DB-only config for maintenance jobs that do not need web auth settings."""
+    _reject_runtime_service_role_key()
+    return DbConfig(
+        database_url=_required_env("DATABASE_URL"),
+        db_pool_size=_int_env("A2CR_DB_POOL_SIZE", 5),
+        db_max_overflow=_int_env("A2CR_DB_MAX_OVERFLOW", 5),
+        db_pool_timeout_seconds=_float_env("A2CR_DB_POOL_TIMEOUT_SECONDS", 5.0),
+        db_pool_recycle_seconds=_int_env("A2CR_DB_POOL_RECYCLE_SECONDS", 1800),
+    )
+
+
+def validate_db_environment() -> None:
+    """Fail fast for DB-only maintenance tasks that don't need JWT/web config."""
+    _reject_runtime_service_role_key()
+    if not os.environ.get("DATABASE_URL"):
+        raise RuntimeError("DATABASE_URL is required")
 
 
 def validate_runtime_environment() -> WebConfig | None:

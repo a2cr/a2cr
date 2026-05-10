@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from sqlalchemy import text
 
-from services.config import validate_runtime_environment
+from services.config import validate_runtime_environment, validate_db_environment
 from services.data_lifecycle import global_orphan_data_lifecycle_scan
 from services.db import get_web_engine
 
@@ -13,6 +13,14 @@ def expire_web_contexts() -> int:
     validate_runtime_environment()
     with get_web_engine().begin() as conn:
         result = conn.execute(text("SELECT app.expire_contexts()"))
+        return int(result.scalar_one())
+
+
+def expire_work_stash() -> int:
+    """Expire due WorkStash entries through the narrow DB function only."""
+    validate_db_environment()
+    with get_web_engine().begin() as conn:
+        result = conn.execute(text("SELECT app.expire_work_stash()"))
         return int(result.scalar_one())
 
 
@@ -38,7 +46,7 @@ def prune_access_logs(*, older_than_seconds: int = 30 * 24 * 60 * 60, batch_size
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="A2CR maintenance commands")
-    parser.add_argument("command", choices=["expire-contexts", "prune-access-logs", "data-lifecycle-scan"])
+    parser.add_argument("command", choices=["expire-contexts", "expire-work-stash", "prune-access-logs", "data-lifecycle-scan"])
     parser.add_argument("--older-than-seconds", type=int, default=30 * 24 * 60 * 60)
     parser.add_argument("--old-access-logs-older-than-seconds", type=int, default=30 * 24 * 60 * 60)
     parser.add_argument("--batch-size", type=int, default=1000)
@@ -47,6 +55,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "expire-contexts":
         count = expire_web_contexts()
         print(f"expired_contexts={count}")
+        return 0
+    if args.command == "expire-work-stash":
+        count = expire_work_stash()
+        print(f"expired_work_stash={count}")
         return 0
     if args.command == "prune-access-logs":
         count = prune_access_logs(

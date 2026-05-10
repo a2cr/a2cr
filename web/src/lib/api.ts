@@ -6,7 +6,8 @@ import type {
   DashboardProfile,
   DashboardStats,
   DashboardWorkThread,
-  ProfilePatch
+  ProfilePatch,
+  WorkStashUsage
 } from "./types";
 
 const apiBase = import.meta.env.VITE_A2CR_API_BASE?.replace(/\/$/, "") || "";
@@ -111,8 +112,10 @@ export async function loadDashboardData(token: string): Promise<DashboardData> {
       ? await dashboardFetch<DashboardWorkThread[]>("/api/dashboard/workthreads", token).catch(() => [])
       : [];
 
+  const workStash = await dashboardFetch<WorkStashUsage>("/api/dashboard/work-stash", token).catch(() => null);
+
   const apiKey = null;
-  return { profile, contexts, stats, accessLogs, apiKey, workthreads };
+  return { profile, contexts, stats, accessLogs, apiKey, workthreads, workStash };
 }
 
 export function updateProfile(token: string, patch: ProfilePatch) {

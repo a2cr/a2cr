@@ -14,7 +14,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy.exc import SQLAlchemyError
 
-from routers import dashboard, health, mcp_http, web_context, workthreads
+from routers import dashboard, health, mcp_http, web_context, work_stash, workthreads
 from services.config import (
     app_env,
     is_request_origin_allowed,
@@ -495,6 +495,7 @@ def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.include_router(health.router)
 app.include_router(web_context.router)
+app.include_router(work_stash.router)
 app.include_router(dashboard.router)
 app.include_router(workthreads.router)
 app.mount("/mcp", mcp_http.mcp_app)

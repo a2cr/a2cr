@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from services.config import reset_config
+import services.db as db_module
 import services.maintenance as maintenance
 
 
@@ -147,6 +148,47 @@ def test_expire_web_contexts_uses_only_db_expiration_function(monkeypatch):
 
     assert maintenance.expire_web_contexts() == 4
     assert executed == ["SELECT app.expire_contexts()"]
+
+
+def test_expire_work_stash_uses_db_only_config_without_jwt(monkeypatch):
+    executed = []
+    created = []
+
+    class FakeResult:
+        def scalar_one(self):
+            return 5
+
+    class FakeConnection:
+        def execute(self, statement):
+            executed.append(str(statement))
+            return FakeResult()
+
+    class FakeBegin:
+        def __enter__(self):
+            return FakeConnection()
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeEngine:
+        def begin(self):
+            return FakeBegin()
+
+    def fake_create_engine(database_url, **kwargs):
+        created.append((database_url, kwargs))
+        return FakeEngine()
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://a2cr_app:test@localhost:5432/a2cr")
+    monkeypatch.delenv("SUPABASE_JWT_SECRET", raising=False)
+    monkeypatch.delenv("SUPABASE_JWKS_URL", raising=False)
+    reset_config()
+    db_module.reset_web_engine()
+    monkeypatch.setattr(db_module, "create_engine", fake_create_engine)
+
+    assert maintenance.expire_work_stash() == 5
+    assert executed == ["SELECT app.expire_work_stash()"]
+    assert created[0][0].startswith("postgresql+psycopg://")
+    assert created[0][1]["pool_pre_ping"] is True
 
 
 def test_prune_access_logs_uses_only_db_prune_function(monkeypatch):

@@ -122,6 +122,44 @@ def ensure_hourly_limit(
         raise PlanLimitExceeded(code, "Hourly plan limit exceeded")
 
 
+@dataclass(frozen=True)
+class WorkStashLimits:
+    plan: PlanName
+    quota_bytes: int
+    ttl_seconds: int
+    max_entries: int | None
+    max_entry_bytes: int
+    writes_per_hour: int
+    reads_per_hour: int
+
+
+FREE_STASH_LIMITS = WorkStashLimits(
+    plan="free",
+    quota_bytes=256 * 1024,
+    ttl_seconds=7 * 24 * 60 * 60,
+    max_entries=None,
+    max_entry_bytes=8 * 1024,
+    writes_per_hour=60,
+    reads_per_hour=300,
+)
+
+PRO_STASH_LIMITS = WorkStashLimits(
+    plan="pro",
+    quota_bytes=2048 * 1024,
+    ttl_seconds=30 * 24 * 60 * 60,
+    max_entries=None,
+    max_entry_bytes=32 * 1024,
+    writes_per_hour=600,
+    reads_per_hour=3000,
+)
+
+
+def get_stash_limits(plan: str | None) -> WorkStashLimits:
+    if plan == "pro":
+        return PRO_STASH_LIMITS
+    return FREE_STASH_LIMITS
+
+
 def ensure_active_slot_capacity(
     session: Session,
     *,

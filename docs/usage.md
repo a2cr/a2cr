@@ -164,6 +164,10 @@ Some MCP clients expose tools lazily. If `save_context` is not immediately
 visible after connection, the AI should search or request the exact
 `save_context` tool name before concluding WorkBaton saves are unavailable.
 
+Some MCP clients expose tools lazily. If `save_context` is not immediately
+visible after connection, the AI should search or request the exact
+`save_context` tool name before concluding WorkBaton saves are unavailable.
+
 ```
 AI client connects
     ↓
@@ -288,6 +292,52 @@ See `docs/runbooks/mcp-baton-vs-threads-flow.md` for the detailed flow.
 
 For autonomous checkpoint guidance, see
 `docs/runbooks/workbaton-autonomous-save-spec.md`.
+
+## WorkStash
+
+WorkStash is a temporary key-value store for AI agents. It is separate from
+WorkBaton checkpoints and WorkThreads messages. Use it to persist intermediate
+work data — parsed specs, API responses, scratchpad notes — that would be too
+large or too volatile to carry inside a WorkBaton body.
+
+WorkStash uses the same client-side Fernet encryption as WorkBaton: the local
+stdio wrapper encrypts the value before upload, and A2CR stores and returns
+ciphertext only.
+
+### When to use WorkStash
+
+Call `should_use_work_stash` when unsure. Typical cases:
+
+- Storing a parsed API spec that multiple steps in the same session will read
+- Caching an intermediate artifact that is too large for a WorkBaton body
+- Sharing a computed result across separate sub-tasks in the same session
+
+Do not use WorkStash as a permanent store. Entries expire automatically (7 days
+on Free, 30 days on Pro) and are deleted when the agent explicitly removes them
+or when the quota is reached.
+
+### Entry key format
+
+Keys must match `^[A-Za-z0-9_.:-]{1,256}`. Use a descriptive namespaced key
+such as `myapp_api_spec_v1` or `session:2026-05-08:parsed_schema`.
+
+### Plan limits
+
+| | Free | Pro |
+|---|---|---|
+| Quota | 256 KB | 2 MB |
+| TTL | 7 days | 30 days |
+| Public entry-count limit | none | none |
+| Max per entry | 8 KB | 32 KB |
+| Writes / hour | 60 | 600 |
+
+Check limits with `get_account_limits` before large or frequent writes.
+
+### WorkStash is not WorkBaton
+
+WorkBaton carries session handoff context between AI windows. WorkStash carries
+temporary work data within or across tasks. Do not store WorkBaton slot names
+or resume prompts inside WorkStash entries.
 
 ## Storage Mode
 
