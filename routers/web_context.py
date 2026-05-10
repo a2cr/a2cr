@@ -69,6 +69,7 @@ def _save_response(result) -> WebContextSaveResponse:
         saved_tokens=result.saved_tokens,
         resume_context_call=result.resume_context_call,
         resume_prompt=result.resume_prompt,
+        user_facing_summary=result.user_facing_summary,
     )
 
 

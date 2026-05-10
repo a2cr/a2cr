@@ -146,7 +146,8 @@ If the local client key is lost, A2CR cannot recover client-encrypted WorkBaton 
 ## Connect Before Starting Work
 
 Connect the A2CR MCP server before beginning any task session. This is the
-single most important step for getting autonomous WorkBaton behavior.
+single most important step for getting autonomous WorkBaton and WorkStash
+behavior.
 
 ### What happens when an AI connects
 
@@ -155,8 +156,9 @@ sends a tool list to the AI. Each tool comes with a name, a description, and
 a parameter schema. The AI reads these before doing anything else.
 
 This means the AI learns — from the server — what A2CR is for, when to save
-a WorkBaton checkpoint, when not to save, and how to avoid confusing WorkBaton
-with WorkThreads. No extra prompting is needed.
+a WorkBaton checkpoint, when to put supporting details in WorkStash, when not
+to save, and how to avoid confusing WorkBaton with WorkThreads. No extra
+prompting is needed.
 
 Some MCP clients expose tools lazily. If `save_context` is not immediately
 visible after connection, the AI should search or request the exact
@@ -169,7 +171,7 @@ A2CR MCP server sends tool list
     ↓
 AI reads tool names, descriptions, and parameter schemas
     ↓
-AI understands: when to save, what to save, what to skip
+AI understands: when to save, when to stash, what to skip
     ↓
 Work begins — AI acts autonomously at the right moments
 ```
@@ -182,45 +184,105 @@ Once the MCP server is connected, tell the AI once at the start of the session:
 A2CR is connected. Save a WorkBaton checkpoint at each task milestone.
 ```
 
-The AI will handle timing, slot naming, content distillation, and showing you
-the resume prompt. You do not need to repeat this for each save.
+The AI will handle timing, slot naming, WorkStash entry keys, content
+distillation, and showing you the resume prompt. You do not need to repeat this
+for each save.
 
 ### Without a connection
 
-Without MCP, the AI has no instructions from A2CR. Every save requires a
-manual prompt from the user, the AI cannot call `should_save_workbaton` to
-check policy, and `explain_a2cr_flows` is unavailable to clarify the
-Baton/Threads boundary.
+Without MCP, the AI has no instructions from A2CR. Every save or stash requires
+a manual prompt from the user, the AI cannot call `should_save_workbaton` or
+`should_use_work_stash` to check policy, and `explain_a2cr_flows` is unavailable
+to clarify the Baton/Stash/Threads boundary.
 
 ### Tools the AI gains on connection
 
 | Tool | What the AI learns to do |
 |---|---|
-| `explain_a2cr_flows` | Distinguish WorkBaton serial handoff from WorkThreads collaboration |
+| `explain_a2cr_flows` | Distinguish WorkBaton handoff, WorkStash temporary memory, and WorkThreads collaboration |
 | `should_save_workbaton` | Check whether a checkpoint is appropriate before saving |
 | `get_account_limits` | Check plan limits before automatic or large saves |
 | `save_context` | Save a client-encrypted WorkBaton checkpoint |
 | `resume_context` | Load a checkpoint in a new window |
 | `list_contexts` | Find active slots |
+| `should_use_work_stash` | Check whether intermediate information belongs in WorkStash |
+| `store_work_stash` | Store client-encrypted temporary work memory |
+| `get_work_stash` | Retrieve a WorkStash note referenced by a WorkBaton |
+| `list_work_stash` | Inspect WorkStash metadata and quota |
+| `delete_work_stash` | Remove temporary WorkStash entries |
 
 ## MCP Flow: Baton Vs Threads
 
-AI agents interact with A2CR through MCP tools. WorkBaton and WorkThreads share
-that MCP entrypoint, but their behavior after the tool call is different.
+AI agents interact with A2CR through MCP tools. WorkBaton, WorkStash, and
+WorkThreads share that MCP entrypoint, but their behavior after the tool call is
+different.
 
 Newly connected agents should call `explain_a2cr_flows` before choosing between
-WorkBaton and WorkThreads. Agents can call `should_save_workbaton` when they
-are unsure whether an autonomous WorkBaton checkpoint is appropriate or whether
-the current MCP surface can save it.
+WorkBaton, WorkStash, and WorkThreads. Agents can call `should_save_workbaton`
+when they are unsure whether an autonomous WorkBaton checkpoint is appropriate
+or whether the current MCP surface can save it. Agents can call
+`should_use_work_stash` when they are unsure whether safe intermediate
+information belongs in WorkStash.
+
+Use this decision table:
+
+| Situation | Use |
+|---|---|
+| A future AI window needs a compact resume checkpoint | WorkBaton |
+| A future AI window may need a small supporting note that would bloat WorkBaton | WorkStash |
+| The task is short and no intermediate state needs to survive | No save |
+| Multiple active agents need to coordinate, answer, wait, claim, or complete tasks | WorkThreads |
 
 WorkBaton is a serial checkpoint flow: `window -> new window -> new window`.
 The local stdio MCP wrapper encrypts the checkpoint before upload, and A2CR
 stores ciphertext plus metadata.
 
+WorkStash is temporary work memory for safe supporting notes. It is useful when
+details would bloat a compact WorkBaton but a future AI window may need them.
+The agent stores the note with `store_work_stash`, records the retained
+`entry_key` in WorkBaton `references` or `next_action`, and later retrieves it
+with `get_work_stash` after `resume_context` or `load_context`.
+
+Planned WorkStash quotas for the first public preview are intentionally based on
+total encrypted storage size, not number of notes: Free gets 256KB total, and
+Pro gets 2048KB total. Pro is larger because it also supports Threads-related
+stash use. WorkStash is not file storage; store concise notes and delete entries
+when a task phase is complete.
+
+Good WorkStash entries:
+
+- confirmed file paths
+- API behavior notes
+- reproduction details
+- small decision summaries
+- concise validation summaries
+
+Bad WorkStash entries:
+
+- secrets, API keys, Authorization headers, cookies, or private database URLs
+- personal data, full transcripts, long logs, generated caches, or git diffs
+- large source-code bodies or file-like payloads that can be read from the repo
+
 WorkThreads are a collaborative coordination flow: `agent <-> agents`. A2CR
-stores encrypted-at-rest append-only messages, task leases, loop guard metadata,
-and progress metadata. WorkThreads must not silently create or overwrite
-WorkBaton Slots.
+stores locally encrypted append-only message ciphertext, task leases, loop guard
+metadata, and progress metadata. Only agent windows that know the WorkThread key
+can decrypt or post readable message bodies. WorkThreads must not silently create
+or overwrite WorkBaton Slots.
+
+## Context Freshness
+
+Agents should treat context freshness as a heuristic. If the current conversation
+is getting noisy, contradictory, stale, or polluted by old task state, the agent
+should call `should_save_workbaton`, save a compact WorkBaton when recommended,
+and suggest continuing in a fresh AI window.
+
+Warning signs include newer user instructions conflicting with older decisions,
+completed work being treated as unfinished, stale assumptions competing with
+current tool results, uncertainty about the active file/spec/branch/goal, or the
+WorkBaton summary no longer matching the workspace state.
+
+Routine saves should report `user_facing_summary` by default. Show the full
+`resume_prompt` when the user is actually switching windows or asks for it.
 
 See `docs/runbooks/mcp-baton-vs-threads-flow.md` for the detailed flow.
 

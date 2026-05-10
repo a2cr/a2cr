@@ -1,7 +1,7 @@
 # A2CR Security and Resilience Plan
 
 Status: Draft, working document
-Date: 2026-05-06
+Date: 2026-05-10
 
 Important: This plan/spec is an internal planning document. It does not need to be committed or pushed unless the user explicitly asks.
 
@@ -13,6 +13,8 @@ The key product claim must stay precise:
 
 - WorkBaton bodies are client-encrypted before upload.
 - A2CR stores ciphertext and cannot decrypt WorkBaton bodies because the local client key stays in the user's local environment.
+- WorkThreads message bodies are planned to be client-encrypted before upload
+  with a thread-scoped key shared only with participating agent windows.
 - A2CR still stores and must protect SaaS data such as account identity, user IDs, slot names, slot numbers, timestamps, sizes, usage logs, API key prefixes, runtime secrets, and operational metadata.
 
 This is not a claim that "nothing can leak." Customer information and metadata remain normal SaaS security responsibilities.
@@ -23,18 +25,24 @@ This is not a claim that "nothing can leak." Customer information and metadata r
 
 WorkBaton uses client-side Fernet encryption. The local stdio MCP wrapper encrypts content before upload. A2CR stores and returns ciphertext only and cannot decrypt WorkBaton bodies.
 
-### WorkThreads: server-side Fernet encryption
+### WorkThreads: local thread-key encryption
 
-WorkThreads uses server-side Fernet encryption. This is an intentional and verified design constraint, not an oversight.
-
-WorkThreads is a cross-agent collaboration system where multiple AI agent windows read and write messages in a shared thread. Each agent window holds its own local client key. There is no mechanism to share a local client key across independent agent instances. Client-side encryption is therefore structurally impossible for WorkThreads.
+WorkThreads message bodies should use local client-side encryption before
+upload. Unlike WorkBaton's single-window client key, WorkThreads use a
+thread-scoped shared key so multiple independent AI agent windows can read and
+write messages in the same thread.
 
 As a result:
 
-- WorkThread message bodies are encrypted at rest using the server-side Fernet key (`FERNET_KEY` runtime secret).
-- A2CR can decrypt WorkThread messages for authenticated API/MCP requests.
-- The Fernet key must be treated as an S1 runtime secret (see Asset Classification).
-- The security claim for WorkThreads is encryption at rest and tenant isolation, not client-side confidentiality from the service operator.
+- WorkThread message bodies are encrypted locally and stored as ciphertext.
+- A2CR must not receive, store, log, or recover WorkThread keys.
+- Only agents that know the WorkThread key can decrypt or post readable
+  messages for that thread.
+- A2CR still stores and protects metadata such as thread id, title, message
+  type, target, response-required state, task leases, timestamps, ciphertext
+  size, and access logs.
+- Broad zero-knowledge claims are not allowed; the precise claim is local
+  message-body encryption plus SaaS metadata protection.
 
 ## Reference Frameworks
 
@@ -59,7 +67,7 @@ In scope:
 Out of scope for this plan:
 
 - Formal SOC 2 / ISO 27001 certification
-- Payment/Stripe controls before billing is enabled
+- Payment/Lemon Squeezy controls before billing is enabled
 - Full endpoint-device management for user machines
 - Zero-knowledge guarantee for WorkThreads until WorkThreads encryption is redesigned
 
@@ -513,7 +521,7 @@ Paid-production target, only after backup/monitoring are tested:
 5. Backup/restore drills are not yet defined or tested.
 6. CI lacks mandatory dependency/security scanning gates.
 7. Incident communication templates are not yet written.
-8. WorkThreads encryption guarantee is weaker than WorkBaton and must not be marketed the same way.
+8. WorkThreads local thread-key encryption is not implemented end-to-end yet and must not be marketed as a public feature.
 9. Official client-side content validation does not yet reject file-like or attachment-like payloads before encryption.
 10. Local client key backup/rotation UX is still mostly documentation-driven.
 

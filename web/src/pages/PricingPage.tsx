@@ -40,7 +40,7 @@ function PlanColumn({
 export function PricingPage() {
   const { t } = useTranslation();
   const freeRows: Array<[string, string]> = [
-    [t("pricing.slots"), "3"],
+    [t("pricing.slots"), "5"],
     [t("pricing.retention"), "15m / 30m / 1h / 3h / 6h / 12h / 24h"],
     [t("pricing.body"), "24KB"],
     [t("pricing.detail"), t("common.compact")],

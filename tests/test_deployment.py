@@ -277,6 +277,8 @@ def test_deploy_runbook_includes_migration_safety_and_readiness():
     assert "supabase/migrations/006_db_resilience_baseline.sql" in runbook
     assert "supabase/migrations/007_workthreads_message_uniqueness.sql" in runbook
     assert "supabase/migrations/008_data_lifecycle_scan.sql" in runbook
+    assert "supabase/migrations/009_workthreads_response_resolution.sql" in runbook
+    assert "supabase/migrations/010_workthreads_task_failure_reason.sql" in runbook
     assert "lock risk" in runbook
     assert "readiness check impact" in runbook
     assert "explicit transaction" in runbook

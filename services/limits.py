@@ -50,7 +50,7 @@ class PlanLimits:
 
 FREE_LIMITS = PlanLimits(
     plan="free",
-    active_slots=3,
+    active_slots=5,
     allowed_retention_seconds=FREE_RETENTION_SECONDS,
     default_retention_seconds=86400,
     max_body_bytes=24 * 1024,

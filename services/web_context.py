@@ -20,7 +20,7 @@ from services.limits import (
     validate_retention_seconds,
 )
 from services.logs import build_access_log_row, write_access_log
-from services.prompts import build_resume_context_call, build_resume_prompt
+from services.prompts import build_resume_context_call, build_resume_prompt, build_user_facing_summary
 from services.tokens import count_tokens, original_tokens_from_length_optional
 
 
@@ -41,6 +41,7 @@ class WebSaveResult:
     saved_tokens: int | None
     resume_context_call: str
     resume_prompt: str
+    user_facing_summary: str | None = None
 
 
 @dataclass(frozen=True)
@@ -417,6 +418,10 @@ def save_context(
         saved_tokens=saved_tokens,
         resume_context_call=build_resume_context_call(row["slot_name"]),
         resume_prompt=build_resume_prompt(service_url=config.a2cr_service_url, slot_name=row["slot_name"]),
+        user_facing_summary=build_user_facing_summary(
+            slot_name=row["slot_name"],
+            slot_number=row["slot_number"],
+        ),
     )
 
 

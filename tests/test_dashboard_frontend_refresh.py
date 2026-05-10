@@ -55,6 +55,15 @@ def test_slot_card_shows_size_against_plan_limit():
     assert '"64KB"' in pricing
 
 
+def test_pricing_copy_uses_planned_eight_dollar_pro_price():
+    i18n = read("web/src/i18n.ts")
+
+    assert 'proPrice: "$8 / month"' in i18n
+    assert 'proPrice: "$8 / 月"' in i18n
+    assert "$5 / month" not in i18n
+    assert "$5 / 月" not in i18n
+
+
 def test_access_log_table_uses_slot_numbers_and_badges():
     source = read("web/src/pages/DashboardPage.tsx")
     i18n = read("web/src/i18n.ts")

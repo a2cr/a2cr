@@ -2,9 +2,11 @@
 
 This runbook describes the MVP deployment path: one Railway service serves the React/Vite SPA, FastAPI APIs, and Streamable HTTP MCP at the same public origin.
 
-Draft design notes and implementation plans are intentionally kept out of the
-active public docs tree. Current STG and restore-drill requirements are listed
-in this runbook and `docs/runbooks/disaster-recovery.md`.
+Current STG design and implementation steps are documented in
+`docs/runbooks/staging-design.md` and
+`docs/runbooks/staging-implementation-plan.md`. Restore-drill requirements are
+listed in this runbook and `docs/runbooks/disaster-recovery.md`. The broader
+SaaS launch sequence is tracked in `docs/runbooks/saas-launch-roadmap.md`.
 
 ## Current Hosted Setup Status
 
@@ -35,6 +37,8 @@ Completed:
   - `supabase/migrations/006_db_resilience_baseline.sql`
   - `supabase/migrations/007_workthreads_message_uniqueness.sql`
   - `supabase/migrations/008_data_lifecycle_scan.sql`
+  - `supabase/migrations/009_workthreads_response_resolution.sql`
+  - `supabase/migrations/010_workthreads_task_failure_reason.sql`
 - RLS verification passed for 9 public tables:
   - `access_logs`
   - `api_keys`
@@ -74,9 +78,9 @@ Still pending:
 - Confirm Railway deployment serves the expected app endpoints
 - Cloudflare DNS pointing `a2cr.app` to Railway
 - Supabase Auth URL configuration for the deployed site
-- Confirm/apply Supabase migrations `003` through `008` in the production project
+- Confirm/apply Supabase migrations `003` through `010` in the production project
 - Hosted smoke tests for `/api/v1/health`, `/dashboard`, `/mcp`, Google login, API key issue, MCP save/resume, and WorkThreads
-- Stripe setup
+- Lemon Squeezy setup
 - Supabase Pro upgrade before real beta/production
 
 ## Production Shape
@@ -213,6 +217,8 @@ supabase/migrations/005_contexts_client_encrypted_only.sql
 supabase/migrations/006_db_resilience_baseline.sql
 supabase/migrations/007_workthreads_message_uniqueness.sql
 supabase/migrations/008_data_lifecycle_scan.sql
+supabase/migrations/009_workthreads_response_resolution.sql
+supabase/migrations/010_workthreads_task_failure_reason.sql
 ```
 
 4. Create a Railway service from the GitHub repository.

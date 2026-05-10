@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import importlib.util
 from pathlib import Path
@@ -100,6 +101,7 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
     result = server.save_context("slot-a", CONTENT, model_source="codex")
 
     assert result["slot_name"] == "slot-a"
+    assert result["user_facing_summary"].startswith("Saved WorkBaton")
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
     assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
@@ -215,6 +217,8 @@ def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
     assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]
     assert "tools lazily" in result["common_rule"]["deferred_tool_clients"]
+    assert result["common_rule"]["deferred_tool_search_phrase"] == "save_context"
+    assert result["common_rule"]["decision_table"]["WorkBaton"].startswith("Use for a compact resume checkpoint")
     assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
     assert "should_save_workbaton" in result["workbaton"]["tools"]
     assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
@@ -222,10 +226,19 @@ def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
     assert "exact-search for save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
     assert "official WorkBaton save path" in result["workbaton"]["save_path"]
     assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
+    assert "WorkStash entry_key" in result["workbaton"]["on_resume"]
+    assert result["workstash"]["flow"] == "AI window -> WorkStash entry_key -> WorkBaton reference -> future AI window"
+    assert "store_work_stash" in result["workstash"]["tools"]
+    assert "WorkBaton remains the resume entrypoint" in result["workstash"]["workbaton_integration"]
+    assert "Client-encrypted locally" in result["workstash"]["encryption"]
+    assert "confirmed file paths" in result["workstash"]["good_examples"]
+    assert "git diffs" in result["workstash"]["bad_examples"]
+    assert "Do not use WorkStash as a durable project knowledge base." in result["workstash"]["must_not"]
     assert result["workthreads"]["flow"] == "agent <-> WorkThread <-> agents"
     assert "not by this local WorkBaton wrapper" in result["workthreads"]["availability"]
-    assert "Encrypted at rest by A2CR" in result["workthreads"]["encryption"]
-    assert "not WorkBaton's client-encrypted boundary" in result["workthreads"]["encryption"]
+    assert "encrypted locally with a thread key" in result["workthreads"]["encryption"]
+    assert "only agents with the WorkThread key" in result["workthreads"]["encryption"]
+    assert any("Do not send WorkThread keys to A2CR" in item for item in result["workthreads"]["must_not"])
     assert "Do not silently create or overwrite WorkBaton Slots." in result["workthreads"]["must_not"]
 
 
@@ -246,8 +259,27 @@ def test_mcp_stdio_should_save_workbaton_advises_local_save_path():
     assert result["recommended_slot_name"] == "a2cr-dashboard-refresh-test-slot3"
     assert result["call_get_account_limits_first"] is True
     assert "tools lazily" in result["tool_visibility_note"]
+    assert result["deferred_tool_search_phrase"] == "save_context"
+    assert result["save_readiness"]["save_with"] == "save_context"
     assert "local stdio save_context" in result["next_step"]
     assert "blockers" in result["optional_fields"]
+    assert result["workstash_guidance"]["record_entry_key_in"] == ["content.references", "content.next_action"]
+    assert "confirmed file paths" in result["workstash_guidance"]["good_examples"]
+    assert result["fresh_window_guidance"]["should_suggest"] is False
+
+
+def test_mcp_stdio_should_save_workbaton_flags_context_freshness():
+    server = load_stdio_server()
+
+    result = server.should_save_workbaton(
+        reason="context_drift",
+        recent_progress="The active context has stale assumptions",
+        next_action="Save a compact checkpoint and restart from it",
+    )
+
+    assert result["should_save"] is True
+    assert result["fresh_window_guidance"]["should_suggest"] is True
+    assert "fresh AI window" in result["fresh_window_guidance"]["reason"]
 
 
 def test_mcp_stdio_should_save_workbaton_refuses_prohibited_material():
@@ -395,6 +427,7 @@ def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():
         "workspace_status",
         "do_not_use_slots",
         "Free/compact saves",
+        "user_facing_summary",
     ]
 
     for field in fields:
@@ -455,6 +488,31 @@ def test_mcp_stdio_instructs_new_agents_about_workbaton_and_deferred_tools():
 
     assert server.mcp.instructions == server.MCP_INSTRUCTIONS
     assert "WorkBaton is a compact work-state checkpoint" in server.MCP_INSTRUCTIONS
+    assert "AI agents may use WorkStash proactively" in server.MCP_INSTRUCTIONS
+    assert "record retained WorkStash entry_key values in WorkBaton" in server.MCP_INSTRUCTIONS
     assert "tools lazily" in server.MCP_INSTRUCTIONS
     assert "tools lazily" in server.SAVE_DESCRIPTION
+    assert "WorkStash integration" in server.SAVE_DESCRIPTION
+    assert "store the safe note with store_work_stash" in server.SAVE_DESCRIPTION
+    assert "get_work_stash only for referenced entries" in server.SAVE_DESCRIPTION
+    assert "user_facing_summary" in server.SAVE_DESCRIPTION
+    assert "Use WorkStash proactively" in skill
+    assert "Record retained `entry_key` values in WorkBaton" in skill
+    assert "Good WorkStash entries" in skill
+    assert "Keep Context Fresh" in skill
     assert "tools lazily" in skill
+
+
+def test_mcp_stdio_tool_descriptions_explain_workstash_autonomy_and_baton_link():
+    server = load_stdio_server()
+
+    tools = {tool.name: tool for tool in asyncio.run(server.mcp.list_tools())}
+
+    assert "WorkStash temporary supporting memory" in tools["explain_a2cr_flows"].description
+    assert "WorkStash integration" in tools["save_context"].description
+    assert "store the safe note with store_work_stash" in tools["save_context"].description
+    assert "WorkStash entry_key values" in tools["resume_context"].description
+    assert "WorkStash entry_key values" in tools["load_context"].description
+    assert "without waiting for an explicit user prompt" in tools["store_work_stash"].description
+    assert "WorkBaton remains the resume entrypoint" in tools["store_work_stash"].description
+    assert "WorkBaton references or next_action" in tools["should_use_work_stash"].description

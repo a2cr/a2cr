@@ -20,7 +20,7 @@ Updated: 2026-05-06
 
 対象外:
 
-- Stripe本実装。
+- Lemon Squeezy本実装。
 - support@a2cr.appからの送信設定。
 - 法的文言の専門家レビュー。
 - admin MFA/IP allowlistの本実装。
@@ -33,7 +33,7 @@ Updated: 2026-05-06
 - admin判定はサーバー側のSupabase user id allowlistで行う。
 - admin UI/APIは保存本文とAPIキー全文を返さない。
 - admin mutationはaudit logに記録される。
-- effective planはFree、trial、admin grant、Stripe subscriptionから一貫して解決できる。
+- effective planはFree、trial、admin grant、Lemon Squeezy subscriptionから一貫して解決できる。
 - 1か月無料体験と管理者付与Proを、ユーザー向けplan表示を複雑にせず表現できる。
 
 ## 3. Environment Variables
@@ -201,6 +201,42 @@ Route:
 - キャンセル/返金。
 - 請求時開示を使う場合の請求方法と遅滞なく提供する旨。
 
+## 8.1 Business Address / Virtual Office Planning
+
+Decision:
+
+- A2CR should evaluate a virtual office/business address before free public
+  preview and finalize the address/phone/contact policy before paid sales.
+- Public preview docs, repository metadata, support templates, screenshots, and
+  dashboard pages must not expose a personal home address, personal phone
+  number, or personal Gmail address.
+- If a virtual office address or phone number is used publicly, the provider
+  plan must explicitly allow that use as a contact point for the relevant
+  business/legal display.
+
+Provider requirements:
+
+- public contact/legal display use
+- mail forwarding or scan notification
+- phone number or reception option if needed
+- compatibility with Lemon Squeezy onboarding and bank/account review
+- future corporation registration option if A2CR incorporates
+- migration path from individual/sole proprietor to corporation
+
+Paid launch gate:
+
+- The `/legal` paid-sales copy must not go live until the operator identity,
+  business address, phone/contact policy, refund/cancellation text, and
+  professional legal review status are recorded.
+
+Reference checks:
+
+- Consumer Affairs Agency mail-order advertising Q&A for virtual office address
+  and phone display conditions.
+- National Tax Agency new-corporation filing guidance if A2CR incorporates.
+- Ministry of Justice representative-address non-display measure guidance if a
+  future Japanese corporation is formed.
+
 ## 9. Database: user_entitlements
 
 新規table:
@@ -209,7 +245,7 @@ Route:
 CREATE TABLE public.user_entitlements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  kind text NOT NULL CHECK (kind IN ('trial', 'admin_grant', 'stripe_subscription')),
+  kind text NOT NULL CHECK (kind IN ('trial', 'admin_grant', 'lemonsqueezy_subscription')),
   plan text NOT NULL CHECK (plan IN ('pro')),
   starts_at timestamptz NOT NULL DEFAULT now(),
   ends_at timestamptz NULL,
@@ -289,7 +325,7 @@ ends_at is null or ends_at > now()
 判定順:
 
 ```text
-active stripe_subscription pro exists -> { plan: "pro", source: "stripe_subscription" }
+active lemonsqueezy_subscription pro exists -> { plan: "pro", source: "lemonsqueezy_subscription" }
 active admin_grant pro exists -> { plan: "pro", source: "admin_grant" }
 active trial pro exists -> { plan: "pro", source: "trial" }
 else -> { plan: "free", source: "free" }
@@ -503,7 +539,7 @@ navigation:
 - admin grant失効でeffective planがFreeに戻る。ただし別Pro sourceがあればProのまま。
 - trialは1ユーザー1回だけ。
 - expired trialはPro判定されない。
-- Stripe sourceが将来追加されてもresolverの優先順が守られる。
+- Lemon Squeezy sourceが将来追加されてもresolverの優先順が守られる。
 
 ## 17. Rollout Plan
 
@@ -558,23 +594,23 @@ verify:
 - trial/admin grantでPro limitになる。
 - expiry/revokeでFreeへ戻る。
 
-### Phase 5: Stripe source
+### Phase 5: Lemon Squeezy source
 
-1. Stripe subscription entitlement sourceを追加。
-2. Stripe webhookを追加。
-3. resolverへStripe stateを接続。
+1. Lemon Squeezy subscription entitlement sourceを追加。
+2. Lemon Squeezy webhookを追加。
+3. resolverへLemon Squeezy stateを接続。
 
 verify:
 
-- Stripe activeでPro。
-- Stripe cancel/expireでFree。ただしtrial/admin grantがあればPro。
+- Lemon Squeezy activeでPro。
+- Lemon Squeezy cancel/expireでFree。ただしtrial/admin grantがあればPro。
 
 ## 18. Open Questions
 
 - `support@a2cr.app` の転送先をどのprivate inboxにするか。
 - `support@a2cr.app` から返信できるようにするか。
 - 有料開始前の販売者名をどう表記するか。
-- バーチャルオフィス/事業用電話を使うか。
+- どのバーチャルオフィス/事業用電話 providerを使うか。公開表示、郵便転送、Lemon Squeezy審査、法人登記予定に使えるか。
 - 1か月無料体験に支払い方法を要求するか。
 - admin grantのProをユーザーに `Pro` とだけ見せるか、`Pro beta` のように見せるか。
 - admin audit logの保持期間。

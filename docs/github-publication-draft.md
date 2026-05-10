@@ -1,6 +1,6 @@
 # A2CR GitHub Publication Draft
 
-Updated: 2026-05-06
+Updated: 2026-05-10
 
 This document is a public-release checklist and messaging draft for publishing A2CR on GitHub.
 
@@ -33,6 +33,7 @@ Product layers:
 | Layer | Purpose |
 |---|---|
 | WorkBaton | Save a short-lived work checkpoint and resume it in a new AI window |
+| WorkStash | Store temporary supporting notes referenced by WorkBaton checkpoints |
 | WorkThreads | Planned shared work threads for active AI-agent coordination |
 
 In the MVP, A2CR does not run LLM inference on the server. Users bring their own AI clients, and those clients call A2CR through MCP/API.
@@ -44,8 +45,8 @@ Implemented locally:
 - FastAPI local API
 - SQLite local storage
 - client-encrypted WorkBaton mode through the local stdio MCP wrapper
-- fixed Slot 1-3 support
-- MCP wrapper tools such as `save_context`, `resume_context`, `load_context`, and `list_contexts`
+- fixed Slot 1-5 support
+- MCP wrapper tools such as `save_context`, `resume_context`, `load_context`, `list_contexts`, and WorkStash tools
 - optional AI client Skill template at `docs/templates/skills/a2cr-agent/SKILL.md`
 - Streamlit local dashboard
 - automated pytest coverage
@@ -62,10 +63,12 @@ Implemented Web SaaS foundation:
 
 Planned:
 
-- first hosted Railway/Supabase deployment
+- first hosted Railway/Supabase deployment for a free WorkBaton + WorkStash preview
 - Cloudflare DNS/domain
-- Stripe billing after Core MVP is stable
-- WorkThreads after WorkBaton Core is solid
+- GitHub OSS publication and community feedback loop
+- official MCP listing/application work after the public setup docs are stable
+- Lemon Squeezy billing after the free preview and Core smoke tests are stable
+- WorkThreads after WorkBaton/WorkStash adoption, billing, and remaining legal work are under control
 
 ## Security And Privacy Copy
 
@@ -78,12 +81,17 @@ A2CR rejects plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabl
 ## Must Fix Before Public
 
 - Remove or ignore `.env` files.
-- Do not publish real API keys, Fernet keys, Supabase keys, Stripe keys, Google OAuth secrets, Railway tokens, or local A2CR client key files.
+- Do not publish real API keys, Fernet keys, Supabase keys, Lemon Squeezy keys, Google OAuth secrets, Railway tokens, or local A2CR client key files.
 - Do not publish private MCP configs.
 - Do not publish local SQLite DB files.
 - Do not publish logs, `__pycache__/`, `.pytest_cache/`, or generated caches.
 - Add or confirm `.gitignore`.
-- Add a `LICENSE` file or keep the repository private.
+- Add a `LICENSE` file before OSS publication.
+- Confirm public docs, repository metadata, support templates, and screenshots
+  do not expose a personal home address, personal phone number, or personal
+  Gmail address.
+- Decide the public contact path for the free preview: `support@a2cr.app` plus
+  virtual office/business address planning for later paid legal display.
 - Run `python -m pytest -q`.
 - Run `cd web && npm run build`.
 - Confirm public-facing Markdown does not contain mojibake or private planning notes.
@@ -95,6 +103,9 @@ A2CR rejects plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabl
 - Keep `SECURITY.md` short and accurate.
 - Keep `.env.example` placeholder-only.
 - Add screenshots only after the UI is stable and does not expose private data.
+- Prepare a concise MCP server submission/listing package after the public setup path is tested.
+- Keep paid legal-display details out of public preview copy until the virtual
+  office/business address and phone/contact handling decision is recorded.
 
 ## Public Messaging Boundaries
 
@@ -108,6 +119,9 @@ Say:
 - Dashboards are designed to show metadata, not saved context bodies.
 - Client-encrypted WorkBaton slots are encrypted before reaching A2CR.
 - A2CR cannot decrypt WorkBaton bodies.
+- WorkBaton and WorkStash are the first public free preview scope.
+- Pro is planned at $8/month to account for Merchant of Record payment/tax
+  handling, but paid checkout is not part of the first free preview.
 
 Do not overclaim:
 
@@ -131,7 +145,7 @@ Included:
 - local encrypted context storage
 - client-encrypted WorkBaton mode through the stdio MCP wrapper
 - MCP wrapper tools for save/resume/load/list
-- fixed Slot 1-3 support
+- fixed Slot 1-5 support
 - Web SaaS foundation for Supabase/Postgres, HTTP MCP, and React dashboard
 - design docs for the planned WorkThreads layer
 

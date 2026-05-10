@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
@@ -166,9 +167,15 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     assert "required local stdio save path" in advice_tool["description"]
     check_tool = next(tool for tool in tools if tool["name"] == "check_workthread_updates")
     wait_tool = next(tool for tool in tools if tool["name"] == "wait_workthread_updates")
+    pending_tool = next(tool for tool in tools if tool["name"] == "pending_workthread_responses")
+    unread_tool = next(tool for tool in tools if tool["name"] == "unread_workthread")
+    fail_task_tool = next(tool for tool in tools if tool["name"] == "fail_workthread_task")
     assert check_tool["description"].startswith("Non-blocking check")
     assert wait_tool["description"].startswith("Blocking wait")
     assert check_tool["description"] != wait_tool["description"]
+    assert "not true unread state" in pending_tool["description"]
+    assert "Deprecated alias" in unread_tool["description"]
+    assert "lease_owner must match" in fail_task_tool["description"]
     result_tool = next(tool for tool in tools if tool["name"] == "save_workthread_result")
     assert "Disabled" in result_tool["description"]
     assert "local stdio encryption flow" in result_tool["description"]
@@ -187,6 +194,8 @@ def test_mcp_explain_a2cr_flows_documents_baton_threads_and_encryption():
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
     assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]
     assert "tools lazily" in result["common_rule"]["deferred_tool_clients"]
+    assert result["common_rule"]["deferred_tool_search_phrase"] == "save_context"
+    assert result["common_rule"]["decision_table"]["WorkStash"].startswith("Use for safe supporting notes")
     assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
     assert "should_save_workbaton" in result["workbaton"]["tools"]
     assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
@@ -195,10 +204,15 @@ def test_mcp_explain_a2cr_flows_documents_baton_threads_and_encryption():
     assert "Remote MCP save_context is disabled" in result["workbaton"]["save_path"]
     assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
     assert result["workbaton"]["storage"] == "public.contexts"
+    assert "confirmed file paths" in result["workstash"]["good_examples"]
+    assert "git diffs" in result["workstash"]["bad_examples"]
     assert result["workthreads"]["flow"] == "agent <-> WorkThread <-> agents"
     assert "remote MCP surface" in result["workthreads"]["availability"]
-    assert "Encrypted at rest by A2CR" in result["workthreads"]["encryption"]
-    assert "not WorkBaton's client-encrypted boundary" in result["workthreads"]["encryption"]
+    assert "pending_workthread_responses" in result["workthreads"]["tools"]
+    assert "fail_workthread_task" in result["workthreads"]["tools"]
+    assert "encrypted locally with a thread key" in result["workthreads"]["encryption"]
+    assert "only agents with the WorkThread key" in result["workthreads"]["encryption"]
+    assert any("Do not send WorkThread keys to A2CR" in item for item in result["workthreads"]["must_not"])
     assert "Do not silently create or overwrite WorkBaton Slots." in result["workthreads"]["must_not"]
     assert "save_context through the local stdio wrapper" in result["finalization"]["allowed"]
 
@@ -218,8 +232,24 @@ def test_mcp_should_save_workbaton_advises_remote_stdio_path():
     assert result["call_get_account_limits_first"] is True
     assert result["recommended_slot_name"] == "a2cr-main"
     assert "tools lazily" in result["tool_visibility_note"]
+    assert result["deferred_tool_search_phrase"] == "save_context"
+    assert result["save_readiness"]["save_with"] == "local stdio save_context"
     assert "remote MCP surface cannot save WorkBaton" in result["next_step"]
     assert "blockers" in result["optional_fields"]
+    assert "confirmed file paths" in result["workstash_guidance"]["good_examples"]
+    assert result["fresh_window_guidance"]["should_suggest"] is False
+
+
+def test_mcp_should_save_workbaton_flags_context_freshness():
+    result = mcp_http.should_save_workbaton(
+        reason="context_contamination",
+        recent_progress="Several unrelated decisions are mixed into the active context",
+        next_action="Save a compact checkpoint and continue in a clean window",
+    )
+
+    assert result["should_save"] is True
+    assert result["fresh_window_guidance"]["should_suggest"] is True
+    assert "fresh AI window" in result["fresh_window_guidance"]["reason"]
 
 
 def test_mcp_should_save_workbaton_blocks_unclear_or_prohibited_saves():
@@ -422,8 +452,99 @@ def test_mcp_get_account_limits_returns_plan_settings(monkeypatch):
     result = mcp_http.get_account_limits()
 
     assert result["plan"] == "free"
-    assert result["active_slots"] == 3
+    assert result["active_slots"] == 5
     assert 86400 in result["allowed_retention_seconds"]
     assert result["max_body_bytes"] == 24 * 1024
     assert result["allowed_detail_levels"] == ["compact"]
     assert result["response_language"] == "auto"
+
+
+def test_pending_workthread_responses_and_unread_alias_return_same_items(monkeypatch):
+    monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
+    calls = []
+    timestamp = future_time()
+    pending_message = SimpleNamespace(
+        message_id="22222222-2222-2222-2222-222222222222",
+        thread_id="11111111-1111-1111-1111-111111111111",
+        message_type="question",
+        content={"question": "Need review?"},
+        consultation_id="c1",
+        requires_response=True,
+        target_agent_name="codex",
+        agent_name="claude",
+        created_at=timestamp,
+        resolved_at=None,
+        resolved_by_message_id=None,
+        loop_warning=None,
+    )
+
+    def fake_unread_workthread_messages(**kwargs):
+        calls.append(kwargs)
+        return [pending_message]
+
+    monkeypatch.setattr(workthreads_service, "unread_workthread_messages", fake_unread_workthread_messages)
+
+    pending = mcp_http.pending_workthread_responses(
+        thread_id="11111111-1111-1111-1111-111111111111",
+        target_agent_name="codex",
+    )
+    unread = mcp_http.unread_workthread(
+        thread_id="11111111-1111-1111-1111-111111111111",
+        target_agent_name="codex",
+    )
+
+    assert pending == unread
+    assert pending[0]["message_id"] == "22222222-2222-2222-2222-222222222222"
+    assert pending[0]["requires_response"] is True
+    assert calls == [
+        {
+            "user_id": USER_ID,
+            "thread_id": "11111111-1111-1111-1111-111111111111",
+            "target_agent_name": "codex",
+        },
+        {
+            "user_id": USER_ID,
+            "thread_id": "11111111-1111-1111-1111-111111111111",
+            "target_agent_name": "codex",
+        },
+    ]
+
+
+def test_mcp_fail_workthread_task_maps_to_service(monkeypatch):
+    monkeypatch.setattr(mcp_http, "_current_auth_context", auth_context)
+    captured = {}
+    timestamp = future_time()
+
+    def fake_fail_workthread_task(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            task_id=kwargs["task_id"],
+            thread_id="11111111-1111-1111-1111-111111111111",
+            title="Verify WorkThreads",
+            status="failed",
+            lease_owner=kwargs["lease_owner"],
+            lease_expires_at=timestamp,
+            result_message_id=kwargs["result_message_id"],
+            failure_reason=kwargs["reason"],
+            created_at=timestamp,
+            updated_at=timestamp,
+        )
+
+    monkeypatch.setattr(workthreads_service, "fail_workthread_task", fake_fail_workthread_task)
+
+    result = mcp_http.fail_workthread_task(
+        task_id="33333333-3333-3333-3333-333333333333",
+        lease_owner="codex",
+        reason="blocked by dependency",
+        result_message_id="44444444-4444-4444-4444-444444444444",
+    )
+
+    assert captured == {
+        "user_id": USER_ID,
+        "task_id": "33333333-3333-3333-3333-333333333333",
+        "lease_owner": "codex",
+        "reason": "blocked by dependency",
+        "result_message_id": "44444444-4444-4444-4444-444444444444",
+    }
+    assert result["status"] == "failed"
+    assert result["failure_reason"] == "blocked by dependency"

@@ -109,6 +109,7 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
                 "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints.\n"
                 'First run: resume_context(slot_name="slot-a")'
             ),
+            user_facing_summary="Saved WorkBaton to Slot 1 (`slot-a`).",
         )
 
     monkeypatch.setattr(web_context_service, "save_context", fake_save_context)
@@ -133,8 +134,11 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
     assert body["resume_context_call"] == 'resume_context(slot_name="slot-a")'
     assert "A2CR MCP tool" in body["resume_prompt"]
     assert "direct HTTP API" in body["resume_prompt"]
+    assert body["user_facing_summary"].startswith("Saved WorkBaton")
     assert "ship web context api" not in body["resume_prompt"]
+    assert "ship web context api" not in body["user_facing_summary"]
     assert "sk-test-secret" not in body["resume_prompt"]
+    assert "sk-test-secret" not in body["user_facing_summary"]
     assert captured["user_id"] == USER_ID
     assert captured["content_dict"] is None
     assert captured["encrypted_content"]["ciphertext"] == "slot-a"
@@ -276,7 +280,7 @@ def test_web_account_limits_returns_free_compact_plan(client, monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["plan"] == "free"
-    assert body["active_slots"] == 3
+    assert body["active_slots"] == 5
     assert body["allowed_detail_levels"] == ["compact"]
     assert body["context_detail_level"] == "compact"
     assert body["max_body_bytes"] == 24 * 1024

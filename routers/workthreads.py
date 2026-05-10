@@ -14,6 +14,7 @@ from models.schemas import (
     WorkThreadTaskClaimRequest,
     WorkThreadTaskCompleteRequest,
     WorkThreadTaskCreateRequest,
+    WorkThreadTaskFailRequest,
     WorkThreadTaskResponse,
     WorkThreadUpdateCheckResponse,
 )
@@ -55,6 +56,8 @@ def _message_response(item) -> WorkThreadMessageResponse:
         target_agent_name=item.target_agent_name,
         agent_name=item.agent_name,
         created_at=item.created_at,
+        resolved_at=item.resolved_at,
+        resolved_by_message_id=item.resolved_by_message_id,
         loop_warning=item.loop_warning,
     )
 
@@ -68,6 +71,7 @@ def _task_response(item) -> WorkThreadTaskResponse:
         lease_owner=item.lease_owner,
         lease_expires_at=item.lease_expires_at,
         result_message_id=item.result_message_id,
+        failure_reason=item.failure_reason,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -228,6 +232,24 @@ def complete_workthread_task(
             user_id=user.user_id,
             task_id=task_id,
             lease_owner=req.lease_owner,
+            result_message_id=req.result_message_id,
+        )
+    )
+
+
+@router.post("/tasks/{task_id}/fail")
+def fail_workthread_task(
+    task_id: str,
+    req: WorkThreadTaskFailRequest,
+    user: AuthenticatedUser = Depends(get_current_api_user),
+) -> WorkThreadTaskResponse:
+    enforce_authenticated_rate_limit(user.user_id, "workthreads.task")
+    return _task_response(
+        workthreads_service.fail_workthread_task(
+            user_id=user.user_id,
+            task_id=task_id,
+            lease_owner=req.lease_owner,
+            reason=req.reason,
             result_message_id=req.result_message_id,
         )
     )

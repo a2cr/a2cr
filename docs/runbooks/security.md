@@ -12,18 +12,19 @@ Never put these in the browser bundle, logs, GitHub, or support tools:
 - `AUDIT_HASH_SECRET`
 - `SUPABASE_JWT_SECRET`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- Stripe and Google OAuth secrets
+- Lemon Squeezy and Google OAuth secrets
 
 `SUPABASE_SERVICE_ROLE_KEY` must not exist in the normal Railway runtime. It is only for migrations or emergency admin work in a separate, short-lived environment.
 
 ## Client Key Rules
 
-The local stdio MCP wrapper can create a client-encryption key file for client-encrypted WorkBaton slots.
+The local stdio MCP wrapper can create a client-encryption key file for client-encrypted WorkBaton slots. WorkThreads use a thread-scoped key shared only with the agent windows that should participate in that thread.
 
 - Do not commit local A2CR client key files.
-- Do not print client keys in logs, tool responses, support messages, or screenshots.
+- Do not print client keys or WorkThread keys in logs, tool responses, support messages, or screenshots.
 - If a client key is lost, A2CR cannot recover client-encrypted WorkBaton bodies.
 - WorkBaton depends on this local key. Creating a new key works for future saves, but it cannot decrypt slots saved with the old key.
+- If a WorkThread key is lost, A2CR cannot recover that thread's message bodies. A new key can only be used for future messages or for a newly created thread.
 
 ## Content Visibility
 
@@ -42,7 +43,11 @@ WorkBaton storage:
 - Direct remote HTTP MCP saving is disabled for WorkBaton because encryption must happen before upload.
 - The server stores and returns ciphertext and cannot decrypt WorkBaton bodies.
 
-WorkThreads are a separate feature and are not covered by the WorkBaton client-encryption guarantee.
+WorkThreads message bodies are also client-encrypted before upload, but they use
+a shared thread key so multiple agent windows can collaborate. A2CR can see and
+operate on metadata such as thread id, title, task leases, message type,
+response-required state, timestamps, and ciphertext size, but must not receive
+or recover the WorkThread key.
 
 ## Startup Guards
 
