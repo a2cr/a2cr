@@ -28,7 +28,7 @@ export function TopPage() {
     <div className="min-h-screen bg-neutral-950 text-white">
       <header className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/brand/a2cr-logo.png" alt="A2CR" className="h-8 w-auto object-contain" />
+          <img src="/brand/a2cr-logo-dark.png" alt="A2CR" className="h-8 w-auto object-contain" />
           <span className="sr-only">A2CR</span>
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -51,7 +51,7 @@ export function TopPage() {
       <main>
         <section className="mx-auto grid min-h-[calc(100vh-124px)] max-w-7xl content-center gap-8 px-4 pb-14 pt-8 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="max-w-3xl">
-            <img src="/brand/a2cr-logo.png" alt="A2CR" className="mb-7 w-full max-w-xl object-contain" />
+            <img src="/brand/a2cr-logo-dark.png" alt="A2CR" className="mb-7 w-full max-w-xl object-contain" />
             <h1 className="max-w-4xl text-4xl font-semibold tracking-normal text-white sm:text-5xl lg:text-6xl">
               {t("appSubtitle")}
             </h1>
