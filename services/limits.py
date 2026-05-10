@@ -13,6 +13,7 @@ from services.exceptions import (
     PlanLimitExceeded,
     RetentionNotAllowed,
 )
+from services.plan_constants import FREE_ACTIVE_SLOTS, PRO_ACTIVE_SLOTS
 
 PlanName = Literal["free", "pro"]
 DetailLevel = Literal["compact", "detailed"]
@@ -50,7 +51,7 @@ class PlanLimits:
 
 FREE_LIMITS = PlanLimits(
     plan="free",
-    active_slots=5,
+    active_slots=FREE_ACTIVE_SLOTS,
     allowed_retention_seconds=FREE_RETENTION_SECONDS,
     default_retention_seconds=86400,
     max_body_bytes=24 * 1024,
@@ -62,7 +63,7 @@ FREE_LIMITS = PlanLimits(
 
 PRO_LIMITS = PlanLimits(
     plan="pro",
-    active_slots=100,
+    active_slots=PRO_ACTIVE_SLOTS,
     allowed_retention_seconds=PRO_RETENTION_SECONDS,
     default_retention_seconds=2592000,
     max_body_bytes=64 * 1024,

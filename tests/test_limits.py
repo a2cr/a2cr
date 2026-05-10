@@ -26,6 +26,7 @@ from services.limits import (
     validate_detail_level,
     validate_retention_seconds,
 )
+from services.plan_constants import FREE_ACTIVE_SLOTS, PRO_ACTIVE_SLOTS
 
 
 class FakeResult:
@@ -53,6 +54,11 @@ def test_get_plan_limits_defaults_to_free():
     assert get_plan_limits(None) == FREE_LIMITS
     assert get_plan_limits("free") == FREE_LIMITS
     assert get_plan_limits("pro") == PRO_LIMITS
+
+
+def test_plan_slot_limits_match_public_preview_constants():
+    assert FREE_LIMITS.active_slots == FREE_ACTIVE_SLOTS == 5
+    assert PRO_LIMITS.active_slots == PRO_ACTIVE_SLOTS == 100
 
 
 def test_validate_retention_allows_free_24h_and_pro_30d():

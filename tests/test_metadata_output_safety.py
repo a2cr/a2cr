@@ -32,6 +32,7 @@ def test_slot_name_accepts_safe_metadata_values(slot_name):
 
 def test_save_request_accepts_free_fixed_slot_range():
     SaveRequest(slot_name="slot-five", slot_number=5, encrypted_content=encrypted())
+    WebContextSaveRequest(slot_name="slot-five", slot_number=5, encrypted_content=encrypted())
 
     with pytest.raises(ValidationError):
         SaveRequest(slot_name="slot-six", slot_number=6, encrypted_content=encrypted())

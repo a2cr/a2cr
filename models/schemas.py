@@ -6,6 +6,8 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from services.plan_constants import MAX_FIXED_SLOT_NUMBER, MIN_FIXED_SLOT_NUMBER
+
 ModelSource = Literal[
     "claude",
     "gpt",
@@ -84,8 +86,10 @@ class SaveRequest(BaseModel):
     @field_validator("slot_number")
     @classmethod
     def validate_slot_number(cls, v: Optional[int]) -> Optional[int]:
-        if v is not None and not 1 <= v <= 5:
-            raise ValueError("slot_number must be between 1 and 5")
+        if v is not None and not MIN_FIXED_SLOT_NUMBER <= v <= MAX_FIXED_SLOT_NUMBER:
+            raise ValueError(
+                f"slot_number must be between {MIN_FIXED_SLOT_NUMBER} and {MAX_FIXED_SLOT_NUMBER}"
+            )
         return v
 
     @field_validator("original_length")

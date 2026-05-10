@@ -65,7 +65,7 @@ def test_mcp_stdio_client_encrypted_load_reports_missing_key(tmp_path, monkeypat
     assert "key file is missing" in loaded["message"]
 
 
-def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
+def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypatch):
     monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
     server = load_stdio_server()
     captured = {}
@@ -77,7 +77,7 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
         def json(self):
             return {
                 "slot_name": "slot-a",
-                "slot_number": 1,
+                "slot_number": 5,
                 "expires_at": "2026-05-06T00:00:00",
                 "compressed_tokens": 10,
                 "saved_tokens": None,
@@ -98,13 +98,15 @@ def test_mcp_stdio_save_posts_encrypted_content(tmp_path, monkeypatch):
 
     monkeypatch.setattr(server.httpx, "Client", FakeClient)
 
-    result = server.save_context("slot-a", CONTENT, model_source="codex")
+    result = server.save_context("slot-a", CONTENT, model_source="codex", slot_number=5)
 
     assert result["slot_name"] == "slot-a"
+    assert result["slot_number"] == 5
     assert result["user_facing_summary"].startswith("Saved WorkBaton")
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
     assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
+    assert captured["json"]["slot_number"] == 5
     assert captured["json"]["detail_level"] == "compact"
     assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(CONTENT)
     assert "content" not in captured["json"]

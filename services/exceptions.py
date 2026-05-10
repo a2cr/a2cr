@@ -1,3 +1,6 @@
+from services.plan_constants import MAX_FIXED_SLOT_NUMBER, MIN_FIXED_SLOT_NUMBER
+
+
 class AppError(Exception):
     def __init__(
         self,
@@ -17,12 +20,20 @@ class AppError(Exception):
 
 class SlotLimitExceeded(AppError):
     def __init__(self):
-        super().__init__("slot_limit_exceeded", "Maximum slot count (5) reached", 400)
+        super().__init__(
+            "slot_limit_exceeded",
+            f"Maximum slot count ({MAX_FIXED_SLOT_NUMBER}) reached",
+            400,
+        )
 
 
 class InvalidSlotNumber(AppError):
     def __init__(self):
-        super().__init__("invalid_slot_number", "slot_number must be between 1 and 5", 400)
+        super().__init__(
+            "invalid_slot_number",
+            f"slot_number must be between {MIN_FIXED_SLOT_NUMBER} and {MAX_FIXED_SLOT_NUMBER}",
+            400,
+        )
 
 
 class SlotNameConflict(AppError):
