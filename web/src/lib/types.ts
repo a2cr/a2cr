@@ -83,7 +83,7 @@ export type WorkStashUsage = {
   total_size_bytes: number;
   quota_bytes: number;
   entry_count: number;
-  entry_limit: number;
+  entry_limit: number | null;
 };
 
 export type DashboardData = {

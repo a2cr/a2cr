@@ -84,8 +84,8 @@ class SaveRequest(BaseModel):
     @field_validator("slot_number")
     @classmethod
     def validate_slot_number(cls, v: Optional[int]) -> Optional[int]:
-        if v is not None and not 1 <= v <= 3:
-            raise ValueError("slot_number must be between 1 and 3")
+        if v is not None and not 1 <= v <= 5:
+            raise ValueError("slot_number must be between 1 and 5")
         return v
 
     @field_validator("original_length")
@@ -104,6 +104,7 @@ class SaveResponse(BaseModel):
     saved_tokens: Optional[int] = None
     resume_context_call: str
     resume_prompt: str
+    user_facing_summary: Optional[str] = None
 
 
 class LoadResponse(BaseModel):
@@ -193,6 +194,7 @@ class WebContextSaveResponse(BaseModel):
     saved_tokens: Optional[int] = None
     resume_context_call: str
     resume_prompt: str
+    user_facing_summary: Optional[str] = None
 
 
 class WebContextMetadataItem(BaseModel):
@@ -363,6 +365,8 @@ class WorkThreadMessageResponse(BaseModel):
     target_agent_name: Optional[str] = None
     agent_name: Optional[str] = None
     created_at: datetime
+    resolved_at: Optional[datetime] = None
+    resolved_by_message_id: Optional[str] = None
     loop_warning: Optional[str] = None
 
 
@@ -402,6 +406,27 @@ class WorkThreadTaskCompleteRequest(BaseModel):
     result_message_id: Optional[str] = None
 
 
+class WorkThreadTaskFailRequest(BaseModel):
+    lease_owner: str
+    reason: str
+    result_message_id: Optional[str] = None
+
+    @field_validator("lease_owner")
+    @classmethod
+    def validate_lease_owner(cls, v: str) -> str:
+        if not v or len(v) > 120:
+            raise ValueError("lease_owner must be 1-120 characters")
+        return v
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        normalized = v.strip()
+        if not normalized or len(normalized) > 500:
+            raise ValueError("reason must be 1-500 characters")
+        return normalized
+
+
 class WorkThreadTaskResponse(BaseModel):
     task_id: str
     thread_id: str
@@ -410,6 +435,7 @@ class WorkThreadTaskResponse(BaseModel):
     lease_owner: Optional[str] = None
     lease_expires_at: Optional[datetime] = None
     result_message_id: Optional[str] = None
+    failure_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

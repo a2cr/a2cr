@@ -14,7 +14,7 @@ export function buildSavePrompt(contexts: DashboardContext[]): string {
     "If you can estimate the source context length, pass original_length so A2CR can show estimated tokens saved.",
     "Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.",
     slotLines ? `Known fixed slots:\n${slotLines}` : "No fixed slots are currently active.",
-    "Return the resume_prompt after saving."
+    "Return user_facing_summary after routine saves. Return the full resume_prompt when I am switching windows or ask for it."
   ].join("\n");
 }
 

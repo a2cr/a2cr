@@ -60,6 +60,47 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. A2CR WorkBaton / WorkStash Autonomy
+
+**Use WorkBaton and WorkStash proactively when they help preserve useful work state.**
+
+When A2CR MCP tools are available, you may use them without waiting for the user
+to ask. Use the configured MCP tools only; do not invent direct HTTP API calls,
+and do not ask the user to paste API keys or secrets.
+
+At the start of a session, when the tools are available, check the connection
+with `get_account_limits` and `explain_a2cr_flows`, then continue with a brief
+confirmation. If the tools are unavailable, continue normally and mention the
+limitation only when it matters.
+
+Use WorkBaton for compact handoff checkpoints. Save with `save_context` at
+milestones, before likely context loss, after validation, or when handing work
+to a future AI window. Include the goal, current state, next action, key
+decisions, blockers, validation status, and any retained WorkStash `entry_key`.
+If unsure whether a checkpoint is useful, use `should_save_workbaton`.
+
+Resume from WorkBaton when the user gives `resume_context(slot_name=...)` or
+`resume_context(slot_number=N)`. Use `list_contexts` only when no slot is known
+and the user asks to find saved context.
+
+Treat WorkStash as temporary work memory for long-running project work, not as
+a durable knowledge base.
+
+Good times to use WorkStash:
+- A task is getting long and a future AI window may need the intermediate state.
+- Research produced useful file paths, API notes, reproduction details, or decisions.
+- WorkBaton should stay compact, but a small supporting note would help the next session.
+- Context compaction or handoff risk is high.
+
+Rules:
+- Store only concise notes, confirmed paths, intermediate findings, and safe summaries.
+- Use `store_work_stash` for supporting notes and record the returned `entry_key` in WorkBaton.
+- Retrieve only needed notes with `get_work_stash`; use `list_work_stash` only when the key is missing.
+- Never store secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, or large source-code bodies.
+- Record any retained `entry_key` in WorkBaton `next_action` or references.
+- Delete temporary entries when the task is complete and the stored note is no longer useful.
+- Planned public WorkStash limits are storage-size based: Free has 256KB total encrypted storage, and Pro has 2048KB total encrypted storage.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
@@ -137,3 +178,32 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - まだ確定していない内容を、確定事項のように書かない。
 - セキュリティについては過剰に宣伝せず、管理者の通常閲覧不可とゼロ知識ではない点を区別する。
 - GitHub公開向け文書では英語を主とし、必要に応じて下部に日本語の概要を置く。
+
+### 6. A2CR WorkBaton / WorkStashの自律利用
+
+A2CR MCP toolsが使える場合は、ユーザーに毎回確認されなくても、必要だと判断した時に使ってよいです。設定済みのMCP toolsだけを使い、直接HTTP API呼び出しを推測して実行したり、ユーザーにAPIキーや秘密情報の貼り付けを求めたりしないでください。
+
+セッション開始時にtoolsが使える場合は、`get_account_limits`と`explain_a2cr_flows`で接続と利用可能な流れを確認し、短く接続確認を伝えてから作業を続けます。toolsが使えない場合は通常通り作業し、必要な時だけその制限を報告します。
+
+WorkBatonは引き継ぎ用の短いチェックポイントとして使います。節目、コンテキスト喪失が起きそうな時、検証後、別のAI窓へ作業を渡す時に`save_context`で保存してください。内容にはgoal、current_state、next_action、重要な決定、blockers、validation status、残す価値のあるWorkStash `entry_key`を含めます。保存すべきか迷う場合は`should_save_workbaton`を使います。
+
+ユーザーが`resume_context(slot_name=...)`または`resume_context(slot_number=N)`を指定した場合は、WorkBatonから再開します。slotが分からず、ユーザーが保存済み文脈の検索を求めた場合だけ`list_contexts`を使います。
+
+WorkStashは長めの作業で文脈を落とさないための一時的な作業メモであり、永続的なナレッジベースではありません。
+
+使う場面:
+
+- 作業が長くなり、次のAI窓へ中間状態を渡す必要がありそうな時。
+- 調査済みファイルパス、APIメモ、再現条件、判断理由などが後で必要になりそうな時。
+- WorkBatonを短く保ちつつ、補助メモを`entry_key`で参照したい時。
+- コンテキスト圧縮や引き継ぎで作業状態を失いそうな時。
+
+ルール:
+
+- 保存するのは短いメモ、確認済みパス、中間調査結果、安全な要約に限定する。
+- 補助メモは`store_work_stash`で保存し、返された`entry_key`をWorkBatonに記録する。
+- 必要なメモだけを`get_work_stash`で取得し、keyが不明な場合だけ`list_work_stash`を使う。
+- APIキー、認証ヘッダー、Cookie、秘密のDB URL、個人情報、全文ログ、会話全文、生成キャッシュ、大きなソースコード本文は保存しない。
+- 残す価値のある`entry_key`はWorkBatonの`next_action`またはreferencesに記録する。
+- 作業完了後、不要になった一時エントリは削除する。
+- 公開仕様上のWorkStash limitはentry数ではなくstorage size basedとし、Freeは256KB total encrypted storage、Proは2048KB total encrypted storageとする。

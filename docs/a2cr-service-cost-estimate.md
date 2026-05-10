@@ -20,7 +20,8 @@ Recommended contract path:
 2. Create the Railway project.
 3. Create the Supabase organization and project.
 4. Configure Google OAuth for Supabase Auth.
-5. Prepare Stripe, but enable paid checkout only after Core MVP smoke tests pass.
+5. Shortlist a virtual office/business address provider before public contact/legal pages are finalized.
+6. Prepare Lemon Squeezy, but enable paid checkout only after the free WorkBaton + WorkStash preview and Core MVP smoke tests pass.
 
 Current setup note:
 
@@ -28,7 +29,7 @@ Current setup note:
 - Supabase `a2cr-production` has been created on Free/Nano for testing.
 - Supabase migrations have been applied and RLS was verified.
 - Google OAuth has been configured and enabled in Supabase.
-- Railway and Stripe are still pending.
+- Railway, Lemon Squeezy setup, and virtual office/business address selection are still pending.
 
 ## Recommended Service Stack
 
@@ -37,13 +38,14 @@ Current setup note:
 | App runtime | Railway | One Dockerfile service serving React/Vite, FastAPI, `/api/*`, and `/mcp` from one origin | Start Hobby, move to Pro for production |
 | Database/Auth/RLS | Supabase | Postgres, Supabase Auth, Google OAuth integration, RLS, migrations | Use Pro before beta with real users |
 | Domain/DNS/edge | Cloudflare | Domain registration, DNS, SSL/TLS, DNSSEC, basic edge protection | Free plan plus paid domain |
-| Payments | Stripe | Pro subscription billing and webhook-driven plan updates | Prepare early; enable after Core is stable |
+| Business address/contact | Virtual office provider | Public contact/legal display planning, mail forwarding, phone/contact option, possible corporation registration path | Shortlist before free preview; finalize before paid sales |
+| Payments | Lemon Squeezy | Pro subscription billing, Merchant of Record checkout, and webhook-driven plan updates | Prepare early; enable after the free preview is stable |
 | Login setup | Google Cloud OAuth | OAuth client ID/secret configured in Supabase Auth | Use minimal identity scopes only |
 | Repository/CI | GitHub | Repository, issues, PRs, CI/CD, deployment source | Free is enough at the start |
 
 ## Cost Scenarios
 
-| Stage | Railway | Supabase | Cloudflare | Stripe | Estimated total |
+| Stage | Railway | Supabase | Cloudflare | Lemon Squeezy | Estimated total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Local only | $0 | $0 | $0 | $0 | $0 |
 | Hosted smoke test | $5/mo | $0 | $0 + domain | payment fees only | about $5/mo + domain |
@@ -111,30 +113,76 @@ Recommendation:
 
 Source: https://www.cloudflare.com/products/registrar/
 
-## Stripe
+## Virtual Office / Business Address
 
-Stripe should be prepared early, but paid flows should remain disabled until Core MVP is stable.
+A2CR should avoid exposing a personal home address or personal phone number in
+public repository metadata, support templates, screenshots, or legal/contact
+pages. Shortlist a virtual office/business address provider before the free
+preview, then finalize it before paid sales.
 
-Japan pricing note:
+Provider requirements:
 
-- Stripe Japan pricing currently advertises 3.6% for domestic card transactions on the standard pricing page.
-- Other payment methods, international cards, Billing, Tax, disputes, refunds, and currency conversion can change the effective fee.
+- Allows use as a public business contact/legal display address where required.
+- Provides mail forwarding or scan/notification handling.
+- Offers a phone number or reception option if a public phone contact is needed.
+- Clearly states whether the address can be used for corporation registration.
+- Can support the planned operator path: individual, sole proprietor, or
+  corporation.
+- Does not conflict with Lemon Squeezy onboarding, bank review, or official MCP
+  listing/application materials.
 
-Example for a $5/mo Pro subscription:
+Legal planning notes:
+
+- Consumer Affairs Agency guidance says address and phone information for
+  mail-order sales should function as real contact points, and virtual office
+  address/phone display can satisfy the requirement when conditions are met.
+- If the operator later incorporates, corporation setup and tax filings use the
+  registered head office / principal office path; confirm the selected address
+  supports that before formation.
+- For a future Japanese corporation, the representative-address non-display
+  measure can reduce public exposure in commercial registry certificates under
+  conditions, but it does not remove the underlying registration obligation.
+
+Sources:
+
+- https://www.no-trouble.caa.go.jp/qa/advertising.html
+- https://www.nta.go.jp/taxes/shiraberu/taxanswer/hojin/5100.htm
+- https://www.moj.go.jp/MINJI/minji06_00210.html
+
+## Lemon Squeezy
+
+Lemon Squeezy is the preferred first paid-checkout provider. It should be prepared early, but paid flows should remain disabled until the free WorkBaton + WorkStash preview is stable and the remaining legal/payment checks are complete.
+
+Provider fit:
+
+- Lemon Squeezy positions itself as a Merchant of Record for digital products, including payments, taxes/VAT, compliance, fraud, refunds, and chargebacks.
+- This is a good fit for a solo/early SaaS launch, but the final fee, payout, country, prohibited-product, and tax details must be confirmed inside the account before enabling paid checkout.
+- The $8/month Pro price is intentional: it replaces the earlier $5/month idea
+  so A2CR can absorb higher Merchant of Record fees while avoiding the
+  operational burden of handling tax/VAT, refunds, chargebacks, and compliance
+  directly during the first paid phase.
+
+Example for an $8/mo Pro subscription:
 
 | Item | Estimate |
 | --- | ---: |
-| Customer payment | $5.00 |
-| Card processing at 3.6% | about $0.18 |
-| Net before other fees/tax/refunds | about $4.82 |
+| Customer payment | $8.00 |
+| Platform/payment/tax impact | Confirm in Lemon Squeezy account |
+| Net before refunds/chargebacks/overages | Confirm before launch |
 
 Recommendation:
 
-- Create the Stripe account early to avoid onboarding delay.
-- Use Checkout/Billing/Customer Portal for the first paid version.
-- Reconsider the $5/mo price before launch because payment fees, support, tax, and chargebacks make very low subscription prices fragile.
+- Create the Lemon Squeezy store early to avoid onboarding delay.
+- Use hosted checkout/customer portal and signed webhooks for the first paid version.
+- Set the first Pro list price to $8/month, not $5/month, because the price
+  includes the cost of outsourcing tax/VAT and payment compliance through
+  Lemon Squeezy's Merchant of Record model.
+- Keep paid checkout disabled while WorkBaton and WorkStash are being released free to gather community feedback.
 
-Source: https://stripe.com/jp/pricing
+Sources:
+
+- https://docs.lemonsqueezy.com/help/payments
+- https://docs.lemonsqueezy.com/help/payments/merchant-of-record
 
 ## Google Cloud OAuth
 
@@ -171,7 +219,8 @@ Sources:
 2. Railway Hobby project for hosted smoke testing.
 3. Supabase project; upgrade the organization to Pro before beta.
 4. Google Cloud OAuth client configured in Supabase Auth.
-5. Stripe account preparation, with checkout disabled until Core MVP is stable.
+5. Virtual office/business address provider selection, with allowed-use terms confirmed.
+6. Lemon Squeezy store preparation, with checkout disabled until the free preview is stable.
 
 ## Deployment Readiness Checklist
 
@@ -184,7 +233,7 @@ Before paying users can rely on A2CR:
 - Dashboard can issue an API key once and never reveals it again.
 - MCP `resume_context` works from a fresh AI window.
 - Dashboard context and WorkThreads responses are metadata-only.
-- Stripe webhook signature verification is implemented before changing `user_profiles.plan`.
+- Lemon Squeezy webhook signature verification is implemented before changing `user_profiles.plan`.
 - Cost controls and usage monitoring are enabled where available.
 
 ## Recommendation
@@ -195,6 +244,6 @@ For paid-SaaS intent, do not stay local. Start with a real hosted environment:
 2. Apply migrations to Supabase.
 3. Deploy Railway from the existing Dockerfile.
 4. Run smoke tests against the public origin.
-5. Add Stripe checkout only after Core save/load/resume and API key flows are stable.
+5. Add Lemon Squeezy checkout only after Core save/load/resume, WorkStash, and API key flows are stable.
 
-Expected first serious beta budget: about $30/mo plus domain. Expected first production budget: about $45/mo plus domain and Stripe payment fees.
+Expected first serious beta budget: about $30/mo plus domain. Expected first production budget: about $45/mo plus domain and Lemon Squeezy payment fees.

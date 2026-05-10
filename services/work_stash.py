@@ -42,7 +42,7 @@ class WorkStashStoreResult:
     quota_used_bytes: int
     quota_bytes: int
     entry_count: int
-    entry_limit: int
+    entry_limit: int | None
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,7 @@ class WorkStashListResult:
     total_size_bytes: int
     quota_bytes: int
     entry_count: int
-    entry_limit: int
+    entry_limit: int | None
 
 
 _ENTRY_KEY_PATTERN = r"^[A-Za-z0-9_.:-]{1,256}$"
@@ -141,7 +141,7 @@ def store_work_stash(
                 f"WorkStash quota exceeded. Used {current_used} / {limits.quota_bytes} bytes.",
             )
 
-        if existing is None and current_count >= limits.max_entries:
+        if limits.max_entries is not None and existing is None and current_count >= limits.max_entries:
             raise PlanLimitExceeded(
                 "stash_entry_limit_exceeded",
                 f"WorkStash entry limit of {limits.max_entries} reached for this plan.",

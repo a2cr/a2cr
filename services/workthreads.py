@@ -12,10 +12,11 @@ from sqlalchemy import text
 from services.config import get_web_config
 from services.crypto import decrypt, encrypt
 from services.db import web_transaction
-from services.exceptions import AppError
+from services.exceptions import AppError, ContentTooLarge
 
 
 FINAL_MESSAGE_TYPES = {"decision", "handoff", "blocked", "result"}
+RESOLVING_MESSAGE_TYPES = {"answer", *FINAL_MESSAGE_TYPES}
 MAX_CONSULTATION_MESSAGES = 6
 MAX_CONSULTATION_QUESTIONS = 3
 MAX_UNRESOLVED_QUESTIONS = 3
@@ -23,6 +24,8 @@ MAX_REPEATED_WAITS = 3
 MAX_LIST_WORKTHREADS = 100
 MAX_READ_WORKTHREAD_MESSAGES = 200
 MAX_UNREAD_WORKTHREAD_MESSAGES = 100
+MAX_WORKTHREAD_MESSAGE_CONTENT_BYTES = 10 * 1024
+MAX_TASK_FAILURE_REASON_LENGTH = 500
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,8 @@ class WorkThreadMessage:
     target_agent_name: str | None
     agent_name: str | None
     created_at: datetime
+    resolved_at: datetime | None = None
+    resolved_by_message_id: str | None = None
     loop_warning: str | None = None
 
 
@@ -65,6 +70,7 @@ class WorkThreadTask:
     lease_owner: str | None
     lease_expires_at: datetime | None
     result_message_id: str | None
+    failure_reason: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -92,6 +98,11 @@ def _content_hash(content_dict: dict) -> str:
 
 def _safe_limit(limit: int, max_limit: int) -> int:
     return min(max(limit, 1), max_limit)
+
+
+def _validate_message_content_size(content_json: str) -> None:
+    if len(content_json.encode("utf-8")) > MAX_WORKTHREAD_MESSAGE_CONTENT_BYTES:
+        raise ContentTooLarge()
 
 
 def _ensure_pro(session, user_id: UUID | str) -> None:
@@ -221,9 +232,17 @@ def _insert_message(
     idempotency_key: str | None = None,
     agent_name: str | None = None,
 ):
-    config = get_web_config()
     content_json = json.dumps(content_dict, ensure_ascii=False, separators=(",", ":"))
+    _validate_message_content_size(content_json)
+    config = get_web_config()
     content_hash = _content_hash(content_dict)
+    resolved_parent_message_id = _parent_resolution_target(
+        session,
+        user_id=user_id,
+        thread_id=thread_id,
+        parent_message_id=parent_message_id,
+        message_type=message_type,
+    )
     loop_warning = _enforce_loop_guard(
         session,
         user_id=user_id,
@@ -233,6 +252,7 @@ def _insert_message(
         consultation_id=consultation_id,
         requires_response=requires_response,
         idempotency_key=idempotency_key,
+        resolved_parent_message_id=resolved_parent_message_id,
     )
     row = session.execute(
         text(
@@ -248,7 +268,7 @@ def _insert_message(
               :idempotency_key, :agent_name
             )
             RETURNING id, thread_id, message_type, content, consultation_id, requires_response,
-                      target_agent_name, agent_name, created_at
+                      target_agent_name, agent_name, created_at, resolved_at, resolved_by_message_id
             """
         ),
         {
@@ -266,11 +286,75 @@ def _insert_message(
             "agent_name": agent_name,
         },
     ).mappings().one()
+    if resolved_parent_message_id:
+        session.execute(
+            text(
+                """
+                UPDATE public.work_thread_messages
+                SET resolved_at = now(),
+                    resolved_by_message_id = :resolved_by_message_id
+                WHERE id = CAST(:parent_message_id AS uuid)
+                  AND thread_id = :thread_id
+                  AND user_id = :user_id
+                  AND requires_response = true
+                  AND resolved_at IS NULL
+                """
+            ),
+            {
+                "parent_message_id": resolved_parent_message_id,
+                "resolved_by_message_id": str(row.id),
+                "thread_id": thread_id,
+                "user_id": str(user_id),
+            },
+        )
     session.execute(
         text("UPDATE public.work_threads SET updated_at = now() WHERE id = :thread_id AND user_id = :user_id"),
         {"thread_id": thread_id, "user_id": str(user_id)},
     )
     return row, loop_warning
+
+
+def _parent_resolution_target(
+    session,
+    *,
+    user_id: UUID | str,
+    thread_id: str,
+    parent_message_id: str | None,
+    message_type: str,
+) -> str | None:
+    if parent_message_id is None:
+        return None
+    try:
+        normalized_parent_message_id = str(UUID(str(parent_message_id)))
+    except (TypeError, ValueError) as exc:
+        raise AppError(
+            "invalid_parent_message_id",
+            "parent_message_id must be a valid WorkThread message id",
+            400,
+        ) from exc
+
+    parent = session.execute(
+        text(
+            """
+            SELECT id, requires_response, resolved_at
+            FROM public.work_thread_messages
+            WHERE id = CAST(:parent_message_id AS uuid)
+              AND thread_id = :thread_id
+              AND user_id = :user_id
+            FOR UPDATE
+            """
+        ),
+        {
+            "parent_message_id": normalized_parent_message_id,
+            "thread_id": thread_id,
+            "user_id": str(user_id),
+        },
+    ).mappings().first()
+    if parent is None:
+        raise AppError("invalid_parent_message_id", "parent_message_id must belong to the same WorkThread", 400)
+    if message_type in RESOLVING_MESSAGE_TYPES and parent.requires_response and parent.resolved_at is None:
+        return normalized_parent_message_id
+    return None
 
 
 def _enforce_loop_guard(
@@ -283,6 +367,7 @@ def _enforce_loop_guard(
     consultation_id: str | None,
     requires_response: bool,
     idempotency_key: str | None,
+    resolved_parent_message_id: str | None,
 ) -> str | None:
     loop_status = session.execute(
         text(
@@ -328,9 +413,14 @@ def _enforce_loop_guard(
             FROM public.work_thread_messages
             WHERE thread_id = :thread_id
               AND requires_response = true
+              AND resolved_at IS NULL
+              AND (
+                :resolved_parent_message_id IS NULL OR
+                id <> CAST(:resolved_parent_message_id AS uuid)
+              )
             """
         ),
-        {"thread_id": thread_id},
+        {"thread_id": thread_id, "resolved_parent_message_id": resolved_parent_message_id},
     ).scalar_one()
     if requires_response and unresolved >= MAX_UNRESOLVED_QUESTIONS:
         _block_loop(session, user_id=user_id, thread_id=thread_id, reason="unresolved_questions")
@@ -448,6 +538,10 @@ def _message_row_to_model(row, *, loop_warning: str | None = None) -> WorkThread
         target_agent_name=row.target_agent_name,
         agent_name=row.agent_name,
         created_at=row.created_at,
+        resolved_at=getattr(row, "resolved_at", None),
+        resolved_by_message_id=(
+            str(row.resolved_by_message_id) if getattr(row, "resolved_by_message_id", None) else None
+        ),
         loop_warning=loop_warning,
     )
 
@@ -460,7 +554,7 @@ def read_workthread(*, user_id: UUID | str, thread_id: str, limit: int = 100) ->
             text(
                 """
                 SELECT id, thread_id, message_type, content, consultation_id, requires_response,
-                       target_agent_name, agent_name, created_at
+                       target_agent_name, agent_name, created_at, resolved_at, resolved_by_message_id
                 FROM public.work_thread_messages
                 WHERE user_id = :user_id
                   AND thread_id = :thread_id
@@ -488,11 +582,12 @@ def unread_workthread_messages(
             text(
                 f"""
                 SELECT id, thread_id, message_type, content, consultation_id, requires_response,
-                       target_agent_name, agent_name, created_at
+                       target_agent_name, agent_name, created_at, resolved_at, resolved_by_message_id
                 FROM public.work_thread_messages
                 WHERE user_id = :user_id
                   AND thread_id = :thread_id
                   AND requires_response = true
+                  AND resolved_at IS NULL
                   {target_sql}
                 ORDER BY created_at ASC
                 LIMIT :limit
@@ -517,6 +612,7 @@ def _task_row_to_model(row) -> WorkThreadTask:
         lease_owner=row.lease_owner,
         lease_expires_at=row.lease_expires_at,
         result_message_id=str(row.result_message_id) if row.result_message_id else None,
+        failure_reason=getattr(row, "failure_reason", None),
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -537,7 +633,7 @@ def create_workthread_task(*, user_id: UUID | str, thread_id: str, title: str) -
                 INSERT INTO public.work_thread_tasks (thread_id, user_id, title)
                 VALUES (:thread_id, :user_id, :title)
                 RETURNING id, thread_id, title, status, lease_owner, lease_expires_at,
-                          result_message_id, created_at, updated_at
+                          result_message_id, failure_reason, created_at, updated_at
                 """
             ),
             {"thread_id": thread_id, "user_id": str(user_id), "title": title},
@@ -579,7 +675,8 @@ def claim_workthread_task(
                 FROM candidate
                 WHERE task.id = candidate.id
                 RETURNING task.id, task.thread_id, task.title, task.status, task.lease_owner,
-                          task.lease_expires_at, task.result_message_id, task.created_at, task.updated_at
+                          task.lease_expires_at, task.result_message_id, task.failure_reason,
+                          task.created_at, task.updated_at
                 """
             ),
             {
@@ -613,13 +710,68 @@ def complete_workthread_task(
                   AND lease_owner = :lease_owner
                   AND lease_expires_at > now()
                 RETURNING id, thread_id, title, status, lease_owner, lease_expires_at,
-                          result_message_id, created_at, updated_at
+                          result_message_id, failure_reason, created_at, updated_at
                 """
             ),
             {
                 "task_id": task_id,
                 "user_id": str(user_id),
                 "lease_owner": lease_owner,
+                "result_message_id": result_message_id,
+            },
+        ).mappings().first()
+        if row is None:
+            raise AppError("task_lease_mismatch", "Task lease is missing, expired, or owned by another agent", 409)
+    return _task_row_to_model(row)
+
+
+def _normalize_task_failure_reason(reason: str) -> str:
+    if not isinstance(reason, str):
+        raise AppError("invalid_task_failure_reason", "Task failure reason must be non-empty", 400)
+    normalized = reason.strip()
+    if not normalized:
+        raise AppError("invalid_task_failure_reason", "Task failure reason must be non-empty", 400)
+    if len(normalized) > MAX_TASK_FAILURE_REASON_LENGTH:
+        raise AppError(
+            "invalid_task_failure_reason",
+            f"Task failure reason must be {MAX_TASK_FAILURE_REASON_LENGTH} characters or fewer",
+            400,
+        )
+    return normalized
+
+
+def fail_workthread_task(
+    *,
+    user_id: UUID | str,
+    task_id: str,
+    lease_owner: str,
+    reason: str,
+    result_message_id: str | None = None,
+) -> WorkThreadTask:
+    failure_reason = _normalize_task_failure_reason(reason)
+    with web_transaction(user_id) as session:
+        _ensure_pro(session, user_id)
+        row = session.execute(
+            text(
+                """
+                UPDATE public.work_thread_tasks
+                SET status = 'failed',
+                    result_message_id = :result_message_id,
+                    failure_reason = :failure_reason
+                WHERE id = :task_id
+                  AND user_id = :user_id
+                  AND status = 'claimed'
+                  AND lease_owner = :lease_owner
+                  AND lease_expires_at > now()
+                RETURNING id, thread_id, title, status, lease_owner, lease_expires_at,
+                          result_message_id, failure_reason, created_at, updated_at
+                """
+            ),
+            {
+                "task_id": task_id,
+                "user_id": str(user_id),
+                "lease_owner": lease_owner,
+                "failure_reason": failure_reason,
                 "result_message_id": result_message_id,
             },
         ).mappings().first()

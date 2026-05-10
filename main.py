@@ -257,7 +257,7 @@ ROUTE_SEO = {
         # A2CR Pricing
 
         Free plan:
-        - 3 Slots
+        - 5 Slots
         - Retention options up to 24 hours
         - 32KB compact saves
         - 100 saves per hour

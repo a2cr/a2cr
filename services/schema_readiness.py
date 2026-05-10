@@ -37,6 +37,8 @@ REQUIRED_COLUMNS = {
         "encryption_metadata",
     },
     "stats": {"user_id", "total_saves", "total_loads", "total_deletes", "total_tokens_saved"},
+    "work_thread_messages": {"resolved_at", "resolved_by_message_id"},
+    "work_thread_tasks": {"failure_reason"},
 }
 
 REQUIRED_FUNCTIONS = {

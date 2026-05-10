@@ -96,7 +96,7 @@ def test_free_stash_limits_values():
     assert limits.plan == "free"
     assert limits.quota_bytes == 256 * 1024
     assert limits.ttl_seconds == 7 * 24 * 60 * 60
-    assert limits.max_entries == 50
+    assert limits.max_entries is None
     assert limits.max_entry_bytes == 8 * 1024
     assert limits.writes_per_hour == 60
     assert limits.reads_per_hour == 300
@@ -105,9 +105,9 @@ def test_free_stash_limits_values():
 def test_pro_stash_limits_values():
     limits = PRO_STASH_LIMITS
     assert limits.plan == "pro"
-    assert limits.quota_bytes == 1024 * 1024
+    assert limits.quota_bytes == 2048 * 1024
     assert limits.ttl_seconds == 30 * 24 * 60 * 60
-    assert limits.max_entries == 500
+    assert limits.max_entries is None
     assert limits.max_entry_bytes == 32 * 1024
     assert limits.writes_per_hour == 600
     assert limits.reads_per_hour == 3000
@@ -189,7 +189,7 @@ def test_store_work_stash_returns_quota_info(client, monkeypatch):
     body = response.json()
     assert body["entry_key"] == ENTRY_KEY
     assert body["quota_bytes"] == FREE_STASH_LIMITS.quota_bytes
-    assert body["entry_limit"] == FREE_STASH_LIMITS.max_entries
+    assert body["entry_limit"] is None
     assert captured["user_id"] == USER_ID
     assert captured["entry_key"] == ENTRY_KEY
     assert captured["tags"] == ["api", "spec"]

@@ -34,7 +34,9 @@ An autonomous WorkBaton save flow is acceptable when:
 - The saved body contains compact `goal`, `current_state`, and `next_action`.
 - The saved body excludes prohibited material.
 - The saved body is encrypted by the local stdio wrapper before upload.
-- The returned `resume_prompt` is shown or preserved for the user.
+- The returned `user_facing_summary` is shown for routine in-thread saves; the
+  full `resume_prompt` is shown or preserved when the user is switching windows
+  or asks for it.
 - The AI does not confuse WorkBaton with WorkThreads.
 
 ## Autonomous Save Triggers
@@ -131,10 +133,10 @@ Recommended autonomous save order:
    large, or detailed saves.
 4. Build a compact WorkBaton body.
 5. Call local stdio `save_context`.
-6. Inspect the result for `resume_prompt`, `slot_name`, expiry, and token
-   metadata.
-7. Tell the user that the WorkBaton was saved and provide the resume prompt or
-   Slot name.
+6. Inspect the result for `user_facing_summary`, `resume_prompt`, `slot_name`,
+   expiry, and token metadata.
+7. Tell the user that the WorkBaton was saved using `user_facing_summary`.
+   Provide the full resume prompt only when switching windows or when requested.
 
 ## Advisory Tool: should_save_workbaton
 

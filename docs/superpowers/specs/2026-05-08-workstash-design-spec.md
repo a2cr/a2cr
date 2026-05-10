@@ -116,9 +116,9 @@ CREATE POLICY work_stash_tenant_isolation ON work_stash_entries
 
 | 制限項目 | 無料 | PRO |
 |------|------|------|
-| 合計容量 | 256 KB | 1 MB |
+| 合計容量 | 256 KB | 2 MB |
 | TTL | 7日 | 30日 |
-| エントリ数上限 | 50件 | 500件 |
+| 公開上のエントリ数上限 | なし | なし |
 | 1エントリの最大サイズ | 8 KB | 32 KB |
 | 1時間あたり書き込み上限 | 60回 | 600回 |
 
@@ -216,7 +216,7 @@ delete_all_work_stash()  # 全件削除
   "total_size_bytes": 128,
   "quota_bytes": 262144,
   "entry_count": 1,
-  "entry_limit": 50
+  "entry_limit": null
 }
 ```
 
@@ -256,7 +256,7 @@ WorkBaton の `should_save_workbaton` に相当するアドバイザリーツー
     "used_bytes": 128,
     "quota_bytes": 262144,
     "entry_count": 1,
-    "entry_limit": 50
+    "entry_limit": null
   }
 }
 ```

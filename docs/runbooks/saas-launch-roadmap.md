@@ -1,6 +1,6 @@
 # A2CR SaaS Launch Roadmap
 
-Last updated: 2026-05-07
+Last updated: 2026-05-10
 
 Status: Draft / not started as a unified launch program
 
@@ -29,8 +29,9 @@ Known current state:
   needs confirmation
 - STG infrastructure is not created yet
 - Supabase backups or scheduled exports are not confirmed
-- Stripe setup is pending
+- Lemon Squeezy setup is pending
 - Public legal pages and support flow are not fully launch-ready
+- Virtual office / business address provider is not selected yet
 - WorkThreads exists as a Pro-only concept, but final production scope must be
   frozen before marketing or paid release
 
@@ -51,38 +52,70 @@ Primary references:
 
 - Do not publish A2CR as production-ready until hosted deployment, auth, RLS,
   logging hygiene, backup/restore, and smoke checks are verified.
-- Do not enable paid checkout until Core WorkBaton save/load/resume and API key
-  flows are stable.
-- Do not market WorkThreads as having the same secrecy boundary as WorkBaton
-  unless its encryption design is explicitly finished and verified.
+- Release WorkBaton and WorkStash first as a free public preview, then use
+  GitHub OSS publication, community feedback, and official MCP listing/application
+  work to form the initial user community.
+- Do not enable paid checkout until the free WorkBaton/WorkStash preview, Core
+  save/load/resume, WorkStash flows, and API key flows are stable.
+- The first planned Pro price is $8/month, not $5/month, because the price
+  needs to absorb Lemon Squeezy Merchant of Record fees and the value of
+  outsourced tax/VAT, refund, chargeback, and compliance handling.
+- Use Lemon Squeezy as the preferred first checkout provider, with signed
+  webhooks as the only path that can mutate paid entitlement state.
+- Select a virtual office/business address before public contact/legal pages
+  are finalized, so personal home address and personal phone details do not
+  become part of the public product surface.
+- Do not market WorkThreads message-body encryption until its local thread-key
+  design is implemented and verified.
 - Do not put production data or production secrets into STG.
-- Do not claim zero-knowledge. Say that WorkBaton bodies are client-encrypted
-  and not normally viewable by A2CR; account data and metadata remain SaaS data.
+- Do not make broad zero-knowledge claims. Say that WorkBaton bodies and planned
+  WorkThreads message bodies are client-encrypted; account data, metadata, task
+  state, and access logs remain SaaS data.
 - Legal pages can be drafted internally, but paid public launch should have
   professional review where required.
 
 ## Stage 0: Product Scope Freeze
 
-Goal: decide what the first SaaS release actually includes.
+Goal: decide the free preview, OSS, and later paid scope before changing public copy.
 
 Status: Not started
 
 Work:
 
 - Freeze Core WorkBaton MVP scope
+- Freeze WorkStash free-preview scope: Free starts at 256KB total encrypted
+  storage and Pro starts at 2048KB total encrypted storage because Pro WorkStash
+  also supports Threads-related stash use. Public plan limits should be based on
+  total encrypted storage size, not entry count. Entry count can remain an
+  internal abuse guard if needed.
 - Freeze first Pro plan limits and user-facing promises
+- Confirm the first Pro list price is $8/month and record that the increase
+  from the earlier $5 idea is intentional to support the Lemon Squeezy
+  Merchant of Record cost structure.
 - Decide whether WorkThreads is included in beta, included as limited Pro beta,
   or hidden behind a feature gate
-- Decide whether paid launch starts with subscriptions or starts with manual
-  beta grants/trials only
+- Decide the GitHub OSS license and publication checklist
+- Decide official MCP listing/application owner and submission package
+- Decide whether the first public operator identity is individual, sole
+  proprietor, or corporation, and select a virtual office path that can support
+  that path.
+- Confirm paid launch starts after the free preview rather than at first public
+  release
 - Define support scope and response expectations for early users
 
 Deliverables:
 
 - Core MVP scope note
+- WorkStash free-preview scope note, including Free 256KB total encrypted
+  storage and Pro 2048KB total encrypted storage, with no public entry-count
+  limit
 - Pro plan limits and entitlement rules
+- OSS license/publication decision
+- Official MCP listing/application checklist
+- Business address decision: provider shortlist, allowed uses, mail forwarding,
+  phone/contact handling, and later corporation migration path
 - WorkThreads release scope decision
-- Paid launch decision: disabled, private beta only, or public checkout
+- Paid launch decision: disabled for first free preview, Lemon Squeezy later
 
 Exit criteria:
 
@@ -90,8 +123,51 @@ Exit criteria:
   hidden
 - Pricing page copy matches the actual launch scope
 - README and public docs do not overclaim production readiness
+- Public copy says WorkBaton and WorkStash are free-preview first, with
+  WorkThreads, payment, and remaining legal work following later
+- Public contact/legal planning does not require exposing a personal home
+  address or personal phone number.
 
-## Stage 1: STG Foundation
+## Stage 1: Free Preview Publication
+
+Goal: release WorkBaton and WorkStash first, free, and start forming a community.
+
+Status: Not started
+
+Work:
+
+- Publish the GitHub repository as OSS after license and secret checks pass
+- Keep the public README focused on WorkBaton, WorkStash, MCP setup, and known
+  limitations
+- Confirm the local stdio MCP wrapper setup works from a clean user environment
+- Publish a free-preview guide for WorkBaton and WorkStash
+- Keep public legal/contact copy minimal and non-paid while the virtual
+  office/business address decision is being finalized.
+- Prepare and submit the official MCP listing/application package once setup
+  docs are stable
+- Route feedback through GitHub issues/discussions or another visible community
+  surface
+- Keep paid checkout disabled and WorkThreads hidden/internal-only
+
+Deliverables:
+
+- OSS repository with LICENSE and SECURITY guidance
+- Free-preview release note
+- WorkBaton + WorkStash onboarding guide
+- Official MCP listing/application package
+- Community feedback intake path
+
+Exit criteria:
+
+- No secrets, local DBs, or private MCP configs are published
+- `python -m pytest -q` and `cd web && npm run build` pass before the public push
+- A clean install can configure the MCP wrapper and use WorkBaton/WorkStash
+- Public docs say billing and WorkThreads are not part of the first free preview
+- Public docs do not expose a personal home address, personal phone number, or
+  personal Gmail address.
+- Feedback/community intake is visible from the repository
+
+## Stage 2: STG Foundation
 
 Goal: create a non-public environment for safe validation.
 
@@ -127,7 +203,7 @@ Exit criteria:
 - STG MCP smoke works with test-only data
 - Production secrets and production data are not used in STG
 
-## Stage 2: Core SaaS Hardening
+## Stage 3: Core SaaS Hardening
 
 Goal: make the base service dependable before inviting real beta users.
 
@@ -160,7 +236,7 @@ Exit criteria:
 - Dashboard does not return WorkBaton body content
 - API and logs do not expose DB URLs, tokens, Authorization headers, or API keys
 
-## Stage 3: Pro Plan And Entitlements
+## Stage 4: Pro Plan And Entitlements
 
 Goal: make the Pro plan real before charging for it.
 
@@ -169,6 +245,8 @@ Status: Spec exists, implementation status must be confirmed before launch
 Work:
 
 - Finalize Free vs Pro limits
+- Set Pro list price to $8/month in public copy and entitlement docs, with the
+  internal rationale that MoR/tax/compliance outsourcing is part of the price.
 - Implement or confirm `user_entitlements`
 - Implement or confirm effective plan resolver
 - Implement trial entitlement rules
@@ -193,7 +271,7 @@ Exit criteria:
 - Plan limits are enforced consistently
 - Users do not lose existing data automatically on downgrade
 
-## Stage 4: WorkThreads Release Decision
+## Stage 5: WorkThreads Release Decision
 
 Goal: avoid shipping an ambiguous or overclaimed collaboration feature.
 
@@ -210,8 +288,8 @@ Work:
 - Confirm Dashboard metadata-only behavior
 - Confirm loop guard and task lease behavior
 - Decide whether final-result saving remains disabled
-- Decide whether WorkThreads needs client-side encryption parity with WorkBaton
-  before public marketing
+- Confirm WorkThreads local thread-key encryption is implemented before public
+  marketing
 
 Deliverables:
 
@@ -224,32 +302,34 @@ Deliverables:
 Exit criteria:
 
 - WorkThreads is not described as server-side AI execution
-- WorkThreads is not described as zero-knowledge
+- WorkThreads makes no broad zero-knowledge claim beyond local message-body
+  encryption
 - Dashboard does not expose message content
 - Loop guard and task leases have regression tests
 - Any disabled features are hidden or clearly unavailable
 
-## Stage 5: Payment And Billing
+## Stage 6: Payment And Billing
 
 Goal: prepare paid SaaS flows without letting billing mutate plans unsafely.
 
-Status: Pending
+Status: Pending, after the free WorkBaton/WorkStash preview
 
 Work:
 
-- Create Stripe account
-- Decide first paid price and currency
+- Create Lemon Squeezy store
+- Confirm first paid price is $8/month and decide billing currency; do not
+  reduce the price back to $5 unless the payment/tax/compliance model changes.
 - Decide trial and coupon policy
-- Implement Stripe Checkout or Billing portal
-- Implement Stripe webhook signature verification
-- Map Stripe subscription state into `user_entitlements`
+- Implement Lemon Squeezy hosted checkout or customer portal
+- Implement Lemon Squeezy webhook signature verification
+- Map Lemon Squeezy subscription state into `user_entitlements`
 - Add customer portal link for plan management
 - Add failure/retry/cancel behavior
-- Test with Stripe test mode first
+- Test with Lemon Squeezy test mode first
 
 Deliverables:
 
-- Stripe account and test mode configuration
+- Lemon Squeezy store and test mode configuration
 - Checkout/customer portal flow
 - Webhook endpoint
 - Billing tests
@@ -258,13 +338,13 @@ Deliverables:
 Exit criteria:
 
 - Webhook signatures are verified before plan changes
-- Stripe active subscription grants Pro
-- Stripe canceled/expired subscription returns to Free unless another Pro source
+- Lemon Squeezy active subscription grants Pro
+- Lemon Squeezy canceled/expired subscription returns to Free unless another Pro source
   is active
 - Billing errors do not expose secrets or raw webhook payloads
 - Paid checkout remains disabled until Core and STG smoke are green
 
-## Stage 6: Legal, Support, And Public Trust
+## Stage 7: Legal, Support, And Public Trust
 
 Goal: have the minimum public-facing legal and support surface before real users.
 
@@ -273,11 +353,21 @@ Status: Spec exists, final content and review pending
 Work:
 
 - Configure `support@a2cr.app`
+- Select a virtual office/business address provider, or explicitly decide not
+  to use one, before paid sales.
+- Confirm the provider permits the required uses: public contact/legal display,
+  mail forwarding, business phone/phone reception if needed, and future
+  corporation registration if that path is chosen.
+- Confirm Lemon Squeezy onboarding, bank/account review, and any official MCP
+  listing/application materials can use the selected operator identity and
+  business address without conflicting claims.
 - Add or confirm `/contact`
 - Add or confirm `/privacy`
 - Add or confirm `/terms`
 - Add or confirm `/legal`
 - Confirm Japanese 特定商取引法 display requirements before paid sales
+- Decide whether paid legal display uses full address/phone display or a
+  request-disclosure flow where legally appropriate.
 - Confirm refund/cancellation wording
 - Confirm privacy wording for account data, metadata, ciphertext, access logs,
   and billing metadata
@@ -289,6 +379,8 @@ Deliverables:
 - Privacy policy
 - Terms of service
 - Legal display page
+- Virtual office/business address decision record
+- Paid legal-display readiness note
 - Support handling checklist
 - Security contact/intake process
 
@@ -296,11 +388,16 @@ Exit criteria:
 
 - Public legal/support pages are reachable without login
 - Personal email is not exposed as the public support contact
+- Personal home address and personal phone number are not exposed in public
+  docs, dashboard pages, public repository metadata, or support templates unless
+  explicitly approved.
+- Any virtual office address/phone shown publicly has a written service
+  agreement or plan that allows use as the relevant contact point.
 - Paid sales page does not launch before required legal fields are accurate
 - Security claims distinguish WorkBaton body secrecy from metadata exposure
 - Legal pages have been professionally reviewed where needed for paid launch
 
-## Stage 7: Backup, Restore, Monitoring, And Operations
+## Stage 8: Backup, Restore, Monitoring, And Operations
 
 Goal: make the service recoverable and operable before beta users rely on it.
 
@@ -336,7 +433,7 @@ Exit criteria:
 - Operators can rotate secrets without pasting them into chat/docs/Git
 - Incident and rollback runbooks are usable without exposing secrets
 
-## Stage 8: Private Beta
+## Stage 9: Private Beta
 
 Goal: invite a small number of trusted users while preserving manual control.
 
@@ -366,7 +463,7 @@ Exit criteria:
 - No critical privacy/security issue remains open
 - Pricing, Pro limits, and WorkThreads scope are still accurate after feedback
 
-## Stage 9: Public Beta
+## Stage 10: Public Beta
 
 Goal: make A2CR discoverable, but still avoid claiming final production maturity.
 
@@ -378,7 +475,7 @@ Work:
 - Publish public pricing and limitations
 - Confirm public legal/support pages
 - Confirm backup/restore and monitoring are active
-- Confirm Stripe is either disabled with clear messaging or fully tested
+- Confirm Lemon Squeezy is either disabled with clear messaging or fully tested
 - Confirm abuse/rate limits are active
 - Confirm public onboarding path
 
@@ -396,7 +493,7 @@ Exit criteria:
 - Paid checkout is either intentionally disabled or fully verified
 - Alerts and rollback path are live
 
-## Stage 10: Paid SaaS Launch
+## Stage 11: Paid SaaS Launch
 
 Goal: open paid SaaS access with billing, legal, and operations in place.
 
@@ -404,7 +501,7 @@ Status: Not started
 
 Work:
 
-- Enable Stripe live mode
+- Enable Lemon Squeezy live mode
 - Enable paid checkout
 - Confirm tax, invoice, cancellation, and refund handling
 - Confirm 特定商取引法 display is complete for paid sales
@@ -416,14 +513,14 @@ Work:
 Deliverables:
 
 - Paid launch approval checklist
-- Stripe live-mode verification
+- Lemon Squeezy live-mode verification
 - Final legal/support review
 - Final production smoke record
 
 Exit criteria:
 
 - Payment success grants Pro
-- Payment cancel/expire removes Stripe Pro source safely
+- Payment cancel/expire removes Lemon Squeezy Pro source safely
 - Legal display is complete
 - Backup/restore and incident process are tested
 - Production deploy and rollback path are verified
@@ -445,10 +542,13 @@ Record decisions here as they are made:
 - Does WorkThreads need client-side encryption parity with WorkBaton before any
   public Pro marketing?
 - What is the first paid price and currency?
-- Should public launch start with Stripe enabled, or with manual beta grants
-  first?
+- Should public launch start as a free preview with Lemon Squeezy disabled, or
+  should any private paid beta happen before public checkout?
 - Which inbox receives `support@a2cr.app`?
 - Which legal entity/name/address/phone are used for paid sales display?
+- Which virtual office provider is used, and does it support public display,
+  mail forwarding, phone handling, payment review, and possible corporation
+  registration?
 - Who performs final legal review before paid public launch?
 - Which monitoring provider or Railway/Supabase-native alert path is used first?
 - Is `stg.a2cr.app` needed, or is a restricted Railway generated URL enough for

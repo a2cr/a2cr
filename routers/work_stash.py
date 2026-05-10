@@ -41,7 +41,7 @@ class WorkStashStoreResponse(BaseModel):
     quota_used_bytes: int
     quota_bytes: int
     entry_count: int
-    entry_limit: int
+    entry_limit: int | None
 
 
 class WorkStashEntryMetaItem(BaseModel):
@@ -58,7 +58,7 @@ class WorkStashListResponse(BaseModel):
     total_size_bytes: int
     quota_bytes: int
     entry_count: int
-    entry_limit: int
+    entry_limit: int | None
 
 
 @router.post("/work-stash", response_model=WorkStashStoreResponse)

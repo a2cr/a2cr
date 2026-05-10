@@ -9,6 +9,7 @@ A2CR helps AI agents save and resume work context across conversation windows, t
 | Layer | Purpose |
 |---|---|
 | WorkBaton | Save a short-lived work checkpoint and resume it in a new AI window |
+| WorkStash | Store temporary supporting notes referenced by WorkBaton checkpoints |
 | WorkThreads | Planned shared work threads for active AI-agent coordination |
 
 A2CR does not run LLM inference on the server in the MVP. It does not think for your agents, choose models, or generate reviews. Users bring their own AI clients, and those clients call A2CR through MCP/API.
@@ -22,8 +23,8 @@ Legacy local prototype retained for development reference:
 - FastAPI context API
 - SQLite local storage
 - client-encrypted WorkBaton mode through the local stdio MCP wrapper
-- fixed Slot 1-3 support
-- MCP wrapper tools: `explain_a2cr_flows`, `should_save_workbaton`, `save_context`, `resume_context`, `load_context`, `list_contexts`
+- fixed Slot 1-5 support
+- MCP wrapper tools: `explain_a2cr_flows`, `should_save_workbaton`, `save_context`, `resume_context`, `load_context`, `list_contexts`, and WorkStash tools
 - Streamlit local dashboard
 - pytest coverage
 
@@ -44,8 +45,10 @@ Planned Web SaaS remaining work:
 
 - Railway/Supabase/Cloudflare project provisioning and first hosted deployment
 - Cloudflare DNS/domain
-- Stripe billing after the Core MVP is stable
-- WorkThreads after WorkBaton Core is solid
+- Free public preview for WorkBaton and WorkStash before paid checkout
+- GitHub OSS publication, community feedback, and official MCP listing/application work
+- Lemon Squeezy billing after the free preview, community loop, and Core smoke tests are stable
+- WorkThreads after WorkBaton/WorkStash adoption, billing, and remaining legal work are under control
 
 ## Local Development
 
@@ -161,4 +164,4 @@ Users must understand that losing the local client key makes those WorkBaton slo
 
 ## License
 
-TBD. Keep the repository private until the license policy is decided.
+TBD before OSS publication. Choose and add an open-source license before making the repository public.

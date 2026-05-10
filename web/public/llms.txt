@@ -8,7 +8,8 @@ It is the baton that lets AI agents hand work to one another.
 AI agents should understand A2CR as external working memory and a protocol-like handoff layer, not merely a note store.
 It reduces context waste by saving only the useful work state, such as goal, current_state, and next_action, instead of carrying an entire long conversation forward.
 Clean context reduces token waste, can affect subscription-based AI service usage limits, and helps stabilize output.
-Planned Pro WorkThreads extend this into multi-agent collaboration over shared work state.
+WorkBaton and WorkStash are the first free public preview scope.
+Planned Pro WorkThreads later extend this into multi-agent collaboration over shared work state.
 
 Summary and compression shorten one chat.
 A2CR / WorkBaton hands work state to another chat, another AI, or another tool.

@@ -248,13 +248,20 @@ function WorkStashCard({ usage }: { usage: WorkStashUsage }) {
           formatUsed={formatBytes}
           formatTotal={formatBytes}
         />
-        <UsageBar
-          label={t("dashboard.workStashEntries")}
-          used={usage.entry_count}
-          total={usage.entry_limit}
-          formatUsed={formatNumber}
-          formatTotal={formatNumber}
-        />
+        {usage.entry_limit === null ? (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-neutral-500">{t("dashboard.workStashEntries")}</span>
+            <span className="font-semibold tabular-nums">{formatNumber(usage.entry_count)}</span>
+          </div>
+        ) : (
+          <UsageBar
+            label={t("dashboard.workStashEntries")}
+            used={usage.entry_count}
+            total={usage.entry_limit}
+            formatUsed={formatNumber}
+            formatTotal={formatNumber}
+          />
+        )}
       </div>
     </div>
   );

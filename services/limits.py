@@ -50,7 +50,7 @@ class PlanLimits:
 
 FREE_LIMITS = PlanLimits(
     plan="free",
-    active_slots=3,
+    active_slots=5,
     allowed_retention_seconds=FREE_RETENTION_SECONDS,
     default_retention_seconds=86400,
     max_body_bytes=24 * 1024,
@@ -127,7 +127,7 @@ class WorkStashLimits:
     plan: PlanName
     quota_bytes: int
     ttl_seconds: int
-    max_entries: int
+    max_entries: int | None
     max_entry_bytes: int
     writes_per_hour: int
     reads_per_hour: int
@@ -137,7 +137,7 @@ FREE_STASH_LIMITS = WorkStashLimits(
     plan="free",
     quota_bytes=256 * 1024,
     ttl_seconds=7 * 24 * 60 * 60,
-    max_entries=50,
+    max_entries=None,
     max_entry_bytes=8 * 1024,
     writes_per_hour=60,
     reads_per_hour=300,
@@ -145,9 +145,9 @@ FREE_STASH_LIMITS = WorkStashLimits(
 
 PRO_STASH_LIMITS = WorkStashLimits(
     plan="pro",
-    quota_bytes=1024 * 1024,
+    quota_bytes=2048 * 1024,
     ttl_seconds=30 * 24 * 60 * 60,
-    max_entries=500,
+    max_entries=None,
     max_entry_bytes=32 * 1024,
     writes_per_hour=600,
     reads_per_hour=3000,
