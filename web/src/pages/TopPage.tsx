@@ -210,7 +210,7 @@ export function TopPage() {
       {/* ── NAV ── */}
       <header className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link to="/">
-          <img src="/brand/a2cr-logo.png" alt="A2CR" className="h-8 w-auto object-contain" />
+          <img src="/brand/a2cr-logo-dark.png" alt="A2CR" className="h-8 w-auto object-contain" />
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link to="/guide" className="rounded-md px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-white/10">
@@ -227,7 +227,7 @@ export function TopPage() {
 
         {/* ── HERO ── */}
         <section className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 sm:pt-28">
-          <img src="/brand/a2cr-logo.png" alt="A2CR" className="mb-10 w-full max-w-[200px] object-contain" />
+          <img src="/brand/a2cr-logo-dark.png" alt="A2CR" className="mb-10 w-full max-w-[200px] object-contain" />
           <h1 className="max-w-3xl whitespace-pre-line text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
             {c.heroTitle}
           </h1>
