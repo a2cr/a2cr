@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link to="/">
-            <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="h-14 w-auto object-contain" />
+            <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="h-[168px] w-auto object-contain" />
           </Link>
           <div className="flex items-center gap-2">
             <LanguageToggle />
