@@ -110,16 +110,24 @@ curl -X DELETE http://localhost:8000/v1/context/my-project-main \
 Example only:
 
 This is the only official AI-agent path for WorkBaton. Configure one MCP server
-named `a2cr` through the local stdio wrapper. Do not configure the hosted
-`/mcp` URL directly for WorkBaton, and do not use the old `AI_CLIPBOARD_*` or
-`A2CR_API_STYLE` settings for normal AI-agent setup.
+named `a2cr` through the local stdio wrapper. Install the wrapper from PyPI as
+`a2cr-mcp`; the repository-local `mcp/server.py` entrypoint is for development
+and compatibility only. Do not configure the hosted `/mcp` URL directly for
+WorkBaton, and do not use the old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings
+for normal AI-agent setup.
+
+Install or update the wrapper:
+
+```bash
+python -m pip install --upgrade a2cr-mcp
+```
 
 ```json
 {
   "mcpServers": {
     "a2cr": {
-      "command": "python",
-      "args": ["<project-root>/mcp/server.py"],
+      "command": "a2cr-mcp",
+      "args": [],
       "env": {
         "A2CR_API_KEY": "<your-api-key>",
         "A2CR_BASE_URL": "https://a2cr.app",

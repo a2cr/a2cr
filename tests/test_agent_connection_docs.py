@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 
 def test_agent_connection_code_uses_official_saas_path_by_default():
-    server = read("mcp/server.py")
+    server = read("a2cr_mcp/server.py")
 
     assert '"https://a2cr.app"' in server
     assert "A2CR_ALLOW_LOCAL_BASE_URL" in server
@@ -30,7 +30,9 @@ def test_public_agent_docs_prefer_slot_first_stdio_path():
     for path in ("README.md", "docs/templates/skills/a2cr-agent/SKILL.md", "docs/usage.md"):
         assert "A2CR_API_STYLE" in docs[path]
 
-    assert "Official AI-agent setup is the local stdio MCP wrapper named a2cr" in docs["web/public/llms.txt"]
+    assert "Official AI-agent setup is the PyPI package a2cr-mcp" in docs["web/public/llms.txt"]
+    assert 'command = "a2cr-mcp"' in docs["web/public/llms.txt"]
+    assert "python -m pip install --upgrade a2cr-mcp" in docs["docs/usage.md"]
     assert "Use `list_contexts` only when no Slot is provided" in docs[
         "docs/templates/skills/a2cr-agent/SKILL.md"
     ]

@@ -7,6 +7,8 @@ description: Use A2CR MCP for WorkBaton checkpoints, WorkStash temporary work me
 
 Use A2CR as the shared context layer for AI-agent work. The official WorkBaton path for AI agents is the local stdio MCP wrapper named `a2cr`. Use WorkStash proactively for safe temporary work memory when useful supporting details should not bloat a WorkBaton. Prefer A2CR MCP tools over guessed HTTP endpoints unless the user explicitly asks for API integration work.
 
+For normal user setup, the local stdio wrapper is installed from PyPI with `python -m pip install --upgrade a2cr-mcp`, then registered in the MCP client as a single server named `a2cr` with command `a2cr-mcp` and empty `args`. The repository-local `mcp/server.py` entrypoint is for development and compatibility only.
+
 When newly connected or unsure which A2CR flow to use, call `explain_a2cr_flows` before choosing tools. WorkBaton is serial window handoff; WorkStash is temporary supporting memory referenced by WorkBaton; WorkThreads is multi-agent collaboration.
 
 Some MCP clients expose tools lazily. If `save_context` is not immediately visible, search or request the exact `save_context` tool name before concluding WorkBaton saves are unavailable.

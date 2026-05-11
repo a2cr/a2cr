@@ -24,7 +24,7 @@ This design covers three related goals:
 The repository already has a strong SaaS foundation:
 
 - FastAPI, React/Vite dashboard, Supabase/Postgres schema, RLS, API keys, access logs, and `/mcp` HTTP surface.
-- Local stdio MCP wrapper at `mcp/server.py` with client-encrypted WorkBaton save/load/resume and WorkStash tool stubs.
+- Local stdio MCP wrapper published as PyPI package `a2cr-mcp`, with `mcp/server.py` retained as a development/compatibility entrypoint.
 - Public-facing drafts in `README.md`, `docs/usage.md`, `docs/github-publication-draft.md`, and `docs/runbooks/saas-launch-roadmap.md`.
 - CI, npm audit, pip-audit, and CodeQL workflows.
 
@@ -196,7 +196,9 @@ A2CR needs two install surfaces:
 Local stdio MCP package:
 - official path for WorkBaton save
 - official path for WorkStash value encryption/decryption
-- can be installed by clone, uvx, pipx, or npx wrapper
+- installed from PyPI as `a2cr-mcp`
+- exposes the console command `a2cr-mcp`
+- registered in the user's MCP client as server name `a2cr`
 
 Remote HTTPS MCP:
 - required by app directories and custom connectors
@@ -208,20 +210,27 @@ The first public docs should make this split obvious. Directory reviewers will t
 
 ### Packaging
 
-Current setup requires a cloned repo path:
+Current public setup uses the PyPI package:
+
+```bash
+python -m pip install --upgrade a2cr-mcp
+```
+
+MCP config uses the installed console command:
 
 ```json
 {
-  "command": "python",
-  "args": ["<project-root>/mcp/server.py"]
+  "command": "a2cr-mcp",
+  "args": []
 }
 ```
 
-For OSS discovery, add a stable package path:
+Package direction:
 
 ```text
-Preferred: PyPI package `a2cr-mcp` with console command `a2cr-mcp`
-Optional: npm package wrapper for clients that prefer `npx`
+Primary: PyPI package `a2cr-mcp` with console command `a2cr-mcp`
+Development compatibility: repo-local `mcp/server.py`
+Possible later: npm package wrapper for clients that prefer `npx`
 ```
 
 This makes install docs and registry `packages` metadata much easier to maintain.

@@ -1,6 +1,8 @@
 import asyncio
 import base64
-import importlib.util
+import importlib
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,14 +14,33 @@ CONTENT = {
     "next_action": "assert",
 }
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def load_stdio_server():
-    path = Path(__file__).resolve().parents[1] / "mcp" / "server.py"
-    spec = importlib.util.spec_from_file_location("a2cr_stdio_mcp_server", path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
+    sys.modules.pop("a2cr_mcp.server", None)
+    return importlib.import_module("a2cr_mcp.server")
+
+
+def test_legacy_stdio_entrypoint_imports_from_any_cwd(tmp_path):
+    script = ROOT / "mcp" / "server.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import runpy; "
+                f"module = runpy.run_path({str(script)!r}, run_name='a2cr_legacy_entrypoint_test'); "
+                "print(callable(module['main']))"
+            ),
+        ],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert result.stdout.strip() == "True"
 
 
 def test_mcp_stdio_client_encryption_roundtrip(tmp_path, monkeypatch):

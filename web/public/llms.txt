@@ -20,6 +20,8 @@ Public guide (Japanese): https://a2cr.app/guide
 Public guide (English): https://a2cr.app/en/guide
 AI agent guide (Japanese): https://a2cr.app/agent-guide
 AI agent guide (English): https://a2cr.app/en/agent-guide
+Manual (Japanese): https://a2cr.app/manual
+Manual (English): https://a2cr.app/en/manual
 Pricing: https://a2cr.app/pricing
 MCP service URL: https://a2cr.app/mcp
 
@@ -28,25 +30,32 @@ Use case:
 - Resume a saved slot from another window, another model, or any AI agent configured with A2CR MCP.
 - Use MCP tools instead of guessing direct HTTP API endpoints.
 - Keep future sessions focused on the next action instead of old chat history.
+- Follow the manual for login, API key setup, MCP config, project memory snippets, Slot saves, Slot resumes, and WorkStash retrieval.
 
 Encryption notes:
 - WorkBaton is client-encrypted only.
 - The local stdio MCP wrapper encrypts before upload and A2CR stores and returns ciphertext only.
 - A2CR does not accept plaintext WorkBaton bodies.
 - Direct remote HTTP MCP saving is disabled for WorkBaton.
-- Official AI-agent setup is the local stdio MCP wrapper named a2cr; do not configure the remote /mcp URL directly for WorkBaton.
+- Official AI-agent setup is the PyPI package a2cr-mcp, registered as one local stdio MCP server named a2cr; do not configure the remote /mcp URL directly for WorkBaton.
 - Do not use the legacy local SQLite /v1/context API for AI-agent saves.
 - The local client key is managed by the user, not by the service administrator.
 - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
 
 MCP setup:
 
+Install or update the wrapper:
+
+```bash
+python -m pip install --upgrade a2cr-mcp
+```
+
 Codex TOML example:
 
 ```toml
 [mcp_servers."a2cr"]
-command = "python"
-args = ["<A2CR_REPO>/mcp/server.py"]
+command = "a2cr-mcp"
+args = []
 
 [mcp_servers."a2cr".env]
 A2CR_API_KEY = "<A2CR_API_KEY>"
@@ -61,8 +70,8 @@ Generic stdio JSON example:
 {
   "mcpServers": {
     "a2cr": {
-      "command": "python",
-      "args": ["<A2CR_REPO>/mcp/server.py"],
+      "command": "a2cr-mcp",
+      "args": [],
       "env": {
         "A2CR_API_KEY": "<A2CR_API_KEY>",
         "A2CR_BASE_URL": "https://a2cr.app",

@@ -1,0 +1,10 @@
+include README.md
+include pyproject.toml
+recursive-include a2cr_mcp *.py
+prune tests
+prune web
+prune docs
+prune dashboard
+prune routers
+prune services
+prune supabase

@@ -34,8 +34,8 @@ function mcpConfigSnippet(client: ClientKey): string {
   if (client === "codex") {
     return [
       '[mcp_servers."a2cr"]',
-      'command = "python"',
-      'args = ["<A2CR_REPO>/mcp/server.py"]',
+      'command = "a2cr-mcp"',
+      "args = []",
       "",
       '[mcp_servers."a2cr".env]',
       'A2CR_API_KEY = "<A2CR_API_KEY>"',
@@ -48,8 +48,8 @@ function mcpConfigSnippet(client: ClientKey): string {
     {
       mcpServers: {
         a2cr: {
-          command: "python",
-          args: ["<A2CR_REPO>/mcp/server.py"],
+          command: "a2cr-mcp",
+          args: [],
           env: {
             A2CR_API_KEY: "<A2CR_API_KEY>",
             A2CR_BASE_URL: baseUrl,
@@ -130,14 +130,14 @@ const text = {
       "WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload. Legacy local SQLite saves are not the official AI-agent path.",
     setupTitle: "MCP setup",
     setupBody:
-      "Sign in to A2CR, issue an API key from Settings, then add the local stdio wrapper to your MCP client using the config below. Paste the API key into the config file yourself — never share it in chat. The wrapper creates and manages a local client key on your machine.",
+      "Sign in to A2CR, issue an API key from Settings, install a2cr-mcp from PyPI, then add the local stdio wrapper to your MCP client using the config below. Paste the API key into the config file yourself — never share it in chat. The wrapper creates and manages a local client key on your machine.",
     agentSetupTitle: "MCP setup — step by step",
     agentSetupBody:
       "Follow these steps in order. The API key must be entered by the user — never ask them to share it in chat, never generate or guess one.",
     agentSetupSteps: [
       "Tell the user to sign in at https://a2cr.app/ and go to Settings → API key → Issue new key.",
       "Ask the user to copy the key and paste it into the MCP config themselves. Do not ask them to share it in chat.",
-      "Clone the A2CR repository so that mcp/server.py is available on the user's machine.",
+      "Ask the user to install or update the wrapper with python -m pip install --upgrade a2cr-mcp.",
       "Add exactly one MCP server named a2cr using the config snippet below that matches the user's client.",
       "Call get_account_limits to verify the connection is working.",
       "Confirm to the user: 'A2CR is connected. I will save WorkBaton checkpoints at task milestones automatically.'"
@@ -145,6 +145,7 @@ const text = {
     workflowTitle: "Basic workflow",
     workflow: [
       "Sign in to A2CR and issue an API key.",
+      "Install or update the wrapper with python -m pip install --upgrade a2cr-mcp.",
       "Add one MCP server named a2cr to your MCP client using the local stdio wrapper.",
       "Ask the AI agent to verify the connection with get_account_limits.",
       "Save a WorkBaton before the session gets long or at a clear task boundary.",
@@ -371,14 +372,14 @@ const text = {
       "A2CRはWorkBaton本文の平文保存を受け付けません。直接HTTP MCPからの保存は無効化し、ローカルstdio wrapperで暗号化してから送る前提です。",
     setupTitle: "MCP設定",
     setupBody:
-      "A2CRにサインインし、設定からAPIキーを発行後、下の設定スニペットを使いMCPクライアントにローカルstdio wrapperを追加します。APIキーはご自身で設定ファイルに貼り付けてください。チャットでは共有しないでください。wrapperがlocal client keyを端末上に作成・管理します。",
+      "A2CRにサインインし、設定からAPIキーを発行後、PyPIからa2cr-mcpをインストールし、下の設定スニペットを使ってMCPクライアントにローカルstdio wrapperを追加します。APIキーはご自身で設定ファイルに貼り付けてください。チャットでは共有しないでください。wrapperがlocal client keyを端末上に作成・管理します。",
     agentSetupTitle: "MCP設定 — 手順",
     agentSetupBody:
       "以下の手順を順番に実行します。APIキーはユーザー本人が貼り付けます。チャットで共有させず、生成・推測も禁止です。",
     agentSetupSteps: [
       "ユーザーに https://a2cr.app/ でサインインし、設定 → APIキー → 新しいキーを発行 を行ってもらいます。",
       "コピーしたAPIキーをMCPの設定ファイルに自分で貼り付けてもらいます。チャットでは共有させないでください。",
-      "A2CRリポジトリをクローンし、mcp/server.py がユーザーの端末上に用意されるようにします。",
+      "python -m pip install --upgrade a2cr-mcp でwrapperをインストールまたは更新してもらいます。",
       "下の設定スニペットを使い、ユーザーのクライアント（Codex または Generic）に合わせてa2crという名前のMCPサーバーを1つ追加します。",
       "get_account_limits を呼び出して接続を確認します。",
       "ユーザーに伝えます：「A2CRが接続されました。作業の節目でWorkBatonチェックポイントを自動的に保存します。」"
@@ -386,6 +387,7 @@ const text = {
     workflowTitle: "基本の流れ",
     workflow: [
       "A2CRへログインし、APIキーを発行します。",
+      "python -m pip install --upgrade a2cr-mcp でwrapperをインストールまたは更新します。",
       "ローカルstdio wrapperを使い、a2crという名前のMCP serverを1つだけ追加します。",
       "AIエージェントにget_account_limitsで接続確認してもらいます。",
       "会話が長くなる前、または作業の区切りでWorkBatonを保存します。",
@@ -552,6 +554,7 @@ function PublicHeader({ language, kind }: { language: Language; kind: GuideKind 
   const { session } = useAuth();
   const humanPath = language === "ja" ? "/guide" : "/en/guide";
   const agentPath = "/agent-guide.html";
+  const manualPath = language === "ja" ? "/manual" : "/en/manual";
   const t = text[language];
 
   return (
@@ -574,6 +577,9 @@ function PublicHeader({ language, kind }: { language: Language; kind: GuideKind 
           >
             {t.navAgent}
           </a>
+          <Link to={manualPath} className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
+            {language === "ja" ? "使用説明書" : "Manual"}
+          </Link>
           <Link to="/pricing" className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
             {t.pricing}
           </Link>

@@ -92,10 +92,15 @@ ROUTE_SEO = {
 
         Important URLs:
         - Guide: https://a2cr.app/en/guide
+        - Manual: https://a2cr.app/en/manual
         - AI agent guide: https://a2cr.app/en/agent-guide
         - Pricing: https://a2cr.app/pricing
         - MCP service URL: https://a2cr.app/mcp
         - LLM notes: https://a2cr.app/llms.txt
+
+        Public setup:
+        - Install or update the local stdio MCP wrapper with python -m pip install --upgrade a2cr-mcp.
+        - Register the installed a2cr-mcp command as one MCP server named a2cr.
         """,
     ),
     "guide": _seo(
@@ -115,6 +120,8 @@ ROUTE_SEO = {
         - A2CRが何を渡し、何を保存しないのかまで、あなた向けにかみ砕いて説明できます。
 
         重要事項:
+        - Python が使える状態で python -m pip install --upgrade a2cr-mcp を実行し、ローカルstdio MCP wrapperをインストールします。
+        - MCP設定では command を a2cr-mcp、args を空配列にし、MCP server名は a2cr にします。
         - WorkBatonはclient-encryptedのみです。
         - A2CRはWorkBaton本文の平文保存を受け付けません。
         - ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存・返却します。
@@ -163,6 +170,8 @@ ROUTE_SEO = {
         - The guide is written for agents, so it can turn the app's role, limits, and setup into plain guidance for your situation.
 
         Important points:
+        - Install the local stdio MCP wrapper with python -m pip install --upgrade a2cr-mcp.
+        - In MCP config, set command to a2cr-mcp, args to an empty array, and MCP server name to a2cr.
         - WorkBaton is client-encrypted only.
         - A2CR does not accept plaintext WorkBaton bodies.
         - The local stdio MCP wrapper encrypts before upload, and A2CR stores and returns ciphertext only.
@@ -203,7 +212,7 @@ ROUTE_SEO = {
         # A2CR AIエージェント向けガイド
 
         AIエージェントはA2CRをMCPツール経由の作業記憶として使います。直接HTTP APIを推測して呼ばないでください。
-        WorkBatonの公式ルートは、a2crという名前のローカルstdio MCPラッパーです。
+        WorkBatonの公式ルートは、PyPI package a2cr-mcpをa2crという名前のローカルstdio MCP serverとして登録する方法です。
 
         ルール:
         - resume promptにSlotがある場合は、最初にresume_context(slot_name="...")またはresume_context(slot_number=N)を実行します。
@@ -229,7 +238,7 @@ ROUTE_SEO = {
         # A2CR AI Agent Guide
 
         AI agents should use A2CR through MCP tools as working memory. Do not guess direct HTTP API calls.
-        The official WorkBaton path is the local stdio MCP wrapper named a2cr.
+        The official WorkBaton path is the PyPI package a2cr-mcp registered as one local stdio MCP server named a2cr.
         Do not use the legacy local SQLite API for WorkBaton saves.
 
         Rules:
@@ -248,6 +257,112 @@ ROUTE_SEO = {
         - Client-encrypted WorkBaton slots cannot be decrypted by the A2CR server.
         - If the local client key is lost, old client-encrypted slots cannot be recovered.
         - Slots saved after creating a new local client key can be read with that new key.
+        """,
+    ),
+    "manual": _seo(
+        title="A2CR 使用説明書 - セットアップと保存・読み込み",
+        description="A2CR のログイン、API key 発行、MCP 設定、AGENTS.md / CLAUDE.md 追記、WorkBaton Slot 保存・読み込み、MCP と WorkStash で AI が受け取る情報をまとめた使用説明書です。",
+        canonical="https://a2cr.app/manual",
+        alternates={"ja": "https://a2cr.app/manual", "en": "https://a2cr.app/en/manual"},
+        machine_text="""
+        # A2CR 使用説明書
+
+        このページは、ユーザー向けガイドと AI エージェント向けガイドとは別の実用手順です。
+
+        ログインから初回利用まで:
+        - 現在の local stdio MCP wrapper は Python のプログラムです。AI クライアントが裏側で起動するため Python が必要です。
+        - 推奨バージョンは Python 3.13 です。Python 3.12 以上なら利用できる想定ですが、迷ったら Python 3.13 を入れてください。
+        - Python 3.15 alpha / beta などの開発版は避けてください。
+        - ターミナルで python --version を実行するとバージョンを確認できます。
+        - Python が使える状態になったら python -m pip install --upgrade a2cr-mcp で PyPI から wrapper をインストールします。
+        - A2CR にログインし、Settings で API key を発行します。
+        - API key は AI チャットに貼らず、ユーザー自身が MCP 設定ファイルに貼り付けます。
+        - MCP 設定では command を a2cr-mcp、args を空配列にします。
+        - MCP server 名は a2cr にします。既存 MCP server は消しません。
+        - 新しい AI セッションで get_account_limits と explain_a2cr_flows を呼び、接続と利用可能な flow を確認します。
+
+        AGENTS.md / CLAUDE.md などへの追記:
+        - A2CR MCP tools may be used proactively when they help preserve useful work state.
+        - Use the configured MCP tools only; do not invent direct HTTP API calls.
+        - Use WorkBaton at milestones, after validation, before likely context loss, or when context drift/contamination is detected.
+        - Use WorkStash for safe supporting notes that would bloat the WorkBaton.
+        - Record WorkStash entry_key values in WorkBaton references or next_action.
+        - Never save secrets, API keys, Authorization headers, cookies, private DB URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.
+
+        Slot への保存:
+        - get_account_limits で plan limit と detail level を確認します。
+        - should_save_workbaton で保存判断を確認します。
+        - save_context には goal, current_state, next_action, decisions, blockers, validation, references を compact に入れます。
+        - 詳細な file path, API notes, failed attempts, validation notes は WorkStash に分けます。
+
+        Slot からの読み込み:
+        - 新しい AI 窓で resume_context(slot_number=N) または resume_context(slot_name="...") を実行します。
+        - AI は goal, current_state, next_action, decisions, blockers, validation, references を読みます。
+        - Slot metadata, response_language_hint, language_context, agent_continuity_guidance も利用可能な場合があります。
+        - WorkStash entry_key がある場合、現在の作業に必要な entry だけ get_work_stash で取得します。
+
+        MCP 接続時に AI が受け取る情報:
+        - WorkBaton は compact serial checkpoint handoff であり、chat log や file store ではありません。
+        - WorkStash は一時的な補助メモであり、永続的な knowledge base ではありません。
+        - local stdio wrapper が公式 WorkBaton 保存経路です。A2CR は client-encrypted WorkBaton body を復号できません。
+        - explain_a2cr_flows, get_account_limits, should_save_workbaton, save_context, resume_context, get_work_stash などの tool description と safety rule を AI が受け取ります。
+
+        自発利用:
+        - MCP tool descriptions、AGENTS.md / CLAUDE.md、読み込んだ WorkBaton が揃うと、対応 AI は必要に応じて WorkBaton / WorkStash を自発利用できます。
+        - context drift または context contamination を感じたら should_save_workbaton を呼び、必要なら compact WorkBaton を保存して新しい AI 窓への移行を提案します。
+        """,
+    ),
+    "en/manual": _seo(
+        title="A2CR Manual - Setup, Save, and Resume",
+        description="A practical A2CR manual covering login, API key setup, MCP config, AGENTS.md and CLAUDE.md snippets, WorkBaton Slot save/resume, and what AI agents receive from MCP and WorkStash.",
+        canonical="https://a2cr.app/en/manual",
+        alternates={"ja": "https://a2cr.app/manual", "en": "https://a2cr.app/en/manual"},
+        machine_text="""
+        # A2CR Manual
+
+        This page is the practical operating manual separate from the public concept guide and the AI agent guide.
+
+        From sign-in to first use:
+        - The current local stdio MCP wrapper is a Python program. The AI client starts it in the background, so Python is required.
+        - Recommended version: Python 3.13. Python 3.12 or newer is expected to work, but choose Python 3.13 if unsure.
+        - Avoid development builds such as Python 3.15 alpha or beta.
+        - Run python --version in a terminal to check the installed version.
+        - After Python is available, install the wrapper from PyPI with python -m pip install --upgrade a2cr-mcp.
+        - Sign in to A2CR and issue an API key from Settings.
+        - Do not paste the API key into AI chat. The user should paste it into the MCP config locally.
+        - In the MCP config, set command to a2cr-mcp and args to an empty array.
+        - Add exactly one MCP server named a2cr. Preserve existing MCP servers.
+        - In a new AI session, call get_account_limits and explain_a2cr_flows to verify the connection and learn the available flows.
+
+        Add to AGENTS.md, CLAUDE.md, or another project memory file:
+        - A2CR MCP tools may be used proactively when they help preserve useful work state.
+        - Use configured MCP tools only; do not invent direct HTTP API calls.
+        - Use WorkBaton at milestones, after validation, before likely context loss, or when context drift/contamination is detected.
+        - Use WorkStash for safe supporting notes that would bloat the WorkBaton.
+        - Record WorkStash entry_key values in WorkBaton references or next_action.
+        - Never save secrets, API keys, Authorization headers, cookies, private DB URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.
+
+        Saving to a Slot:
+        - Call get_account_limits to confirm plan limits and detail level.
+        - Call should_save_workbaton when the save is discretionary.
+        - Save compact goal, current_state, next_action, decisions, blockers, validation, and references with save_context.
+        - Move detailed file paths, API notes, failed attempts, and validation notes to WorkStash.
+
+        Reading from a Slot:
+        - In a fresh AI window, call resume_context(slot_number=N) or resume_context(slot_name="...").
+        - The AI reads goal, current_state, next_action, decisions, blockers, validation, and references.
+        - Slot metadata, response_language_hint, language_context, and agent_continuity_guidance may also be available.
+        - If WorkStash entry_key values are referenced, call get_work_stash only for entries needed for the current task.
+
+        What the AI receives from MCP:
+        - WorkBaton is a compact serial checkpoint handoff, not a chat log or file store.
+        - WorkStash is temporary supporting memory, not a durable knowledge base.
+        - The local stdio wrapper is the official WorkBaton save path. A2CR cannot decrypt client-encrypted WorkBaton bodies.
+        - The AI receives tool descriptions and safety rules for explain_a2cr_flows, get_account_limits, should_save_workbaton, save_context, resume_context, get_work_stash, and related tools.
+
+        Autonomy:
+        - With MCP tool descriptions, AGENTS.md / CLAUDE.md, and a loaded WorkBaton, capable AI agents can use WorkBaton and WorkStash proactively when needed.
+        - If context drift or context contamination appears, the agent can call should_save_workbaton, save a compact WorkBaton when recommended, and suggest continuing in a fresh AI window.
         """,
     ),
     "pricing": _seo(

@@ -305,7 +305,8 @@ A2CR should reach a high security posture without turning normal use into a secu
 Principles:
 
 1. Secure defaults, low friction
-   - The recommended path is local stdio MCP wrapper + client-encrypted WorkBaton.
+   - The recommended user setup is PyPI package `a2cr-mcp` + local stdio MCP wrapper + client-encrypted WorkBaton.
+   - MCP clients should register the installed command `a2cr-mcp` as one server named `a2cr`.
    - Users should not need to understand cryptography to save or resume normal WorkBaton checkpoints.
    - Dangerous or unsupported paths should fail with plain, actionable messages.
 

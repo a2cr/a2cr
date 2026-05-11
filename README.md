@@ -1,8 +1,30 @@
+<p align="center">
+  <img src="docs/assets/github/a2cr-logo.png" alt="A2CR logo" width="420">
+</p>
+
+<p align="center">
+  <img src="docs/assets/github/a2cr-story.gif" alt="A2CR turns messy AI work context into WorkBaton and WorkStash handoff state" width="900">
+</p>
+
 # A2CR
 
 Agent-to-Agent Context Relay.
 
 A2CR helps AI agents save and resume work context across conversation windows, tools, and clients. The current repository is a Web SaaS foundation with a legacy local prototype kept only for development reference.
+
+## Visual Overview
+
+### A2CR Basics
+
+![A2CR Basics](docs/assets/github/a2cr-basics.png)
+
+### Save Rules and Cautions
+
+![Save Rules and Cautions](docs/assets/github/a2cr-save-rules.png)
+
+### Basic Workflow
+
+![How to Use A2CR](docs/assets/github/a2cr-workflow.png)
 
 ## Product Layers
 
@@ -92,14 +114,20 @@ See [deploy runbook](docs/runbooks/deploy.md) and [security runbook](docs/runboo
 
 Example only. Do not commit real API keys.
 
-WorkBaton requires the local stdio wrapper so content is encrypted before upload. Configure exactly one MCP server named `a2cr` through this stdio wrapper for AI-agent work. Do not configure the remote `/mcp` URL directly for WorkBaton, do not guess REST endpoints, and do not use the old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
+WorkBaton requires the local stdio wrapper so content is encrypted before upload. The official user-facing distribution path is the PyPI package `a2cr-mcp`, which provides the `a2cr-mcp` command. Configure exactly one MCP server named `a2cr` through this stdio wrapper for AI-agent work. Do not configure the remote `/mcp` URL directly for WorkBaton, do not guess REST endpoints, and do not use the old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
+
+Install or update the wrapper:
+
+```bash
+python -m pip install --upgrade a2cr-mcp
+```
 
 Codex-style local stdio example:
 
 ```toml
 [mcp_servers."a2cr"]
-command = "python"
-args = ["<project-root>/mcp/server.py"]
+command = "a2cr-mcp"
+args = []
 
 [mcp_servers."a2cr".env]
 A2CR_API_KEY = "<your-a2cr-api-key>"
@@ -114,8 +142,8 @@ Generic MCP stdio example:
 {
   "mcpServers": {
     "a2cr": {
-      "command": "python",
-      "args": ["<project-root>/mcp/server.py"],
+      "command": "a2cr-mcp",
+      "args": [],
       "env": {
         "A2CR_API_KEY": "<your-a2cr-api-key>",
         "A2CR_BASE_URL": "https://a2cr.app",
@@ -161,6 +189,18 @@ Users must understand that losing the local client key makes those WorkBaton slo
 - Optional AI client Skill template: `docs/templates/skills/a2cr-agent/SKILL.md`
 - Service cost estimate: `docs/a2cr-service-cost-estimate.md`
 - GitHub publication draft: `docs/github-publication-draft.md`
+
+## 日本語概要
+
+A2CR は、AI エージェントの作業状態を別の会話窓・別のモデル・別の MCP 対応クライアントへ引き継ぐためのコンテキスト中継レイヤーです。
+
+WorkBaton は、次の AI が作業を再開するために必要な最小限の状態を保存するための仕組みです。WorkStash は、ファイルパス、調査メモ、判断理由などの補助情報を WorkBaton から参照できる形で分けて扱うためのレイヤーです。
+
+A2CR はサーバー側で LLM 推論を行いません。ユーザーは自分の AI クライアントを使い、それらのクライアントが MCP/API 経由で A2CR を呼び出します。
+
+WorkBaton 本文は、ローカル stdio MCP wrapper でアップロード前に暗号化されます。A2CR は暗号化済み本文とメタデータを保存しますが、ダッシュボードでは本文ではなくスロット名、時刻、サイズ、状態などのメタデータのみを扱う設計です。
+
+初回公開は無料プレビューとして進め、課金、WorkThreads、本番 SLA は後続フェーズで扱う予定です。
 
 ## License
 

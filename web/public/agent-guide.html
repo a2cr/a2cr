@@ -136,6 +136,7 @@
   <a class="brand" href="https://a2cr.app/">A2CR</a>
   <nav>
     <a href="https://a2cr.app/guide">Guide</a>
+    <a href="https://a2cr.app/en/manual">Manual</a>
     <a href="https://a2cr.app/pricing">Pricing</a>
     <a href="https://a2cr.app/dashboard">Dashboard</a>
   </nav>
@@ -205,7 +206,7 @@
     <ol>
       <li>Tell the user to sign in at <a href="https://a2cr.app/">https://a2cr.app/</a> and go to <strong>Settings → API key → Issue new key</strong>.</li>
       <li>Ask the user to copy the key and paste it into the MCP config themselves. Do not ask them to share it in chat.</li>
-      <li>Clone the A2CR repository so that <code>mcp/server.py</code> is available on the user's machine.</li>
+      <li>Ask the user to install or update the wrapper with <code>python -m pip install --upgrade a2cr-mcp</code>.</li>
       <li>Add exactly one MCP server named <code>a2cr</code> using the config snippet below that matches the user's client.</li>
       <li>Call <code>get_account_limits</code> to verify the connection is working.</li>
       <li>Confirm to the user: "A2CR is connected. I will save WorkBaton checkpoints at task milestones automatically."</li>
@@ -213,8 +214,8 @@
 
     <div class="config-label">Codex — <code>config.toml</code></div>
 <pre>[mcp_servers."a2cr"]
-command = "python"
-args = ["&lt;A2CR_REPO&gt;/mcp/server.py"]
+command = "a2cr-mcp"
+args = []
 
 [mcp_servers."a2cr".env]
 A2CR_API_KEY = "&lt;A2CR_API_KEY&gt;"
@@ -226,8 +227,8 @@ A2CR_SERVICE_URL = "https://a2cr.app/mcp"
 <pre>{
   "mcpServers": {
     "a2cr": {
-      "command": "python",
-      "args": ["&lt;A2CR_REPO&gt;/mcp/server.py"],
+      "command": "a2cr-mcp",
+      "args": [],
       "env": {
         "A2CR_API_KEY": "&lt;A2CR_API_KEY&gt;",
         "A2CR_BASE_URL": "https://a2cr.app",

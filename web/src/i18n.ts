@@ -41,11 +41,11 @@ const resources = {
         },
         originTitle: "How A2CR works",
         originBody:
-          "A2CR runs as a hosted service. Your AI connects via MCP, saves encrypted WorkBaton checkpoints through the local stdio wrapper, and resumes from any new window or tool.",
+          "A2CR runs as a hosted service. Install a2cr-mcp from PyPI, connect your AI via MCP, save encrypted WorkBaton checkpoints through the local stdio wrapper, and resume from any new window or tool.",
         surfaces: {
           dashboard: "View slots, usage, limits, and access logs. Saved content is never exposed.",
           api: "Authenticated paths for WorkBaton save, load, resume, and delete.",
-          mcp: "MCP tools for AI clients. WorkBaton saving uses the local stdio wrapper for client-side encryption before upload."
+          mcp: "MCP tools for AI clients. WorkBaton saving uses the PyPI-installed local stdio wrapper for client-side encryption before upload."
         }
       },
       common: {
@@ -119,6 +119,7 @@ const resources = {
         responseLanguage: "Response language",
         timezone: "Timezone",
         setup: "MCP setup",
+        setupInstall: "Install or update the wrapper first: python -m pip install --upgrade a2cr-mcp. Then use the config snippet below.",
         genericResume: "Generic resume prompt",
         saved: "Settings saved",
         noApiKey: "No active API key"
@@ -188,11 +189,11 @@ const resources = {
         },
         originTitle: "A2CR の仕組み",
         originBody:
-          "A2CR はホスト型サービスです。AI は MCP 経由で接続し、ローカル stdio wrapper で暗号化した WorkBaton チェックポイントを保存。新しいウィンドウやツールからいつでも再開できます。",
+          "A2CR はホスト型サービスです。PyPI から a2cr-mcp を入れ、AI は MCP 経由で接続し、ローカル stdio wrapper で暗号化した WorkBaton チェックポイントを保存。新しいウィンドウやツールからいつでも再開できます。",
         surfaces: {
           dashboard: "スロット・利用状況・上限・アクセスログを確認できます。保存本文は表示されません。",
           api: "WorkBaton の保存・読込・再開・削除の認証済み API パスを提供します。",
-          mcp: "AI クライアント向けの MCP ツール群。WorkBaton 保存はローカル stdio wrapper を経由してクライアント側で暗号化してから送信します。"
+          mcp: "AI クライアント向けの MCP ツール群。WorkBaton 保存は PyPI で入れたローカル stdio wrapper を経由してクライアント側で暗号化してから送信します。"
         }
       },
       common: {
@@ -266,6 +267,7 @@ const resources = {
         responseLanguage: "応答言語",
         timezone: "タイムゾーン",
         setup: "MCP 設定",
+        setupInstall: "先に python -m pip install --upgrade a2cr-mcp で wrapper をインストールまたは更新し、その後に下の設定例を使います。",
         genericResume: "汎用再開プロンプト",
         saved: "設定を保存しました",
         noApiKey: "有効な API キーはありません"

@@ -24,6 +24,12 @@ export function LanguageToggle() {
     if (location.pathname === "/en/agent-guide" && language === "ja") {
       navigate("/agent-guide");
     }
+    if (location.pathname === "/manual" && language === "en") {
+      navigate("/en/manual");
+    }
+    if (location.pathname === "/en/manual" && language === "ja") {
+      navigate("/manual");
+    }
   };
 
   return (

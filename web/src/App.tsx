@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
 import { GuidePage } from "./pages/GuidePage";
 import { LoginPage } from "./pages/LoginPage";
+import { ManualPage } from "./pages/ManualPage";
 import { PricingPage } from "./pages/PricingPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TopPage } from "./pages/TopPage";
@@ -17,6 +18,8 @@ export function App() {
       <Route path="/en/guide" element={<GuidePage />} />
       <Route path="/agent-guide" element={<GuidePage />} />
       <Route path="/en/agent-guide" element={<GuidePage />} />
+      <Route path="/manual" element={<ManualPage />} />
+      <Route path="/en/manual" element={<ManualPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route

@@ -139,7 +139,7 @@ Work:
 - Publish the GitHub repository as OSS after license and secret checks pass
 - Keep the public README focused on WorkBaton, WorkStash, MCP setup, and known
   limitations
-- Confirm the local stdio MCP wrapper setup works from a clean user environment
+- Confirm `python -m pip install --upgrade a2cr-mcp` works from a clean user environment
 - Publish a free-preview guide for WorkBaton and WorkStash
 - Keep public legal/contact copy minimal and non-paid while the virtual
   office/business address decision is being finalized.
@@ -161,7 +161,7 @@ Exit criteria:
 
 - No secrets, local DBs, or private MCP configs are published
 - `python -m pytest -q` and `cd web && npm run build` pass before the public push
-- A clean install can configure the MCP wrapper and use WorkBaton/WorkStash
+- A clean PyPI install can configure the MCP wrapper and use WorkBaton/WorkStash
 - Public docs say billing and WorkThreads are not part of the first free preview
 - Public docs do not expose a personal home address, personal phone number, or
   personal Gmail address.

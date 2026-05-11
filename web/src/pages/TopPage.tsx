@@ -53,7 +53,7 @@ const pageContent = {
       {
         num: "01",
         title: "Connect via MCP",
-        body: "Add one MCP server named a2cr to your client config. The server sends your AI a complete set of instructions — what to save, when, and what never to include."
+        body: "Install a2cr-mcp from PyPI, then add one MCP server named a2cr to your client config. The server sends your AI a complete set of instructions — what to save, when, and what never to include."
       },
       {
         num: "02",
@@ -97,7 +97,7 @@ const pageContent = {
 
     ctaFinalTitle: "Ready to stop re-explaining?",
     ctaFinalBody:
-      "Setup takes under five minutes. Add one MCP server, issue an API key, and your AI starts saving checkpoints automatically.",
+      "Setup takes under five minutes. Install a2cr-mcp from PyPI, add one MCP server, issue an API key, and your AI starts saving checkpoints automatically.",
     ctaStart: "Get started free"
   },
   ja: {
@@ -145,7 +145,7 @@ const pageContent = {
       {
         num: "01",
         title: "MCP で接続する",
-        body: "クライアント設定に a2cr という MCP サーバーを 1 つ追加するだけ。サーバーが AI に対して、何をいつ保存するか・何を保存してはいけないかを伝えます。"
+        body: "PyPI から a2cr-mcp をインストールし、クライアント設定に a2cr という MCP サーバーを 1 つ追加します。サーバーが AI に対して、何をいつ保存するか・何を保存してはいけないかを伝えます。"
       },
       {
         num: "02",
@@ -189,7 +189,7 @@ const pageContent = {
 
     ctaFinalTitle: "説明し直すのを、もうやめませんか。",
     ctaFinalBody:
-      "セットアップは 5 分以内。MCP サーバーを 1 つ追加して API キーを発行すれば、AI が自動でチェックポイントを保存し始めます。",
+      "セットアップは 5 分以内。PyPI から a2cr-mcp を入れ、MCP サーバーを 1 つ追加して API キーを発行すれば、AI が自動でチェックポイントを保存し始めます。",
     ctaStart: "無料で始める"
   }
 };
@@ -215,6 +215,9 @@ export function TopPage() {
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link to="/guide" className="rounded-md px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-white/10">
             {t("nav.guide")}
+          </Link>
+          <Link to={lang === "ja" ? "/manual" : "/en/manual"} className="rounded-md px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-white/10">
+            {lang === "ja" ? "使用説明書" : "Manual"}
           </Link>
           <Link to="/pricing" className="rounded-md px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-white/10">
             {t("nav.pricing")}
