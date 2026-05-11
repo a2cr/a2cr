@@ -252,28 +252,32 @@ export function TopPage() {
 
         {/* ── HERO ── */}
         <section className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 sm:pt-28">
-          <img src="/brand/a2cr-logo-dark-v2.png" alt="A2CR" className="mb-10 w-full max-w-[640px] object-contain" />
-          <h1 className="max-w-3xl whitespace-pre-line text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {c.heroTitle}
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-7 text-neutral-300 sm:text-lg">
-            {c.heroBody}
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to={primaryTo}
-              className="inline-flex h-11 items-center gap-2 rounded-md bg-emerald-500 px-5 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
-            >
-              <PrimaryIcon className="size-4" aria-hidden="true" />
-              {primaryLabel}
-            </Link>
-            <Link
-              to="/guide"
-              className="inline-flex h-11 items-center gap-2 rounded-md border border-white/20 px-5 text-sm font-semibold text-white hover:bg-white/10"
-            >
-              {t("nav.guide")}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <img src="/brand/a2cr-logo-dark-v2.png" alt="A2CR" className="w-full max-w-[640px] object-contain" />
+            <div>
+              <h1 className="whitespace-pre-line text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+                {c.heroTitle}
+              </h1>
+              <p className="mt-6 text-base leading-7 text-neutral-300 sm:text-lg">
+                {c.heroBody}
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  to={primaryTo}
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-emerald-500 px-5 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+                >
+                  <PrimaryIcon className="size-4" aria-hidden="true" />
+                  {primaryLabel}
+                </Link>
+                <Link
+                  to="/guide"
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-white/20 px-5 text-sm font-semibold text-white hover:bg-white/10"
+                >
+                  {t("nav.guide")}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 
