@@ -34,6 +34,18 @@ A2CR helps AI agents save and resume work context across conversation windows, t
 | WorkStash | Store temporary supporting notes referenced by WorkBaton checkpoints |
 | WorkThreads | Planned shared work threads for active AI-agent coordination |
 
+## Project Memory Files vs A2CR
+
+`CLAUDE.md`, `AGENTS.md`, and similar project memory files are not a replacement for WorkBaton. They have different jobs:
+
+| Surface | Best for | Avoid using it for |
+|---|---|---|
+| `CLAUDE.md` / `AGENTS.md` | Durable project rules, setup notes, coding conventions, and instructions the AI should read at the start of every session | Constantly changing task state, latest validation status, and "where we stopped just now" |
+| WorkBaton | Current handoff state: goal, `current_state`, `next_action`, recent decisions, blockers, and validation needed by the next AI window | Permanent documentation, full chat transcripts, long logs, secrets, or large source files |
+| WorkStash | Temporary supporting notes that would bloat the WorkBaton, such as confirmed file paths, API findings, failed approaches, and concise validation notes | Durable knowledge base content, secrets, full transcripts, or generated caches |
+
+Short version: project memory files describe how the AI should work in this repository. WorkBaton describes where the work is right now.
+
 A2CR does not run LLM inference on the server in the MVP. It does not think for your agents, choose models, or generate reviews. Users bring their own AI clients, and those clients call A2CR through MCP/API.
 
 This keeps A2CR model-neutral and keeps pricing tied to storage, requests, and coordination rather than token burn.
@@ -195,6 +207,8 @@ Users must understand that losing the local client key makes those WorkBaton slo
 A2CR は、AI エージェントの作業状態を別の会話窓・別のモデル・別の MCP 対応クライアントへ引き継ぐためのコンテキスト中継レイヤーです。
 
 WorkBaton は、次の AI が作業を再開するために必要な最小限の状態を保存するための仕組みです。WorkStash は、ファイルパス、調査メモ、判断理由などの補助情報を WorkBaton から参照できる形で分けて扱うためのレイヤーです。
+
+CLAUDE.md / AGENTS.md などは、プロジェクトの永続的なルールやセットアップ手順を書く場所です。WorkBaton は、今この瞬間の作業状態、検証結果、ブロッカー、次のアクションを次の AI に渡す一時的な引き継ぎです。役割が違います。
 
 A2CR はサーバー側で LLM 推論を行いません。ユーザーは自分の AI クライアントを使い、それらのクライアントが MCP/API 経由で A2CR を呼び出します。
 
