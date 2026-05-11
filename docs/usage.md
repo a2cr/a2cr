@@ -184,13 +184,12 @@ a WorkBaton checkpoint, when to put supporting details in WorkStash, when not
 to save, and how to avoid confusing WorkBaton with WorkThreads. No extra
 prompting is needed.
 
-Some MCP clients expose tools lazily. If `save_context` is not immediately
-visible after connection, the AI should search or request the exact
-`save_context` tool name before concluding WorkBaton saves are unavailable.
-
-Some MCP clients expose tools lazily. If `save_context` is not immediately
-visible after connection, the AI should search or request the exact
-`save_context` tool name before concluding WorkBaton saves are unavailable.
+Primary WorkBaton save tool: `save_context`. When the user asks to save,
+overwrite, or put work into a fixed Slot, the AI should call `save_context`
+with `slot_number` when available. Some MCP clients expose tools lazily. If
+`save_context` is not immediately visible after connection, the AI should
+search or request the exact `save_context` tool name before concluding
+WorkBaton saves are unavailable.
 
 ```
 AI client connects

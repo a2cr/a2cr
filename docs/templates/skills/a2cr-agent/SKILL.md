@@ -9,9 +9,9 @@ Use A2CR as the shared context layer for AI-agent work. The official WorkBaton p
 
 For normal user setup, the local stdio wrapper is installed from PyPI with `python -m pip install --upgrade a2cr-mcp`, then registered in the MCP client as a single server named `a2cr` with command `a2cr-mcp` and empty `args`. The repository-local `mcp/server.py` entrypoint is for development and compatibility only.
 
-When newly connected or unsure which A2CR flow to use, call `explain_a2cr_flows` before choosing tools. WorkBaton is serial window handoff; WorkStash is temporary supporting memory referenced by WorkBaton; WorkThreads is multi-agent collaboration.
+Primary WorkBaton save tool: `save_context`. When the user asks to save, overwrite, or put work into a fixed Slot, call `save_context` with `slot_number` when available.
 
-Some MCP clients expose tools lazily. If `save_context` is not immediately visible, search or request the exact `save_context` tool name before concluding WorkBaton saves are unavailable.
+When newly connected or unsure which A2CR flow to use, call `explain_a2cr_flows` before choosing tools. WorkBaton is serial window handoff; WorkStash is temporary supporting memory referenced by WorkBaton; WorkThreads is multi-agent collaboration.
 
 Some MCP clients expose tools lazily. If `save_context` is not immediately visible, search or request the exact `save_context` tool name before concluding WorkBaton saves are unavailable.
 

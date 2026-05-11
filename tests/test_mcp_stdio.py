@@ -379,6 +379,7 @@ def test_mcp_stdio_should_save_workbaton_advises_local_save_path():
     assert result["deferred_tool_search_phrase"] == "save_context"
     assert result["save_readiness"]["save_with"] == "save_context"
     assert "local stdio save_context" in result["next_step"]
+    assert "exact-search for save_context" in result["next_step"]
     assert "blockers" in result["optional_fields"]
     assert result["workstash_guidance"]["record_entry_key_in"] == ["content.references", "content.next_action"]
     assert "confirmed file paths" in result["workstash_guidance"]["good_examples"]
@@ -612,6 +613,7 @@ def test_mcp_stdio_instructs_new_agents_about_workbaton_and_deferred_tools():
     )
 
     assert server.mcp.instructions == server.MCP_INSTRUCTIONS
+    assert "Primary WorkBaton save tool: save_context" in server.MCP_INSTRUCTIONS
     assert "WorkBaton is a compact work-state checkpoint" in server.MCP_INSTRUCTIONS
     assert "AI agents may use WorkStash proactively" in server.MCP_INSTRUCTIONS
     assert "record retained WorkStash entry_key values in WorkBaton" in server.MCP_INSTRUCTIONS
@@ -634,7 +636,9 @@ def test_mcp_stdio_instructs_new_agents_about_workbaton_and_deferred_tools():
 def test_mcp_stdio_tool_descriptions_explain_workstash_autonomy_and_baton_link():
     server = load_stdio_server()
 
-    tools = {tool.name: tool for tool in asyncio.run(server.mcp.list_tools())}
+    listed_tools = asyncio.run(server.mcp.list_tools())
+    assert listed_tools[0].name == "save_context"
+    tools = {tool.name: tool for tool in listed_tools}
 
     assert "WorkStash temporary supporting memory" in tools["explain_a2cr_flows"].description
     assert "WorkStash integration" in tools["save_context"].description

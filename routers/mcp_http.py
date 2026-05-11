@@ -103,6 +103,8 @@ A2CR_CONTINUITY_GUIDANCE = {
 
 INSTRUCTIONS = (
     "A2CR is the MCP surface for WorkBaton checkpoints, WorkStash temporary memory, and WorkThreads coordination. "
+    "Primary WorkBaton save tool name: save_context on the local stdio wrapper. "
+    "When the user asks to save, overwrite, or put work into a fixed Slot, use that local save_context tool with slot_number when available. "
     "If you are unsure which flow to use, call explain_a2cr_flows first. "
     "WorkBaton is a serial handoff checkpoint for window -> new window continuation. "
     "WorkStash is temporary supporting memory referenced by WorkBaton. "
@@ -370,7 +372,10 @@ def _workbaton_save_advice(
         warnings.insert(0, "Do not save automatically until next_action is clear.")
 
     if should_save and local_stdio_available:
-        next_step = "Call get_account_limits, then call local stdio save_context with a compact WorkBaton body."
+        next_step = (
+            "Call get_account_limits, then call local stdio save_context with a compact WorkBaton body. "
+            "If save_context is not callable yet in a deferred-tool client, exact-search for save_context immediately."
+        )
     elif should_save:
         next_step = "Use a configured local stdio A2CR MCP wrapper to call save_context; this remote MCP surface cannot save WorkBaton."
     else:

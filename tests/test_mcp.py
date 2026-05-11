@@ -194,6 +194,7 @@ def test_mcp_explain_a2cr_flows_documents_baton_threads_and_encryption():
     result = mcp_http.explain_a2cr_flows()
 
     assert mcp_http.web_mcp.instructions == mcp_http.INSTRUCTIONS
+    assert "Primary WorkBaton save tool name: save_context" in mcp_http.INSTRUCTIONS
     assert "tools lazily" in mcp_http.INSTRUCTIONS
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
     assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]

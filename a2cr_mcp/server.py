@@ -120,6 +120,9 @@ SAVE_CONTEXT_SEARCH_PHRASE = "save_context"
 
 MCP_INSTRUCTIONS = (
     "A2CR is the MCP surface for WorkBaton checkpoints and WorkThreads coordination. "
+    "Primary WorkBaton save tool: save_context. When the user asks to save, "
+    "overwrite, or put work into a fixed Slot, call save_context with slot_number "
+    "when available. "
     "WorkBaton is a compact work-state checkpoint for serial handoff from one AI "
     "window to a new AI window; it is not a chat log, file store, or live "
     "multi-agent task lease. WorkThreads are collaborative workspaces for "
@@ -681,7 +684,10 @@ def _workbaton_save_advice(
     if not has_next_action:
         warnings.insert(0, "Do not save automatically until next_action is clear.")
     if should_save and local_stdio_available:
-        next_step = "Call get_account_limits, then call local stdio save_context with a compact WorkBaton body."
+        next_step = (
+            "Call get_account_limits, then call local stdio save_context with a compact WorkBaton body. "
+            "If save_context is not callable yet in a deferred-tool client, exact-search for save_context immediately."
+        )
     elif should_save:
         next_step = "Use a configured local stdio A2CR MCP wrapper to call save_context."
     else:
@@ -887,46 +893,6 @@ Slot naming: {project}-{purpose}  e.g. "my-app-main", "my-app-debug"
 """
 
 
-@mcp.tool(
-    description=(
-        "Explain A2CR's MCP flows before choosing tools. Use this when you "
-        "need to understand WorkBaton serial handoff, WorkStash temporary "
-        "supporting memory, and WorkThreads multi-agent collaboration, "
-        "including their different encryption and coordination boundaries."
-    )
-)
-def explain_a2cr_flows() -> dict:
-    return A2CR_FLOW_EXPLANATION
-
-
-@mcp.tool(
-    description=(
-        "Advisory policy check for autonomous WorkBaton saves. "
-        "Returns whether a checkpoint is recommended, the required local stdio save path, "
-        "and safety warnings. This local stdio MCP wrapper can save WorkBaton content."
-    )
-)
-def should_save_workbaton(
-    reason: str | None = None,
-    project: str | None = None,
-    recent_progress: str | None = None,
-    next_action: str | None = None,
-    context_pressure: str | None = None,
-    known_slot_name: str | None = None,
-    has_prohibited_material: bool = False,
-) -> dict:
-    return _workbaton_save_advice(
-        reason=reason,
-        project=project,
-        recent_progress=recent_progress,
-        next_action=next_action,
-        context_pressure=context_pressure,
-        known_slot_name=known_slot_name,
-        has_prohibited_material=has_prohibited_material,
-        local_stdio_available=True,
-    )
-
-
 @mcp.tool(description=SAVE_DESCRIPTION)
 def save_context(
     slot_name: str,
@@ -965,6 +931,46 @@ def save_context(
     result.setdefault("agent_continuity_guidance", _continuity_guidance())
     result.update(_attach_response_language_hint({}, content_to_save))
     return result
+
+
+@mcp.tool(
+    description=(
+        "Explain A2CR's MCP flows before choosing tools. Use this when you "
+        "need to understand WorkBaton serial handoff, WorkStash temporary "
+        "supporting memory, and WorkThreads multi-agent collaboration, "
+        "including their different encryption and coordination boundaries."
+    )
+)
+def explain_a2cr_flows() -> dict:
+    return A2CR_FLOW_EXPLANATION
+
+
+@mcp.tool(
+    description=(
+        "Advisory policy check for autonomous WorkBaton saves. "
+        "Returns whether a checkpoint is recommended, the required local stdio save path, "
+        "and safety warnings. This local stdio MCP wrapper can save WorkBaton content."
+    )
+)
+def should_save_workbaton(
+    reason: str | None = None,
+    project: str | None = None,
+    recent_progress: str | None = None,
+    next_action: str | None = None,
+    context_pressure: str | None = None,
+    known_slot_name: str | None = None,
+    has_prohibited_material: bool = False,
+) -> dict:
+    return _workbaton_save_advice(
+        reason=reason,
+        project=project,
+        recent_progress=recent_progress,
+        next_action=next_action,
+        context_pressure=context_pressure,
+        known_slot_name=known_slot_name,
+        has_prohibited_material=has_prohibited_material,
+        local_stdio_available=True,
+    )
 
 
 @mcp.tool(

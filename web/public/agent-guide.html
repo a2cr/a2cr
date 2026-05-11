@@ -527,7 +527,9 @@ Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.
 Use the PyPI-installed a2cr-mcp command registered as MCP server a2cr as the official WorkBaton path.
 When a resume prompt provides a Slot, first call resume_context(slot_name="...") or resume_context(slot_number=N).
 Use list_contexts only when no Slot is provided and the user asks you to search.
+Primary WorkBaton save tool: save_context. When saving, overwriting, or putting work into a fixed Slot, call save_context with slot_number when available.
 During work, call save_context before the conversation gets long or at important milestones.
+Some MCP clients expose tools lazily. If save_context is not immediately visible, search or request the exact save_context tool name before concluding saves are unavailable.
 Use WorkBaton and WorkStash proactively when they help preserve useful work state; do not wait for the user to ask.
 If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
 If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
