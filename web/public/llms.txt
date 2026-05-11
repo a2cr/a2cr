@@ -48,6 +48,12 @@ Encryption notes:
 - The local client key is managed by the user, not by the service administrator.
 - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
 
+Infrastructure notes:
+- Hosted A2CR uses Supabase/Postgres for the data layer and Railway for the app runtime.
+- User-owned rows are isolated with Supabase Row Level Security (RLS) and the least-privileged a2cr_app runtime role.
+- Official WorkBaton saves are encrypted locally before upload, so A2CR stores ciphertext for WorkBaton bodies.
+- Supabase and Railway publish SOC 2 / compliance information for their platforms. That helps with vendor risk, but it does not make A2CR itself SOC 2 certified and does not replace A2CR's own RLS, client encryption, key hygiene, and smoke tests.
+
 MCP setup:
 
 Install or update the wrapper:

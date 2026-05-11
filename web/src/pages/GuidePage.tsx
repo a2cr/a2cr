@@ -153,6 +153,15 @@ const text = {
     ],
     noOverclaim:
       "WorkBaton bodies are never accepted as plaintext by A2CR. Direct remote HTTP MCP saving is disabled; use the local stdio wrapper so encryption happens before upload. Legacy local SQLite saves are not the official AI-agent path.",
+    infrastructureTitle: "Infrastructure and data boundaries",
+    infrastructureBody:
+      "Hosted A2CR runs on Supabase/Postgres for the data layer and Railway for the app runtime. User-owned rows are isolated with Supabase Row Level Security (RLS) and a least-privileged runtime role, while official WorkBaton saves encrypt bodies locally before upload.",
+    infrastructurePoints: [
+      "Supabase/Postgres stores A2CR data; Railway runs the FastAPI and React app service.",
+      "RLS policies and the least-privileged a2cr_app runtime role provide the user boundary for WorkBaton, WorkStash, and planned WorkThreads tables.",
+      "A2CR stores ciphertext for WorkBaton bodies. Dashboards and APIs should work from metadata, limits, and access logs rather than plaintext saved content.",
+      "Supabase and Railway publish SOC 2 / compliance information for their platforms. That helps with vendor risk, but it does not make A2CR itself SOC 2 certified and does not replace A2CR's own RLS, client encryption, key hygiene, and smoke tests."
+    ],
     setupTitle: "MCP setup",
     setupBody:
       "Sign in to A2CR, issue an API key from Settings, install a2cr-mcp from PyPI, then add the local stdio wrapper to your MCP client using the config below. Paste the API key into the config file yourself — never share it in chat. The wrapper creates and manages a local client key on your machine.",
@@ -439,6 +448,15 @@ const text = {
     ],
     noOverclaim:
       "A2CRはWorkBaton本文の平文保存を受け付けません。直接HTTP MCPからの保存は無効化し、ローカルstdio wrapperで暗号化してから送る前提です。",
+    infrastructureTitle: "インフラとデータ境界",
+    infrastructureBody:
+      "ホスト版A2CRは、データ層にSupabase/Postgres、アプリ層にRailwayを使います。ユーザーごとの行分離はSupabase Row Level Security（RLS）とleast-privileged runtime roleで行い、公式WorkBaton保存経路では本文を端末側で暗号化してから送信します。",
+    infrastructurePoints: [
+      "Supabase/PostgresがA2CRのデータを保存し、RailwayがFastAPIとReactアプリを実行します。",
+      "WorkBaton、WorkStash、予定中のWorkThreadsテーブルでは、RLSポリシーとleast-privileged a2cr_app runtime roleでユーザー境界を作ります。",
+      "A2CRが保存するWorkBaton本文は暗号文です。ダッシュボードとAPIは、本文の平文ではなくメタデータ、制限、アクセスログを扱う設計です。",
+      "SupabaseとRailwayはSOC 2 / compliance情報を公開しています。これは基盤リスクの説明には役立ちますが、A2CR自体がSOC 2認証済みという意味ではなく、A2CR側のRLS、クライアント暗号化、鍵管理、スモークテストの代わりにはなりません。"
+    ],
     setupTitle: "MCP設定",
     setupBody:
       "A2CRにサインインし、設定からAPIキーを発行後、PyPIからa2cr-mcpをインストールし、下の設定スニペットを使ってMCPクライアントにローカルstdio wrapperを追加します。APIキーはご自身で設定ファイルに貼り付けてください。チャットでは共有しないでください。wrapperがlocal client keyを端末上に作成・管理します。",
@@ -1027,6 +1045,12 @@ export function GuidePage() {
         <section className="border-y border-neutral-200 bg-white">
           <Section eyebrow="Security" title={t.keyTitle} body={t.keyBody}>
             <BulletList items={t.keyPoints} />
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-neutral-50">
+          <Section eyebrow="Infrastructure" title={t.infrastructureTitle} body={t.infrastructureBody}>
+            <BulletList items={t.infrastructurePoints} />
           </Section>
         </section>
 

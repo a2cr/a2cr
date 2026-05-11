@@ -449,6 +449,18 @@ Both:
     </ul>
   </section>
 
+  <section id="infrastructure">
+    <div class="eyebrow">Infrastructure</div>
+    <h2>Infrastructure and data boundaries</h2>
+    <p>Hosted A2CR runs on Supabase/Postgres for the data layer and Railway for the app runtime. User-owned rows are isolated with Supabase Row Level Security (RLS) and a least-privileged runtime role, while official WorkBaton saves encrypt bodies locally before upload.</p>
+    <ul>
+      <li>Supabase/Postgres stores A2CR data; Railway runs the FastAPI and React app service.</li>
+      <li>RLS policies and the least-privileged <code>a2cr_app</code> runtime role provide the user boundary for WorkBaton, WorkStash, and planned WorkThreads tables.</li>
+      <li>A2CR stores ciphertext for WorkBaton bodies. Dashboards and APIs should work from metadata, limits, and access logs rather than plaintext saved content.</li>
+      <li>Supabase and Railway publish SOC 2 / compliance information for their platforms. That helps with vendor risk, but it does not make A2CR itself SOC 2 certified and does not replace A2CR's own RLS, client encryption, key hygiene, and smoke tests.</li>
+    </ul>
+  </section>
+
   <!-- ── ENCRYPTION ── -->
   <section id="encryption">
     <div class="eyebrow">Encryption</div>

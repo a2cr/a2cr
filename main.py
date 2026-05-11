@@ -130,6 +130,12 @@ ROUTE_SEO = {
         - local client keyを失うと、旧鍵で保存したclient-encrypted SlotはA2CR側でも復旧できません。
         - local client keyを作り直すと、それ以後に新しい鍵で保存したSlotは読めますが、旧鍵で保存したSlotには旧鍵が必要です。
 
+        インフラとデータ境界:
+        - ホスト版A2CRはデータ層にSupabase/Postgres、アプリ層にRailwayを使います。
+        - ユーザーごとの行分離はSupabase Row Level Security（RLS）とleast-privileged a2cr_app runtime roleで行います。
+        - 公式WorkBaton保存経路では本文を端末側で暗号化してから送信するため、A2CRはWorkBaton本文の暗号文を保存します。
+        - SupabaseとRailwayはSOC 2 / compliance情報を公開しています。これは基盤リスクの説明には役立ちますが、A2CR自体がSOC 2認証済みという意味ではなく、A2CR側のRLS、クライアント暗号化、鍵管理、スモークテストの代わりにはなりません。
+
         関連ページ:
         - AIエージェント向けガイド: https://a2cr.app/agent-guide
         - English guide: https://a2cr.app/en/guide
@@ -179,6 +185,12 @@ ROUTE_SEO = {
         - The local client key is managed by the user, not by the service administrator.
         - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
         - Slots saved after creating a new local client key can be read with that new key, but old slots still need the old key.
+
+        Infrastructure and data boundaries:
+        - Hosted A2CR uses Supabase/Postgres for the data layer and Railway for the app runtime.
+        - User-owned rows are isolated with Supabase Row Level Security (RLS) and the least-privileged a2cr_app runtime role.
+        - Official WorkBaton saves are encrypted locally before upload, so A2CR stores ciphertext for WorkBaton bodies.
+        - Supabase and Railway publish SOC 2 / compliance information for their platforms. That helps with vendor risk, but it does not make A2CR itself SOC 2 certified and does not replace A2CR's own RLS, client encryption, key hygiene, and smoke tests.
 
         Related pages:
         - AI agent guide: https://a2cr.app/en/agent-guide
@@ -233,6 +245,12 @@ ROUTE_SEO = {
         - client-encrypted WorkBaton Slotは、A2CRサーバーでは復号できません。
         - local client keyを失うと、旧鍵で保存したclient-encrypted Slotは復旧できません。
         - 新しいlocal client keyで保存したSlotは、その新しい鍵で読めます。
+
+        インフラ:
+        - ホスト版A2CRはデータ層にSupabase/Postgres、アプリ層にRailwayを使います。
+        - ユーザーごとの行分離はSupabase RLSとleast-privileged a2cr_app runtime roleで行います。
+        - 公式WorkBaton保存経路では本文を端末側で暗号化してから送信するため、A2CRはWorkBaton本文の暗号文を保存します。
+        - SupabaseとRailwayはSOC 2 / compliance情報を公開していますが、A2CR自体がSOC 2認証済みという意味ではありません。
         """,
     ),
     "en/agent-guide": _seo(
@@ -269,6 +287,12 @@ ROUTE_SEO = {
         - Client-encrypted WorkBaton slots cannot be decrypted by the A2CR server.
         - If the local client key is lost, old client-encrypted slots cannot be recovered.
         - Slots saved after creating a new local client key can be read with that new key.
+
+        Infrastructure:
+        - Hosted A2CR uses Supabase/Postgres for the data layer and Railway for the app runtime.
+        - User-owned rows are isolated with Supabase RLS and the least-privileged a2cr_app runtime role.
+        - Official WorkBaton saves are encrypted locally before upload, so A2CR stores ciphertext for WorkBaton bodies.
+        - Supabase and Railway publish SOC 2 / compliance information, but that does not make A2CR itself SOC 2 certified.
         """,
     ),
     "manual": _seo(
