@@ -11,7 +11,7 @@ const pageContent = {
   en: {
     heroTitle: "At every milestone,\nthe next AI already knows.",
     heroBody:
-      "Stop re-explaining your project every session. A2CR saves compact WorkBaton checkpoints at task milestones — so any MCP-capable AI picks up exactly where the last one left off.",
+      "Stop re-explaining your project every session. A2CR saves compact WorkBaton checkpoints at task milestones — so any MCP-capable AI configured with A2CR MCP picks up exactly where the last one left off.",
 
     painEyebrow: "The problem",
     painTitle: "Starting from zero, every single session?",
@@ -38,7 +38,7 @@ const pageContent = {
     workbatonPoints: [
       "Saves goal, current progress, next action, key decisions, and blockers.",
       "Encrypted on your machine before upload. A2CR cannot read the body.",
-      "Any MCP-capable AI resumes from the same checkpoint."
+      "Any MCP-capable AI configured with A2CR MCP resumes from the same checkpoint."
     ],
     workstashLabel: "WorkStash — the detail",
     workstashPoints: [
@@ -67,17 +67,17 @@ const pageContent = {
       }
     ],
 
-    crossEyebrow: "Any AI",
+    crossEyebrow: "Configured AI",
     crossTitle: "Works with the AI you already use",
     crossBody:
-      "Any MCP-capable client connects to the same checkpoint layer. Start in one tool, continue in another — no re-setup, no re-explanation.",
+      "Any MCP-capable client configured with A2CR MCP connects to the same checkpoint layer. Start in one tool, continue in another — no repeated project explanation.",
     crossTools: ["Claude", "Codex", "Cursor", "Gemini", "Cline", "Roo Code"],
     crossNote: "+ any other MCP-capable client",
 
     cleanEyebrow: "Clean context",
-    cleanTitle: "Every new session starts fresh — and fully informed",
+    cleanTitle: "Every resumed session starts cleaner — and focused",
     cleanBody:
-      "A2CR doesn't pass the chat history to the next AI. It passes only the work state. Each session begins with a clean context and peak AI performance.",
+      "A2CR doesn't pass the chat history to the next AI. It passes only the work state, so resumed sessions can start with cleaner, lighter context.",
     cleanPoints: [
       "No stale assumptions carried over from old conversations.",
       "Faster responses from the start — no heavy context to process.",
@@ -130,7 +130,7 @@ const pageContent = {
     workbatonPoints: [
       "目標・進捗・次のアクション・意思決定・ブロッカーを保存。",
       "ローカルで暗号化してからアップロード。A2CR は内容を読めません。",
-      "MCP 対応 AI ならどれでも同じチェックポイントから再開できます。"
+      "A2CR MCP を設定した MCP 対応 AI なら、同じチェックポイントから再開できます。"
     ],
     workstashLabel: "WorkStash — 詳細ノート",
     workstashPoints: [
@@ -162,14 +162,14 @@ const pageContent = {
     crossEyebrow: "MCP 対応",
     crossTitle: "使っている AI で、そのまま動く",
     crossBody:
-      "MCP 対応クライアントなら同じチェックポイント層に接続できます。ツールをまたいでも、作業の続きが保たれます。",
+      "A2CR MCP を設定した MCP 対応クライアントなら同じチェックポイント層に接続できます。ツールをまたいでも、作業の続きが保たれます。",
     crossTools: ["Claude", "Codex", "Cursor", "Gemini", "Cline", "Roo Code"],
     crossNote: "+ その他 MCP 対応クライアント",
 
     cleanEyebrow: "クリーンなコンテキスト",
     cleanTitle: "新しいセッションは、軽く・速く・正確に始まる",
     cleanBody:
-      "A2CR は次の AI にチャット履歴を渡しません。渡すのは作業状態だけ。だから新しいセッションは常にクリーンなコンテキストで、AI はピーク性能で動き始めます。",
+      "A2CR は次の AI にチャット履歴を渡しません。渡すのは作業状態だけ。だから再開したセッションは、軽いコンテキストで始めやすくなります。",
     cleanPoints: [
       "古い会話の思い込みが残らない。",
       "最初から速いレスポンス——重いコンテキストを処理しなくていいから。",

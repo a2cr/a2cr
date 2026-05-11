@@ -146,7 +146,7 @@ def test_public_seo_support_files_are_served():
     assert "<loc>https://a2cr.app/en/manual</loc>" in sitemap.text
     assert llms.status_code == 200
     assert "Public guide (English): https://a2cr.app/en/guide" in llms.text
-    assert "AI agent guide (English): https://a2cr.app/en/agent-guide" in llms.text
+    assert "AI agent guide (agent-readable HTML): https://a2cr.app/agent-guide.html" in llms.text
     assert "Manual (English): https://a2cr.app/en/manual" in llms.text
     assert "MCP service URL: https://a2cr.app/mcp" in llms.text
     assert "A2CR is not an AI" in llms.text

@@ -145,7 +145,7 @@
 <main>
 
   <h1>A2CR guide for AI agents</h1>
-  <p>You are an AI agent. This page contains everything you need to configure A2CR MCP, understand WorkBaton and WorkStash, and start using them immediately. Read the tool table, save timing rules, and do-not-save list before beginning work.</p>
+  <p>You are an AI agent. This page contains everything you need to configure A2CR MCP, understand WorkBaton and WorkStash, and use them after setup. Read the tool table, save timing rules, and do-not-save list before beginning work.</p>
 
   <!-- ── OVERVIEW ── -->
   <section id="overview">
@@ -165,7 +165,7 @@
     <ul>
       <li>Saves goal, current progress, next action, key decisions, and blockers — nothing more than what the next AI needs.</li>
       <li>Encrypted on your machine before upload. A2CR stores ciphertext only and cannot read the body.</li>
-      <li>Any MCP-capable AI — Claude, Codex, Cursor, Gemini — can resume from the same checkpoint.</li>
+      <li>Any MCP-capable AI configured with A2CR MCP - Claude, Codex, Cursor, Gemini - can resume from the same checkpoint.</li>
       <li>Session cuts, model switches, and multi-day projects all become routine handoffs instead of lost work.</li>
     </ul>
   </section>
@@ -193,7 +193,7 @@
       <li>The WorkBaton stays compact because detailed notes live in WorkStash — fast to load, focused on direction.</li>
       <li>The next AI reads the checkpoint first, then retrieves only the WorkStash entries it actually needs.</li>
       <li>Failed approaches stored in WorkStash prevent the next window from repeating the same mistake.</li>
-      <li>Every session starts with clean context and peak performance — no re-explanation from the user.</li>
+      <li>Every resumed session can start with cleaner, lighter context - no re-explanation from the user.</li>
       <li>Selective retrieval means fewer tokens per session, so subscription limits go further.</li>
     </ul>
   </section>
@@ -244,7 +244,7 @@ A2CR_SERVICE_URL = "https://a2cr.app/mcp"
   <section id="project-memory">
     <div class="eyebrow">Project memory</div>
     <h2>Make it automatic with project memory files</h2>
-    <p>Add the snippet below to the project's memory file and you will read it automatically at the start of every session — no user reminder needed. This is the most reliable way to use both WorkBaton and WorkStash proactively on every project.</p>
+    <p>Add the snippet below to the project's memory file and you will read it automatically at the start of every session - no user reminder needed. This is a reliable way to use both WorkBaton and WorkStash proactively after A2CR MCP is configured.</p>
     <table>
       <thead>
         <tr><th>AI / Tool</th><th>File</th></tr>
@@ -267,12 +267,21 @@ A2CR_SERVICE_URL = "https://a2cr.app/mcp"
 
 A2CR MCP is connected. Follow these rules every session:
 
-WorkBaton — save work state:
+Use proactively:
+- Use WorkBaton and WorkStash whenever they help preserve useful work state; do not wait for the user to ask.
+- Before automatic WorkBaton saves, call should_save_workbaton and get_account_limits when available.
+
+WorkBaton - save work state:
 - Save a WorkBaton checkpoint at task milestones, phase completions, or when context pressure is detected. Call should_save_workbaton if unsure, then save_context.
 
-WorkStash — save supporting details:
+WorkStash - save supporting details:
 - Proactively store detailed notes (file paths, API findings, failed attempts, intermediate results) with store_work_stash before they are needed by a future session.
 - Record the returned entry_key in WorkBaton references or next_action so the next window can retrieve it.
+
+Context freshness:
+- If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
+- If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
+- If the user explicitly wants to continue here, continue here while keeping the risk in mind.
 
 Both:
 - Never save secrets, API keys, Authorization headers, full transcripts, or large source files.</pre>
@@ -284,6 +293,7 @@ Both:
     <h2>Basic workflow</h2>
     <ol>
       <li>Sign in to A2CR and issue an API key.</li>
+      <li>Install or update the wrapper with <code>python -m pip install --upgrade a2cr-mcp</code>.</li>
       <li>Add one MCP server named <code>a2cr</code> to your MCP client using the local stdio wrapper.</li>
       <li>Ask the AI agent to verify the connection with <code>get_account_limits</code>.</li>
       <li>Save a WorkBaton before the session gets long or at a clear task boundary.</li>
@@ -299,8 +309,8 @@ Both:
     <ul>
       <li>Your AI learns WorkBaton rules from the server, not from your prompts.</li>
       <li>One instruction at the start of a session is enough: tell the AI to save checkpoints at milestones.</li>
-      <li>Any MCP-capable AI — Claude, Codex, Gemini, Cursor — receives the same instructions.</li>
-      <li>No plugin, no custom prompt engineering, no repeated setup.</li>
+      <li>Any MCP-capable AI configured with A2CR MCP - Claude, Codex, Gemini, Cursor - receives the same instructions.</li>
+      <li>After setup, no repeated project explanation or custom per-session prompt is needed.</li>
     </ul>
     <div class="notice">
       <strong>After connecting, tell your AI once:</strong><br>
@@ -374,7 +384,7 @@ Both:
       <tbody>
         <tr><td><strong>Shape</strong></td><td>Serial checkpoint handoff</td><td>Collaborative multi-agent workspace</td></tr>
         <tr><td><strong>Flow</strong></td><td>window → new window</td><td>agent ↔ agents</td></tr>
-        <tr><td><strong>Save path</strong></td><td>Local stdio wrapper only — client-encrypted before upload</td><td>Remote MCP — encrypted at rest by A2CR</td></tr>
+        <tr><td><strong>Save path</strong></td><td>Local stdio wrapper only — client-encrypted before upload</td><td>Remote MCP (planned; message-body encryption design before public release)</td></tr>
         <tr><td><strong>Primary use</strong></td><td>Resume work in a new session or tool</td><td>Coordinate tasks between multiple agents</td></tr>
         <tr><td><strong>Key tools</strong></td><td><code>save_context</code> / <code>resume_context</code></td><td><code>create_workthread</code> / <code>post_workthread_message</code></td></tr>
       </tbody>
@@ -447,7 +457,7 @@ Both:
     <div class="prompt-box">A2CR service: https://a2cr.app/mcp
 Use A2CR MCP as working memory.
 Do not guess direct HTTP API endpoints. Use only the A2CR MCP tools.
-Use the local stdio MCP wrapper named a2cr as the official WorkBaton path.
+Use the PyPI-installed a2cr-mcp command registered as MCP server a2cr as the official WorkBaton path.
 When a resume prompt provides a Slot, first call resume_context(slot_name="...") or resume_context(slot_number=N).
 Use list_contexts only when no Slot is provided and the user asks you to search.
 During work, call save_context before the conversation gets long or at important milestones.

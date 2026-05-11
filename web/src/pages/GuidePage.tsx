@@ -64,6 +64,31 @@ function mcpConfigSnippet(client: ClientKey): string {
   );
 }
 
+const memoryFileSnippet = [
+  "## A2CR WorkBaton + WorkStash",
+  "",
+  "A2CR MCP is connected. Follow these rules every session:",
+  "",
+  "Use proactively:",
+  "- Use WorkBaton and WorkStash whenever they help preserve useful work state; do not wait for the user to ask.",
+  "- Before automatic WorkBaton saves, call should_save_workbaton and get_account_limits when available.",
+  "",
+  "WorkBaton - save work state:",
+  "- Save a WorkBaton checkpoint at task milestones, phase completions, or when context pressure is detected. Call should_save_workbaton if unsure, then save_context.",
+  "",
+  "WorkStash - save supporting details:",
+  "- Proactively store detailed notes (file paths, API findings, failed attempts, intermediate results) with store_work_stash before they are needed by a future session.",
+  "- Record the returned entry_key in WorkBaton references or next_action so the next window can retrieve it.",
+  "",
+  "Context freshness:",
+  '- If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".',
+  "- If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.",
+  "- If the user explicitly wants to continue here, continue here while keeping the risk in mind.",
+  "",
+  "Both:",
+  "- Never save secrets, API keys, Authorization headers, full transcripts, or large source files."
+].join("\n");
+
 const text = {
   en: {
     navHuman: "Guide",
@@ -73,10 +98,10 @@ const text = {
     dashboard: "Open dashboard",
     humanTitle: "A2CR guide",
     humanBody:
-      "Every time an AI session ends, your context resets. A2CR solves this with WorkBaton checkpoints — compact snapshots of work state that any MCP-capable AI can resume, whether that's a new window, a different model, or the next day.",
+      "Every time an AI session ends, your context resets. A2CR solves this with WorkBaton checkpoints - compact snapshots of work state that any MCP-capable AI configured with A2CR MCP can resume, whether that's a new window, a different model, or the next day.",
     agentTitle: "A2CR guide for AI agents",
     agentBody:
-      "You are an AI agent. This page contains everything you need to configure A2CR MCP, understand WorkBaton and WorkStash, and start using them immediately. Read the tool table, save timing rules, and do-not-save list before beginning work.",
+      "You are an AI agent. This page contains everything you need to configure A2CR MCP, understand WorkBaton and WorkStash, and use them after setup. Read the tool table, save timing rules, and do-not-save list before beginning work.",
     whatTitle: "What A2CR does",
     whatPoints: [
       "WorkBaton saves only the work state the next AI needs to continue — goal, progress, next action, key decisions. Not the full chat history.",
@@ -168,8 +193,8 @@ const text = {
     connectPoints: [
       "Your AI learns WorkBaton rules from the server, not from your prompts.",
       "One instruction at the start of a session is enough: tell the AI to save checkpoints at milestones.",
-      "Any MCP-capable AI — Claude, Codex, Gemini, Cursor — receives the same instructions.",
-      "No plugin, no custom prompt engineering, no repeated setup."
+      "Any MCP-capable AI configured with A2CR MCP - Claude, Codex, Gemini, Cursor - receives the same instructions.",
+      "After setup, no repeated project explanation or custom per-session prompt is needed."
     ],
     connectPromptLabel: "After connecting, tell your AI once:",
     connectPromptExample: "A2CR is connected. Save a WorkBaton checkpoint at each task milestone.",
@@ -244,7 +269,7 @@ const text = {
     workbatonPoints: [
       "Saves goal, current progress, next action, key decisions, and blockers — nothing more than what the next AI needs.",
       "Encrypted on your machine before upload. A2CR stores ciphertext only and cannot read the body.",
-      "Any MCP-capable AI — Claude, Codex, Cursor, Gemini — can resume from the same checkpoint.",
+      "Any MCP-capable AI configured with A2CR MCP - Claude, Codex, Cursor, Gemini - can resume from the same checkpoint.",
       "Session cuts, model switches, and multi-day projects all become routine handoffs instead of lost work."
     ],
     workstashSectionTitle: "WorkStash — supporting memory for WorkBaton",
@@ -262,7 +287,7 @@ const text = {
       "The WorkBaton stays compact because detailed notes live in WorkStash — fast to load, focused on direction.",
       "The next AI reads the checkpoint first, then retrieves only the WorkStash entries it actually needs.",
       "Failed approaches stored in WorkStash prevent the next window from repeating the same mistake.",
-      "Every session starts with clean context and peak performance — no re-explanation from the user.",
+      "Every resumed session can start with cleaner, lighter context - no re-explanation from the user.",
       "Selective retrieval means fewer tokens per session, so subscription limits go further."
     ],
     batonThreadsTitle: "WorkBaton vs WorkThreads",
@@ -271,7 +296,7 @@ const text = {
     batonThreadsRows: [
       ["Shape", "Serial checkpoint handoff", "Collaborative multi-agent workspace"],
       ["Flow", "window → new window", "agent ↔ agents"],
-      ["Save path", "Local stdio wrapper only — client-encrypted before upload", "Remote MCP — encrypted at rest by A2CR"],
+      ["Save path", "Local stdio wrapper only — client-encrypted before upload", "Remote MCP (planned; message-body encryption design before public release)"],
       ["Primary use", "Resume work in a new session or tool", "Coordinate tasks between multiple agents"],
       ["Key tools", "save_context / resume_context", "create_workthread / post_workthread_message"]
     ],
@@ -287,7 +312,7 @@ const text = {
     ],
     memoryFileTitle: "Make it automatic with project memory files",
     memoryFileBody:
-      "Add the snippet below to your project's memory file and the AI reads it at the start of every session — no need to remind it each time. This is the most reliable way to make any AI use both WorkBaton and WorkStash proactively.",
+      "Add the snippet below to your project's memory file and the AI reads it at the start of every session - no need to remind it each time. This is a reliable way to help configured agents use both WorkBaton and WorkStash proactively.",
     memoryFileFiles: [
       ["Claude Code", "CLAUDE.md"],
       ["Gemini CLI", "GEMINI.md"],
@@ -301,8 +326,7 @@ const text = {
       ["Aider", "CONVENTIONS.md"]
     ] as [string, string][],
     memoryFileNote: "The snippet content is the same for every AI — only the filename differs.",
-    memoryFileSnippet:
-      "## A2CR WorkBaton + WorkStash\n\nA2CR MCP is connected. Follow these rules every session:\n\nUse proactively:\n- Use WorkBaton and WorkStash whenever they help preserve useful work state; do not wait for the user to ask.\n- Before automatic WorkBaton saves, call should_save_workbaton and get_account_limits when available.\n\nWorkBaton — save work state:\n- Save a WorkBaton checkpoint at task milestones, phase completions, or when context pressure is detected. Call should_save_workbaton if unsure, then save_context.\n\nWorkStash — save supporting details:\n- Proactively store detailed notes (file paths, API findings, failed attempts, intermediate results) with store_work_stash before they are needed by a future session.\n- Record the returned entry_key in WorkBaton references or next_action so the next window can retrieve it.\n\nContext freshness:\n- If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason=\"context_drift\" or reason=\"context_contamination\".\n- If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.\n- If the user explicitly wants to continue here, continue here while keeping the risk in mind.\n\nBoth:\n- Never save secrets, API keys, Authorization headers, full transcripts, or large source files.",
+    memoryFileSnippet,
     copyConfig: "Copy config",
     copyPrompt: "Copy prompt",
     copySnippet: "Copy snippet"
@@ -315,10 +339,10 @@ const text = {
     dashboard: "ダッシュボード",
     humanTitle: "A2CR ガイド",
     humanBody:
-      "AIのセッションが終わるたびに、積み上げた文脈がリセットされます。A2CRはWorkBatonチェックポイントでこれを解決します。作業状態をコンパクトなスナップショットとして保存し、新しいウィンドウ・別モデル・翌日から、どのMCP対応AIでも続きを再開できます。",
+      "AIのセッションが終わるたびに、積み上げた文脈がリセットされます。A2CRはWorkBatonチェックポイントでこれを解決します。作業状態をコンパクトなスナップショットとして保存し、新しいウィンドウ・別モデル・翌日から、A2CR MCP を設定した対応AIで続きを再開できます。",
     agentTitle: "A2CR AIエージェント向けガイド",
     agentBody:
-      "あなたはAIエージェントです。このページにはA2CR MCPの設定、WorkBatonとWorkStashの使い方、即座に利用を開始するために必要なことが全て記載されています。作業を始める前に、ツール一覧・保存タイミング・保存禁止事項を確認してください。",
+      "あなたはAIエージェントです。このページにはA2CR MCPの設定、WorkBatonとWorkStashの使い方、設定後に利用するために必要なことが全て記載されています。作業を始める前に、ツール一覧・保存タイミング・保存禁止事項を確認してください。",
     whatTitle: "A2CRがすること",
     whatPoints: [
       "WorkBatonは次のAIが続きに必要な作業状態だけを保存します。goal・進捗・次のアクション・判断事項。会話履歴全体ではありません。",
@@ -485,7 +509,7 @@ const text = {
     workbatonPoints: [
       "goal・現在の進捗・次のアクション・判断事項・ブロッカーだけを保存。次のAIが必要な情報のみです。",
       "アップロード前にあなたの端末で暗号化されます。A2CRは暗号文のみを保存し、本文を読むことはできません。",
-      "MCP対応のAI（Claude・Codex・Cursor・Geminiなど）なら、同じチェックポイントから再開できます。",
+      "A2CR MCP を設定した MCP 対応 AI（Claude・Codex・Cursor・Geminiなど）なら、同じチェックポイントから再開できます。",
       "セッション切れ・モデル切り替え・複数日プロジェクトが、いずれも失われた作業ではなく通常の引き継ぎになります。"
     ],
     workstashSectionTitle: "WorkStash — WorkBatonを補う一時メモ",
@@ -503,7 +527,7 @@ const text = {
       "詳細メモはWorkStashに分離されるので、WorkBatonは常に軽くすぐに読み込める。",
       "次のAIはまずチェックポイントで方向を確認し、実際に必要なWorkStashエントリだけを取り出して動く。",
       "WorkStashに記録した失敗した試みが、次のウィンドウが同じ過ちを繰り返すことを防ぐ。",
-      "毎回クリーンなコンテキストでスタート。ピークのパフォーマンス、ユーザーからの再説明ゼロ。",
+      "再開時は軽いコンテキストで始めやすくなり、ユーザーからの再説明を減らせる。",
       "選択的な取得でセッションあたりのトークン消費が抑えられ、サブスクの使用量が節約できる。"
     ],
     batonThreadsTitle: "WorkBaton vs WorkThreads",
@@ -512,7 +536,7 @@ const text = {
     batonThreadsRows: [
       ["形状", "シリアルチェックポイント引き継ぎ", "複数エージェントの協調ワークスペース"],
       ["フロー", "window → 新しいwindow", "agent ↔ agents"],
-      ["保存パス", "ローカルstdio wrapperのみ（送信前にクライアント暗号化）", "リモートMCP（A2CRがサーバー側で暗号化）"],
+      ["保存パス", "ローカルstdio wrapperのみ（送信前にクライアント暗号化）", "リモートMCP（予定。公開前にメッセージ本文の暗号化設計を確定）"],
       ["主な用途", "新しいセッションやツールで作業を再開する", "複数エージェント間でタスクを調整する"],
       ["主なツール", "save_context / resume_context", "create_workthread / post_workthread_message"]
     ],
@@ -528,7 +552,7 @@ const text = {
     ],
     memoryFileTitle: "プロジェクトのメモリファイルで自動化する",
     memoryFileBody:
-      "下のスニペットをプロジェクトのメモリファイルに追記すると、AIはセッション開始時に自動で読み込みます。毎回指示しなくても WorkBaton と WorkStash の両方を積極的に使ってくれる、最も確実な方法です。",
+      "下のスニペットをプロジェクトのメモリファイルに追記すると、AIはセッション開始時に自動で読み込みます。毎回指示しなくても WorkBaton と WorkStash の両方を積極的に使ってもらうための、信頼性を高める基本形です。",
     memoryFileFiles: [
       ["Claude Code", "CLAUDE.md"],
       ["Gemini CLI", "GEMINI.md"],
@@ -542,8 +566,7 @@ const text = {
       ["Aider", "CONVENTIONS.md"]
     ] as [string, string][],
     memoryFileNote: "スニペットの内容はどのAIでも同じです。ファイル名だけが異なります。",
-    memoryFileSnippet:
-      "## A2CR WorkBaton + WorkStash\n\nA2CR MCP が接続されています。毎回のセッションで以下のルールに従ってください。\n\n積極的に使う：\n- 有用な作業状態を残す助けになる場合は、ユーザーに依頼される前に WorkBaton と WorkStash を使う。\n- WorkBaton を自動保存する前に、可能なら should_save_workbaton と get_account_limits を呼ぶ。\n\nWorkBaton — 作業状態の保存：\n- 作業の節目・フェーズ完了・コンテキスト圧迫を検知したら WorkBaton チェックポイントを保存する。迷ったら should_save_workbaton を呼んでから save_context を実行する。\n\nWorkStash — 詳細メモの保存：\n- ファイルパス・API調査・失敗した試み・中間結果など、将来のセッションで必要になる詳細メモは store_work_stash で積極的に保存する。\n- 返ってきた entry_key を WorkBaton の references または next_action に記録し、次のウィンドウが取り出せるようにする。\n\nコンテキスト鮮度：\n- 会話がノイズを含む、矛盾している、古い前提が残っている、別タスクの文脈に汚染されていると感じたら、reason=\"context_drift\" または reason=\"context_contamination\" で should_save_workbaton を呼ぶ。\n- 保存が推奨されたら、コンパクトな WorkBaton を保存し、肥大化しそうな安全な補足メモは WorkStash に移し、entry_key を WorkBaton に記録したうえで、ユーザーに新しいAI窓での継続を提案する。\n- ユーザーがこの窓で続けると明示した場合は、リスクを意識しながらこの窓で続ける。\n\n共通：\n- シークレット・APIキー・認証ヘッダー・全文履歴・大きなソースファイルは保存しない。",
+    memoryFileSnippet,
     copyConfig: "設定をコピー",
     copyPrompt: "プロンプトをコピー",
     copySnippet: "スニペットをコピー"

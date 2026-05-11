@@ -22,17 +22,17 @@ const resources = {
       },
       top: {
         heroBody:
-          "Stop re-explaining your project every session. A2CR saves compact WorkBaton checkpoints — so any AI can pick up exactly where the last one left off, across windows, models, and days.",
+          "Stop re-explaining your project every session. A2CR saves compact WorkBaton checkpoints so any MCP-capable AI configured with A2CR MCP can pick up exactly where the last one left off, across windows, models, and days.",
         ctaDashboard: "Open dashboard",
         ctaPricing: "View pricing",
         points: {
           checkpoints: {
             title: "Your AI remembers where it stopped",
-            body: "WorkBaton saves goal, progress, and next step before the session ends. The next AI — any AI — resumes without re-explaining anything."
+            body: "WorkBaton saves goal, progress, and next step before the session ends. The next configured MCP-capable AI resumes without re-explaining anything."
           },
           mcp: {
             title: "Works across Claude, Codex, Cursor, and more",
-            body: "Any MCP-capable client connects to the same checkpoint layer. Start in one tool, continue in another without losing state."
+            body: "Any MCP-capable client configured with A2CR MCP connects to the same checkpoint layer. Start in one tool, continue in another without losing state."
           },
           inspection: {
             title: "You stay in control",
