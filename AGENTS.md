@@ -79,6 +79,24 @@ to a future AI window. Include the goal, current state, next action, key
 decisions, blockers, validation status, and any retained WorkStash `entry_key`.
 If unsure whether a checkpoint is useful, use `should_save_workbaton`.
 
+Use WorkBaton and WorkStash proactively when they help preserve useful work
+state; do not wait for the user to ask.
+
+Context freshness / new window handoff:
+- Watch for context drift or contamination during long or resumed work.
+- Warning signs include noisy, contradictory, stale, or polluted task state;
+  newer user instructions conflicting with loaded WorkBaton state; treating
+  completed work as unfinished; repeated branch, PR, slot, or target-file churn;
+  user corrections; unrelated task threads mixing together; or uncertainty
+  about whether the next action belongs to the current request or an older task.
+- When these signs appear, call `should_save_workbaton` with
+  `reason="context_drift"` or `reason="context_contamination"`.
+- If saving is recommended, save a compact WorkBaton, move safe bulky supporting
+  notes into WorkStash, record retained `entry_key` values in WorkBaton, and
+  suggest continuing in a fresh AI window.
+- If the user explicitly wants to continue in the current window, continue here
+  while keeping the freshness risk in mind.
+
 Resume from WorkBaton when the user gives `resume_context(slot_name=...)` or
 `resume_context(slot_number=N)`. Use `list_contexts` only when no slot is known
 and the user asks to find saved context.
@@ -186,6 +204,16 @@ A2CR MCP toolsが使える場合は、ユーザーに毎回確認されなくて
 セッション開始時にtoolsが使える場合は、`get_account_limits`と`explain_a2cr_flows`で接続と利用可能な流れを確認し、短く接続確認を伝えてから作業を続けます。toolsが使えない場合は通常通り作業し、必要な時だけその制限を報告します。
 
 WorkBatonは引き継ぎ用の短いチェックポイントとして使います。節目、コンテキスト喪失が起きそうな時、検証後、別のAI窓へ作業を渡す時に`save_context`で保存してください。内容にはgoal、current_state、next_action、重要な決定、blockers、validation status、残す価値のあるWorkStash `entry_key`を含めます。保存すべきか迷う場合は`should_save_workbaton`を使います。
+
+有用な作業状態を残す助けになる場合は、ユーザーに依頼される前でもWorkBatonとWorkStashを積極的に使ってください。
+
+コンテキスト鮮度 / 新窓への引き継ぎ:
+
+- 長い作業や再開後の作業では、context driftやcontext contaminationを監視する。
+- 警告サインには、会話がノイズを含む、矛盾している、古い前提が残っている、別タスクの文脈に汚染されている、現在のユーザー指示とロード済みWorkBatonの状態が競合している、完了済み作業を未完了として扱いそうになる、branch / PR / slot / 対象ファイルが何度も切り替わる、ユーザーから前提を修正される、無関係なタスクが混ざる、次の行動が現在の依頼か古い依頼か曖昧になる、などが含まれる。
+- これらの兆候が出たら、`reason="context_drift"`または`reason="context_contamination"`で`should_save_workbaton`を呼ぶ。
+- 保存が推奨されたら、コンパクトなWorkBatonを保存し、肥大化しそうな安全な補助メモはWorkStashへ移し、残す`entry_key`をWorkBatonに記録したうえで、ユーザーに新しいAI窓での継続を提案する。
+- ユーザーがこの窓で続けると明示した場合は、鮮度リスクを意識しながらこの窓で続ける。
 
 ユーザーが`resume_context(slot_name=...)`または`resume_context(slot_number=N)`を指定した場合は、WorkBatonから再開します。slotが分からず、ユーザーが保存済み文脈の検索を求めた場合だけ`list_contexts`を使います。
 

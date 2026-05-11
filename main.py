@@ -236,6 +236,9 @@ ROUTE_SEO = {
         - When a resume prompt provides a Slot, first call resume_context(slot_name="...") or resume_context(slot_number=N).
         - Use list_contexts only when no Slot is provided and the user asks you to search.
         - During work, call save_context before the conversation gets long or at important milestones.
+        - Use WorkBaton and WorkStash proactively when they help preserve useful work state; do not wait for the user to ask.
+        - If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
+        - If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
         - Save only goal, current_state, next_action, and compact supporting facts.
         - Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
         - Call get_account_limits before automatic saves.

@@ -102,6 +102,9 @@ def test_public_agent_guide_serves_static_html():
     assert "first call resume_context(slot_name=" in response.text
     assert "Use list_contexts only when no Slot is provided" in response.text
     assert "Never save secrets" in response.text
+    assert "Use WorkBaton and WorkStash proactively" in response.text
+    assert "context_contamination" in response.text
+    assert "suggest continuing in a fresh AI window" in response.text
     assert "The local client key is managed by the user" in response.text
     assert "old client-encrypted slots cannot be recovered" in response.text
     assert '<div id="root"></div>' in response.text
@@ -128,6 +131,9 @@ def test_public_seo_support_files_are_served():
     assert "Official AI-agent setup is the local stdio MCP wrapper named a2cr" in llms.text
     assert 'first call resume_context(slot_name="...")' in llms.text
     assert "Use list_contexts only when no Slot is provided" in llms.text
+    assert "Use WorkBaton and WorkStash proactively" in llms.text
+    assert 'reason="context_contamination"' in llms.text
+    assert "suggest continuing in a fresh AI window" in llms.text
     assert "local client key is managed by the user" in llms.text
     assert "old client-encrypted slots cannot be recovered" in llms.text
     assert "WorkBaton is client-encrypted only" in llms.text
