@@ -51,6 +51,8 @@ def test_public_human_guide_serves_static_html():
     assert "このアプリを説明して" in response.text
     assert "https://a2cr.app/mcp" in response.text
     assert "local client keyは利用者側が管理します" in response.text
+    assert "Supabase Row Level Security" in response.text
+    assert "Railway" in response.text
     assert "client-encrypted" in response.text
     assert "WorkBatonはclient-encryptedのみです" in response.text
     assert "A2CRはWorkBaton本文の平文保存を受け付けません" in response.text
@@ -76,6 +78,8 @@ def test_public_english_human_guide_serves_static_html():
     assert "ask it to explain A2CR" in response.text
     assert "A2CR is not an AI" in response.text
     assert "local client key is managed by the user" in response.text
+    assert "Supabase Row Level Security" in response.text
+    assert "Railway" in response.text
     assert "client-encrypted" in response.text
     assert "WorkBaton is client-encrypted only" in response.text
     assert "A2CR does not accept plaintext WorkBaton bodies" in response.text
@@ -109,6 +113,9 @@ def test_public_agent_guide_serves_static_html():
     assert "WorkBaton is current handoff state" in response.text
     assert "WorkThreads is planned for multi-agent collaboration" in response.text
     assert "The local client key is managed by the user" in response.text
+    assert "Supabase/Postgres for the data layer and Railway" in response.text
+    assert "least-privileged" in response.text
+    assert "does not make A2CR itself SOC 2 certified" in response.text
     assert "old client-encrypted slots cannot be recovered" in response.text
     assert '<div id="root"></div>' in response.text
 
@@ -163,6 +170,9 @@ def test_public_seo_support_files_are_served():
     assert 'reason="context_contamination"' in llms.text
     assert "suggest continuing in a fresh AI window" in llms.text
     assert "local client key is managed by the user" in llms.text
+    assert "Supabase Row Level Security (RLS)" in llms.text
+    assert "a2cr_app runtime role" in llms.text
+    assert "does not make A2CR itself SOC 2 certified" in llms.text
     assert "old client-encrypted slots cannot be recovered" in llms.text
     assert "WorkBaton is client-encrypted only" in llms.text
     assert "A2CR does not accept plaintext WorkBaton bodies" in llms.text

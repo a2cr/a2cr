@@ -170,6 +170,15 @@ The local stdio MCP wrapper creates and stores the local client key in a local k
 
 ## Security Direction
 
+A2CR's hosted service uses Supabase/Postgres for the data layer and Railway for
+the app runtime. User-owned rows are separated with Supabase Row Level Security
+(RLS) and a least-privileged `a2cr_app` runtime role. Official WorkBaton saves
+are encrypted locally before upload, so the service stores ciphertext for
+WorkBaton bodies rather than plaintext. Supabase and Railway publish SOC 2 /
+compliance information for their platforms; that helps with vendor risk, but it
+does not make A2CR itself SOC 2 certified and does not replace A2CR's own RLS,
+client encryption, key hygiene, and smoke tests.
+
 A2CR is designed so human-facing dashboards do not display saved context bodies. Dashboards should show metadata only, such as slot names, timestamps, sizes, counts, status, and logs.
 
 WorkBaton is client-encrypted only. The local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
@@ -213,6 +222,8 @@ CLAUDE.md / AGENTS.md などは、プロジェクトの永続的なルールや�
 A2CR はサーバー側で LLM 推論を行いません。ユーザーは自分の AI クライアントを使い、それらのクライアントが MCP/API 経由で A2CR を呼び出します。
 
 WorkBaton 本文は、ローカル stdio MCP wrapper でアップロード前に暗号化されます。A2CR は暗号化済み本文とメタデータを保存しますが、ダッシュボードでは本文ではなくスロット名、時刻、サイズ、状態などのメタデータのみを扱う設計です。
+
+ホスト版 A2CR は、データ層に Supabase/Postgres、アプリ層に Railway を使います。ユーザーごとのデータ分離は Supabase RLS と least-privileged `a2cr_app` runtime role で行い、公式 WorkBaton 経路では送信前に端末側で暗号化するため、A2CR は WorkBaton 本文の暗号文を保存します。Supabase と Railway は SOC 2 / compliance 情報を公開していますが、それは A2CR 自体が SOC 2 認証済みという意味ではなく、A2CR 側の RLS、クライアント暗号化、鍵管理、スモークテストの代わりにはなりません。
 
 初回公開は無料プレビューとして進め、課金、WorkThreads、本番 SLA は後続フェーズで扱う予定です。
 

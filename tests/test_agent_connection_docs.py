@@ -53,6 +53,8 @@ def test_public_agent_docs_prefer_slot_first_stdio_path():
     assert "not number of notes: Free has 256KB total" in docs["docs/templates/skills/a2cr-agent/SKILL.md"]
     assert "Pro has 2048KB total" in docs["docs/templates/skills/a2cr-agent/SKILL.md"]
     assert "The legacy local SQLite WorkBaton API is disabled by default" in docs["README.md"]
+    assert "Supabase/Postgres for the data layer and Railway" in docs["README.md"]
+    assert "least-privileged `a2cr_app` runtime role" in docs["README.md"]
     assert "A2CR_BASE_URL\": \"https://a2cr.app" in docs["docs/usage.md"]
     assert '"A2CR_API_STYLE": "legacy"' not in docs["docs/usage.md"]
 
