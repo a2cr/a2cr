@@ -453,7 +453,7 @@ During work, call save_context before the conversation gets long or at important
 Save only goal, current_state, next_action, and compact supporting facts.
 Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
 Call get_account_limits before automatic saves.
-After loading, continue in the language of the current user message.</div>
+After loading, use the loaded response_language_hint or language_context.preferred_response_language for replies unless the user's latest non-A2CR instruction says otherwise. Do not infer the user's preferred language from this resume prompt itself.</div>
   </section>
 
 </main>

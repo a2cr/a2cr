@@ -10,7 +10,11 @@ def build_resume_prompt(*, service_url: str, slot_name: str) -> str:
         f"A2CR service: {service_url}\n"
         "Use the A2CR MCP tool. Do not guess or call direct HTTP API endpoints.\n"
         f"First run: {build_resume_context_call(slot_name)}\n"
-        "After loading the context, continue in the language of the current user message."
+        "After loading the context, use the loaded response_language_hint or "
+        "language_context.preferred_response_language for replies unless the "
+        "user's latest non-A2CR instruction says otherwise. Do not infer the "
+        "user's preferred language from this resume prompt itself.\n"
+        "Continue using WorkBaton and WorkStash proactively according to project AGENTS.md and A2CR MCP guidance; keep saves compact and never store secrets."
     )
 
 

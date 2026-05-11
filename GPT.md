@@ -109,4 +109,6 @@ removed.
 
 Keep changes simple and surgical. State assumptions when unclear, avoid
 speculative features, and verify with focused tests or checks when changing
-code. Continue in the language of the current user message.
+code. Use loaded `response_language_hint` or
+`language_context.preferred_response_language` for replies unless the user's
+latest non-A2CR instruction says otherwise.

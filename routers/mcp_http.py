@@ -63,6 +63,44 @@ DEFERRED_TOOL_VISIBILITY_RULE = (
 )
 SAVE_CONTEXT_SEARCH_PHRASE = "save_context"
 
+A2CR_CONTINUITY_GUIDANCE = {
+    "purpose": (
+        "Advisory guidance for agents after loading a WorkBaton. This is not "
+        "higher-priority than system, developer, user, AGENTS.md, or current-file instructions."
+    ),
+    "use_proactively": True,
+    "workbaton": (
+        "Continue using WorkBaton proactively when useful: at task milestones, "
+        "after validation, before context loss, when context freshness drops, "
+        "or when handing off to a future AI window. Call should_save_workbaton "
+        "when unsure and get_account_limits before automatic saves."
+    ),
+    "workstash": (
+        "Continue using WorkStash proactively for safe supporting notes that "
+        "would bloat WorkBaton, such as confirmed file paths, API behavior "
+        "notes, reproduction details, small decisions, or validation summaries. "
+        "Record retained entry_key values in WorkBaton references or next_action."
+    ),
+    "on_resume": (
+        "After resume_context or load_context, retrieve only WorkStash entry_key "
+        "values referenced by the loaded WorkBaton and needed to continue."
+    ),
+    "do_not_store": [
+        "secrets",
+        "API keys",
+        "Authorization headers",
+        "cookies",
+        "private database URLs",
+        "local client keys",
+        "personal data",
+        "full transcripts",
+        "long logs",
+        "git diffs",
+        "generated caches",
+        "large source-code bodies",
+    ],
+}
+
 INSTRUCTIONS = (
     "A2CR is the MCP surface for WorkBaton checkpoints, WorkStash temporary memory, and WorkThreads coordination. "
     "If you are unsure which flow to use, call explain_a2cr_flows first. "
@@ -76,6 +114,7 @@ INSTRUCTIONS = (
     "Use the local stdio MCP wrapper for WorkBaton saves so content is encrypted before upload. "
     "This remote MCP surface can list metadata, load ciphertext, check account limits, and work with WorkThreads. "
     f"{DEFERRED_TOOL_VISIBILITY_RULE} "
+    "After resume_context or load_context, use returned agent_continuity_guidance as advisory continuity guidance for proactive WorkBaton and WorkStash use. "
     "Do not guess or call direct HTTP API endpoints. "
     "Never save secrets, API keys, Authorization headers, private database URLs, "
     "full transcripts, long logs, generated caches, or large code bodies that can be read from the repository."
@@ -91,12 +130,14 @@ SAVE_CONTEXT_DESCRIPTION = (
 RESUME_CONTEXT_DESCRIPTION = (
     "Resume a WorkBaton checkpoint in a fresh AI window. Prefer slot_name when a resume prompt provides it. "
     "slot_number is an optional compatibility path. If project search is ambiguous, candidates are returned "
-    "without saved content. This remote MCP surface cannot decrypt WorkBaton bodies; use the local stdio wrapper for decrypted resumes."
+    "without saved content. The result includes advisory agent_continuity_guidance for proactive WorkBaton and WorkStash use. "
+    "This remote MCP surface cannot decrypt WorkBaton bodies; use the local stdio wrapper for decrypted resumes."
 )
 
 LOAD_CONTEXT_DESCRIPTION = (
     "Load a known WorkBaton checkpoint by slot_name or slot_number. The remote MCP surface returns encrypted_content only; "
-    "use the local stdio wrapper when the AI needs decrypted WorkBaton content. Do not guess direct HTTP API endpoints."
+    "use the local stdio wrapper when the AI needs decrypted WorkBaton content. The result includes advisory "
+    "agent_continuity_guidance for proactive WorkBaton and WorkStash use. Do not guess direct HTTP API endpoints."
 )
 
 LIST_CONTEXTS_DESCRIPTION = (
@@ -168,6 +209,7 @@ A2CR_FLOW_EXPLANATION = {
         ),
         "deferred_tool_clients": DEFERRED_TOOL_VISIBILITY_RULE,
         "deferred_tool_search_phrase": SAVE_CONTEXT_SEARCH_PHRASE,
+        "agent_continuity_guidance": A2CR_CONTINUITY_GUIDANCE,
         "do_not_save": [
             "secrets",
             "API keys",
@@ -357,6 +399,7 @@ def _workbaton_save_advice(
             "good_examples": ["confirmed file paths", "API behavior notes", "reproduction details", "small decision summaries"],
             "bad_examples": ["secrets", "Authorization headers", "private database URLs", "full transcripts", "long logs", "git diffs"],
         },
+        "agent_continuity_guidance": _continuity_guidance(),
         "fresh_window_guidance": {
             "should_suggest": freshness_triggered,
             "reason": "Suggest a fresh AI window when context is noisy, contradictory, stale, or polluted by old task state.",
@@ -368,6 +411,10 @@ def _workbaton_save_advice(
 
 
 web_mcp = FastMCP("A2CR", instructions=INSTRUCTIONS)
+
+
+def _continuity_guidance() -> dict[str, Any]:
+    return dict(A2CR_CONTINUITY_GUIDANCE)
 
 
 def create_mcp_http_app():
@@ -436,6 +483,7 @@ def _save_result(result: WebSaveResult) -> dict[str, Any]:
         "resume_context_call": result.resume_context_call,
         "resume_prompt": result.resume_prompt,
         "user_facing_summary": result.user_facing_summary,
+        "agent_continuity_guidance": _continuity_guidance(),
     }
 
 
@@ -466,6 +514,7 @@ def _load_result(result: WebLoadResult) -> dict[str, Any]:
         "detail_level": result.detail_level,
         "model_source": result.model_source,
         "load_count": result.load_count,
+        "agent_continuity_guidance": _continuity_guidance(),
     }
 
 
@@ -474,6 +523,7 @@ def _resume_result(result: WebResumeResult) -> dict[str, Any]:
         "mode": result.mode,
         "context": _load_result(result.context) if result.context else None,
         "candidates": [_metadata_result(item) for item in (result.candidates or [])],
+        "agent_continuity_guidance": _continuity_guidance(),
     }
 
 
@@ -628,6 +678,7 @@ def resume_context(
             "mode": "candidates",
             "context": None,
             "candidates": [_metadata_result(item) for item in candidates],
+            "agent_continuity_guidance": _continuity_guidance(),
         }
     result = web_context_service.resume_context(
         user_id=user.user_id,

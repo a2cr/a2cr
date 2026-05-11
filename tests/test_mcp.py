@@ -163,6 +163,10 @@ def test_mcp_streamable_http_lists_tools_and_rejects_remote_save(monkeypatch):
     assert "client-side encryption" in save_tool["description"]
     assert "local stdio" in save_tool["description"]
     assert "tools lazily" in save_tool["description"]
+    resume_tool = next(tool for tool in tools if tool["name"] == "resume_context")
+    load_tool = next(tool for tool in tools if tool["name"] == "load_context")
+    assert "agent_continuity_guidance" in resume_tool["description"]
+    assert "agent_continuity_guidance" in load_tool["description"]
     advice_tool = next(tool for tool in tools if tool["name"] == "should_save_workbaton")
     assert "required local stdio save path" in advice_tool["description"]
     check_tool = next(tool for tool in tools if tool["name"] == "check_workthread_updates")
@@ -193,6 +197,7 @@ def test_mcp_explain_a2cr_flows_documents_baton_threads_and_encryption():
     assert "tools lazily" in mcp_http.INSTRUCTIONS
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
     assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]
+    assert result["common_rule"]["agent_continuity_guidance"]["use_proactively"] is True
     assert "tools lazily" in result["common_rule"]["deferred_tool_clients"]
     assert result["common_rule"]["deferred_tool_search_phrase"] == "save_context"
     assert result["common_rule"]["decision_table"]["WorkStash"].startswith("Use for safe supporting notes")
@@ -237,6 +242,7 @@ def test_mcp_should_save_workbaton_advises_remote_stdio_path():
     assert "remote MCP surface cannot save WorkBaton" in result["next_step"]
     assert "blockers" in result["optional_fields"]
     assert "confirmed file paths" in result["workstash_guidance"]["good_examples"]
+    assert result["agent_continuity_guidance"]["use_proactively"] is True
     assert result["fresh_window_guidance"]["should_suggest"] is False
 
 
@@ -389,6 +395,8 @@ def test_mcp_resume_context_loads_exact_slot_number(monkeypatch):
     assert result["context"]["slot_name"] == "slot-b"
     assert result["context"]["content"] is None
     assert result["context"]["encrypted_content"]["ciphertext"] == "slot-b"
+    assert result["agent_continuity_guidance"]["use_proactively"] is True
+    assert result["context"]["agent_continuity_guidance"]["use_proactively"] is True
 
 
 def test_mcp_ambiguous_resume_returns_candidates_without_content(monkeypatch):
@@ -406,6 +414,7 @@ def test_mcp_ambiguous_resume_returns_candidates_without_content(monkeypatch):
 
     assert result["mode"] == "candidates"
     assert result["context"] is None
+    assert result["agent_continuity_guidance"]["use_proactively"] is True
     assert len(result["candidates"]) == 2
     assert "content" not in result["candidates"][0]
 
@@ -425,6 +434,7 @@ def test_mcp_resume_without_selector_returns_metadata_candidates(monkeypatch):
     assert captured["user_id"] == USER_ID
     assert result["mode"] == "candidates"
     assert result["context"] is None
+    assert result["agent_continuity_guidance"]["use_proactively"] is True
     assert result["candidates"][0]["slot_name"] == "slot-a"
     assert "content" not in result["candidates"][0]
 

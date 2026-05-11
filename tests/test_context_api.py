@@ -17,6 +17,7 @@ from services.web_context import (
 )
 import services.dashboard as dashboard_service
 import services.web_context as web_context_service
+from services.prompts import build_resume_prompt
 
 
 USER_ID = UUID("00000000-0000-0000-0000-0000000000a1")
@@ -147,6 +148,16 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
     assert captured["retention_seconds"] == 86400
     assert captured["detail_level"] == "compact"
     assert captured["meta"].client_type == "mcp"
+
+
+def test_dashboard_resume_prompt_uses_loaded_language_hint():
+    prompt = build_resume_prompt(service_url="https://a2cr.example/mcp", slot_name="slot-a")
+
+    assert 'First run: resume_context(slot_name="slot-a")' in prompt
+    assert "current user message" not in prompt
+    assert "response_language_hint" in prompt
+    assert "language_context.preferred_response_language" in prompt
+    assert "resume prompt itself" in prompt
 
 
 def test_web_save_context_uses_model_source_as_client_type_when_header_missing(client, monkeypatch):

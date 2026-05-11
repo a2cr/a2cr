@@ -40,6 +40,35 @@ def test_mcp_stdio_client_encryption_roundtrip(tmp_path, monkeypatch):
     assert loaded["status"] == "loaded"
     assert loaded["content"] == CONTENT
     assert loaded["encrypted_content"] is None
+    assert loaded["agent_continuity_guidance"]["use_proactively"] is True
+    assert "not higher-priority" in loaded["agent_continuity_guidance"]["purpose"]
+    assert "should_save_workbaton" in loaded["agent_continuity_guidance"]["workbaton"]
+
+
+def test_mcp_stdio_loaded_context_returns_response_language_hint(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+    content = {
+        **CONTENT,
+        "language_context": {
+            "preferred_response_language": "ja",
+            "source": "conversation_before_save",
+            "confidence": "high",
+        },
+    }
+
+    loaded = server._decrypt_loaded_context(
+        {
+            "status": "loaded",
+            "encryption_mode": "client",
+            "content": None,
+            "encrypted_content": server._encrypt_content(content),
+        }
+    )
+
+    assert loaded["content"] == content
+    assert loaded["response_language_hint"] == "ja"
+    assert loaded["language_context"] == content["language_context"]
 
 
 def test_mcp_stdio_client_encrypted_load_reports_missing_key(tmp_path, monkeypatch):
@@ -63,6 +92,7 @@ def test_mcp_stdio_client_encrypted_load_reports_missing_key(tmp_path, monkeypat
     assert loaded["status"] == "key_unavailable"
     assert loaded["content"] is None
     assert "key file is missing" in loaded["message"]
+    assert loaded["agent_continuity_guidance"]["use_proactively"] is True
 
 
 def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypatch):
@@ -103,6 +133,7 @@ def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypat
     assert result["slot_name"] == "slot-a"
     assert result["slot_number"] == 5
     assert result["user_facing_summary"].startswith("Saved WorkBaton")
+    assert result["agent_continuity_guidance"]["use_proactively"] is True
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
     assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
@@ -112,6 +143,68 @@ def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypat
     assert "content" not in captured["json"]
     assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
     assert CONTENT["goal"] not in captured["json"]["encrypted_content"]["ciphertext"]
+
+
+def test_mcp_stdio_save_adds_preferred_response_language(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "slot_name": "slot-a",
+                "slot_number": 1,
+                "expires_at": "2026-05-06T00:00:00",
+                "compressed_tokens": 10,
+                "saved_tokens": None,
+            }
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, json, headers, timeout):
+            captured["json"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    result = server.save_context("slot-a", CONTENT, model_source="codex", preferred_response_language="ja")
+    decrypted = server._decrypt_content(captured["json"]["encrypted_content"])
+
+    assert "language_context" not in CONTENT
+    assert decrypted["language_context"] == {
+        "preferred_response_language": "ja",
+        "source": "conversation_before_save",
+        "confidence": "high",
+    }
+    assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(decrypted)
+    assert result["response_language_hint"] == "ja"
+    assert result["language_context"] == decrypted["language_context"]
+
+
+def test_mcp_stdio_save_rejects_invalid_preferred_response_language(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+
+    class FakeClient:
+        def __enter__(self):
+            raise AssertionError("HTTP client should not be opened")
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    with pytest.raises(ValueError, match="preferred_response_language"):
+        server.save_context("slot-a", CONTENT, model_source="codex", preferred_response_language="ja jp")
 
 
 def test_mcp_stdio_save_rejects_file_like_payload_before_encrypting_or_posting(tmp_path, monkeypatch):
@@ -218,6 +311,7 @@ def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
 
     assert result["common_rule"]["mcp_first"].startswith("AI agents use A2CR MCP tools")
     assert "newly connected AI" in result["common_rule"]["new_agent_bootstrap"]
+    assert result["common_rule"]["agent_continuity_guidance"]["use_proactively"] is True
     assert "tools lazily" in result["common_rule"]["deferred_tool_clients"]
     assert result["common_rule"]["deferred_tool_search_phrase"] == "save_context"
     assert result["common_rule"]["decision_table"]["WorkBaton"].startswith("Use for a compact resume checkpoint")
@@ -267,6 +361,8 @@ def test_mcp_stdio_should_save_workbaton_advises_local_save_path():
     assert "blockers" in result["optional_fields"]
     assert result["workstash_guidance"]["record_entry_key_in"] == ["content.references", "content.next_action"]
     assert "confirmed file paths" in result["workstash_guidance"]["good_examples"]
+    assert result["agent_continuity_guidance"]["use_proactively"] is True
+    assert "WorkStash" in result["agent_continuity_guidance"]["workstash"]
     assert result["fresh_window_guidance"]["should_suggest"] is False
 
 
@@ -366,6 +462,10 @@ def test_mcp_stdio_resume_prompt_is_slot_first_and_endpoint_safe(monkeypatch):
     assert "Do not guess or call direct HTTP API endpoints" in prompt
     assert 'First run: resume_context(slot_name="slot-a")' in prompt
     assert "resume_context(slot_number=2)" in prompt
+    assert "current user message" not in prompt
+    assert "response_language_hint" in prompt
+    assert "resume prompt itself" in prompt
+    assert "Continue using WorkBaton and WorkStash proactively" in prompt
 
 
 def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
@@ -428,8 +528,10 @@ def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():
         "validation",
         "workspace_status",
         "do_not_use_slots",
+        "language_context",
         "Free/compact saves",
         "user_facing_summary",
+        "agent_continuity_guidance",
     ]
 
     for field in fields:
@@ -495,6 +597,9 @@ def test_mcp_stdio_instructs_new_agents_about_workbaton_and_deferred_tools():
     assert "tools lazily" in server.MCP_INSTRUCTIONS
     assert "tools lazily" in server.SAVE_DESCRIPTION
     assert "WorkStash integration" in server.SAVE_DESCRIPTION
+    assert "A2CR continuity guidance" in server.SAVE_DESCRIPTION
+    assert "agent_continuity_guidance" in server.SAVE_DESCRIPTION
+    assert "preferred_response_language" in server.SAVE_DESCRIPTION
     assert "store the safe note with store_work_stash" in server.SAVE_DESCRIPTION
     assert "get_work_stash only for referenced entries" in server.SAVE_DESCRIPTION
     assert "user_facing_summary" in server.SAVE_DESCRIPTION
@@ -515,6 +620,12 @@ def test_mcp_stdio_tool_descriptions_explain_workstash_autonomy_and_baton_link()
     assert "store the safe note with store_work_stash" in tools["save_context"].description
     assert "WorkStash entry_key values" in tools["resume_context"].description
     assert "WorkStash entry_key values" in tools["load_context"].description
+    assert "agent_continuity_guidance" in tools["save_context"].description
+    assert "agent_continuity_guidance" in tools["resume_context"].description
+    assert "agent_continuity_guidance" in tools["load_context"].description
+    assert "preferred_response_language" in tools["save_context"].description
+    assert "response_language_hint" in tools["resume_context"].description
+    assert "response_language_hint" in tools["load_context"].description
     assert "without waiting for an explicit user prompt" in tools["store_work_stash"].description
     assert "WorkBaton remains the resume entrypoint" in tools["store_work_stash"].description
     assert "WorkBaton references or next_action" in tools["should_use_work_stash"].description
