@@ -30,6 +30,27 @@ const pageContent = {
       }
     ],
 
+    contextEyebrow: "Context weight",
+    contextTitle: "Long AI sessions get heavy because the work history grows",
+    contextBody:
+      "AI agents do not just answer the latest message. They often need earlier requirements, decisions, files, errors, and corrections. As that context grows, later turns can become slower and more token-hungry.",
+    contextSteps: [
+      {
+        title: "Growing session",
+        body: "The conversation accumulates goals, logs, decisions, and paths that may no longer matter."
+      },
+      {
+        title: "WorkBaton save",
+        body: "A2CR distills the useful state: goal, current state, next action, blockers, and validation."
+      },
+      {
+        title: "Fresh session",
+        body: "The next AI resumes from a compact checkpoint instead of dragging the whole chat forward."
+      }
+    ],
+    contextNote:
+      "Keeping context light is becoming standard practice. A2CR makes it a normal part of the agent workflow.",
+
     solutionEyebrow: "Solution",
     solutionTitle: "WorkBaton carries your work state to the next AI",
     solutionBody:
@@ -121,6 +142,27 @@ const pageContent = {
         body: "セッションが長くなるほどコンテキストが肥大化。レスポンスが遅くなり、トークンが増え、途中で終われない状況に。"
       }
     ],
+
+    contextEyebrow: "Contextを軽く保つ",
+    contextTitle: "長いAIセッションは、作業履歴が増えるほど重くなる",
+    contextBody:
+      "AIは最新の一言だけを見ているわけではありません。多くのAI作業では、過去の要件、判断、ファイル、エラー、修正方針も参照します。文脈が増えるほど、後半のレスポンスは遅く、トークンも重くなりやすくなります。",
+    contextSteps: [
+      {
+        title: "長くなった会話",
+        body: "ゴール、ログ、意思決定、もう不要な経路まで会話の中に積み上がります。"
+      },
+      {
+        title: "WorkBaton保存",
+        body: "A2CR が必要な状態だけを蒸留します。目標、現在地、次の行動、ブロッカー、検証結果。"
+      },
+      {
+        title: "新鮮なセッション",
+        body: "次の AI は、長いチャット全体ではなくコンパクトなチェックポイントから再開します。"
+      }
+    ],
+    contextNote:
+      "Contextを軽く保つことは、AIエージェント運用の標準になりつつあります。A2CRはそれを普段のワークフローにします。",
 
     solutionEyebrow: "解決策",
     solutionTitle: "WorkBaton が、作業状態を次の AI へ渡す",
@@ -300,6 +342,32 @@ export function TopPage() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── CONTEXT WEIGHT ── */}
+        <section className="bg-white text-neutral-950">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-700">{c.contextEyebrow}</p>
+            <h2 className="mb-4 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">{c.contextTitle}</h2>
+            <p className="mb-10 max-w-3xl text-base leading-7 text-neutral-600">{c.contextBody}</p>
+            <div className="grid gap-4 lg:grid-cols-3">
+              {c.contextSteps.map((step, index) => (
+                <article key={step.title} className="rounded-md border border-neutral-200 bg-neutral-50 p-6">
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <span className="text-sm font-semibold text-emerald-700">0{index + 1}</span>
+                    {index < c.contextSteps.length - 1 ? (
+                      <ArrowRight className="hidden size-5 text-neutral-300 lg:block" aria-hidden="true" />
+                    ) : null}
+                  </div>
+                  <h3 className="mb-2 font-semibold text-neutral-950">{step.title}</h3>
+                  <p className="text-sm leading-6 text-neutral-600">{step.body}</p>
+                </article>
+              ))}
+            </div>
+            <p className="mt-8 max-w-3xl rounded-md border-l-4 border-emerald-500 bg-emerald-50 px-5 py-4 text-sm leading-6 text-neutral-700">
+              {c.contextNote}
+            </p>
           </div>
         </section>
 

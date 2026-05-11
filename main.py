@@ -76,7 +76,7 @@ def _seo(
 ROUTE_SEO = {
     "": _seo(
         title="A2CR - Agent-to-Agent Context Relay",
-        description="A2CR is an MCP-first work-continuation layer for saving compact WorkBaton checkpoints, reducing context waste, and resuming work across Codex, Claude, Cursor, and other MCP clients.",
+        description="A2CR keeps long AI sessions light by saving compact WorkBaton checkpoints, reducing context waste, and resuming work across Codex, Claude, Cursor, and other MCP clients.",
         canonical="https://a2cr.app/",
         og_type="website",
         json_ld_type="SoftwareApplication",
@@ -89,6 +89,10 @@ ROUTE_SEO = {
         A2CR is an MCP-first work-continuation layer.
 
         It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
+
+        Long AI sessions get heavy because the work history grows. Later turns often need earlier requirements, decisions, files, errors, and corrections, so the active context can become slower and more token-hungry.
+
+        A2CR keeps context light. When work reaches a milestone or context pressure appears, an agent can save a compact WorkBaton with the goal, current state, next action, blockers, and validation. A fresh AI session can resume from that distilled state instead of carrying the entire chat history forward.
 
         Important URLs:
         - Guide: https://a2cr.app/en/guide

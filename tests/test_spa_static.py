@@ -12,6 +12,9 @@ def test_public_home_serves_indexable_spa_html():
     assert '<meta name="robots" content="index, follow"' in response.text
     assert '<link rel="canonical" href="https://a2cr.app/"' in response.text
     assert "Agent-to-Agent Context Relay" in response.text
+    assert "keeps long AI sessions light" in response.text
+    assert "Long AI sessions get heavy because the work history grows" in response.text
+    assert "A fresh AI session can resume from that distilled state" in response.text
     assert '<div id="root"></div>' in response.text
     assert '<noscript id="a2cr-static-description">' in response.text
 
