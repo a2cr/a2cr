@@ -59,6 +59,9 @@ def test_public_human_guide_serves_static_html():
     assert "client-encrypted" in response.text
     assert "WorkBatonはclient-encryptedのみです" in response.text
     assert "A2CRはWorkBaton本文の平文保存を受け付けません" in response.text
+    assert "API keyの全文は発行時に一度だけ表示されます" in response.text
+    assert "別のPCで同じWorkBatonを再開するには" in response.text
+    assert "%APPDATA%\\A2CR\\workbaton.key" in response.text
     assert "圧縮・要約機能との違い" in response.text
     assert "会話ログのダイエット" in response.text
     assert "サブエージェントとの違い" in response.text
@@ -86,6 +89,9 @@ def test_public_english_human_guide_serves_static_html():
     assert "client-encrypted" in response.text
     assert "WorkBaton is client-encrypted only" in response.text
     assert "A2CR does not accept plaintext WorkBaton bodies" in response.text
+    assert "The full API key is shown only once when issued" in response.text
+    assert "To resume from another PC" in response.text
+    assert "%APPDATA%\\A2CR\\workbaton.key" in response.text
     assert "Compression / summarization vs A2CR / WorkBaton" in response.text
     assert "diet for a conversation log" in response.text
     assert "Sub-agents vs A2CR" in response.text
@@ -116,6 +122,9 @@ def test_public_agent_guide_serves_static_html():
     assert "WorkBaton is current handoff state" in response.text
     assert "WorkThreads is planned for multi-agent collaboration" in response.text
     assert "The local client key is managed by the user" in response.text
+    assert "The full API key is shown only once when issued" in response.text
+    assert "To resume from another PC" in response.text
+    assert "%APPDATA%\\A2CR\\workbaton.key" in response.text
     assert "Supabase/Postgres for the data layer and Railway" in response.text
     assert "least-privileged" in response.text
     assert "does not make A2CR itself SOC 2 certified" in response.text
@@ -136,6 +145,8 @@ def test_public_manual_serves_static_html():
     assert "python --version" in response.text
     assert "python -m pip install --upgrade a2cr-mcp" in response.text
     assert "AGENTS.md, CLAUDE.md, or another project memory file" in response.text
+    assert "The full API key is shown only once when issued" in response.text
+    assert "To resume the same WorkBaton from another PC" in response.text
     assert "resume_context(slot_number=N)" in response.text
     assert "WorkStash entry_key values" in response.text
     assert "context contamination" in response.text
@@ -173,6 +184,9 @@ def test_public_seo_support_files_are_served():
     assert 'reason="context_contamination"' in llms.text
     assert "suggest continuing in a fresh AI window" in llms.text
     assert "local client key is managed by the user" in llms.text
+    assert "The full API key is shown only once when issued" in llms.text
+    assert "To resume from another PC" in llms.text
+    assert "%APPDATA%\\A2CR\\workbaton.key" in llms.text
     assert "Supabase Row Level Security (RLS)" in llms.text
     assert "a2cr_app runtime role" in llms.text
     assert "does not make A2CR itself SOC 2 certified" in llms.text

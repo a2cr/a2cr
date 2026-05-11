@@ -131,6 +131,11 @@ ROUTE_SEO = {
         - ローカルstdio MCP wrapperが送信前に暗号化し、A2CRは暗号文だけを保存・返却します。
         - 直接HTTP MCPからのWorkBaton保存は無効化されています。
         - local client keyは利用者側が管理します。サービス管理者は管理しません。
+        - API keyの全文は発行時に一度だけ表示されます。再発行すると別のAPI keyになるため、MCP設定の更新が必要です。
+        - local client keyファイルは、ローカルstdio MCP wrapperが初回のclient-encrypted保存時に作成します。
+        - A2CR_CLIENT_KEY_FILEを指定するとkeyファイルのパスを固定できます。A2CR_CONFIG_DIRを指定すると、そのディレクトリ内のworkbaton.keyを使います。
+        - どちらも未指定の場合、Windowsでは%APPDATA%\\A2CR\\workbaton.key、macOS/Linuxでは$XDG_CONFIG_HOME/a2cr/workbaton.keyまたは~/.config/a2cr/workbaton.keyが既定です。
+        - 別のPCで同じWorkBatonを再開するには、A2CR API keyと同じlocal client keyファイルの両方が必要です。API keyだけでは本文を復号できません。
         - local client keyを失うと、旧鍵で保存したclient-encrypted SlotはA2CR側でも復旧できません。
         - local client keyを作り直すと、それ以後に新しい鍵で保存したSlotは読めますが、旧鍵で保存したSlotには旧鍵が必要です。
 
@@ -187,6 +192,11 @@ ROUTE_SEO = {
         - The local stdio MCP wrapper encrypts before upload, and A2CR stores and returns ciphertext only.
         - Direct remote HTTP MCP saving is disabled for WorkBaton.
         - The local client key is managed by the user, not by the service administrator.
+        - The full API key is shown only once when issued. Reissuing creates a different API key, so MCP configs must be updated.
+        - The local stdio MCP wrapper creates the local client key file during the first client-encrypted save when no key file exists.
+        - Set A2CR_CLIENT_KEY_FILE to choose the exact key file path, or A2CR_CONFIG_DIR to choose the directory that contains workbaton.key.
+        - If neither variable is set, the default path is %APPDATA%\\A2CR\\workbaton.key on Windows, and $XDG_CONFIG_HOME/a2cr/workbaton.key or ~/.config/a2cr/workbaton.key on macOS/Linux.
+        - To resume from another PC, the user needs the A2CR API key plus the same local client key file. The API key alone cannot decrypt saved WorkBaton bodies.
         - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
         - Slots saved after creating a new local client key can be read with that new key, but old slots still need the old key.
 
@@ -246,6 +256,10 @@ ROUTE_SEO = {
 
         暗号化:
         - local client keyは利用者側が管理します。
+        - API keyの全文は発行時に一度だけ表示されます。再発行すると別のAPI keyになります。
+        - local client keyファイルはwrapperが初回のclient-encrypted保存時に作成します。A2CR_CLIENT_KEY_FILEでパスを固定でき、A2CR_CONFIG_DIRでworkbaton.keyを置くディレクトリを指定できます。
+        - 既定ではWindowsは%APPDATA%\\A2CR\\workbaton.key、macOS/Linuxは$XDG_CONFIG_HOME/a2cr/workbaton.keyまたは~/.config/a2cr/workbaton.keyです。
+        - 別のPCで同じWorkBatonを再開するには、A2CR API keyと同じlocal client keyファイルの両方が必要です。
         - client-encrypted WorkBaton Slotは、A2CRサーバーでは復号できません。
         - local client keyを失うと、旧鍵で保存したclient-encrypted Slotは復旧できません。
         - 新しいlocal client keyで保存したSlotは、その新しい鍵で読めます。
@@ -288,6 +302,10 @@ ROUTE_SEO = {
 
         Encryption:
         - The local client key is managed by the user.
+        - The full API key is shown only once when issued. Reissuing creates a different API key.
+        - The wrapper creates the local client key file during the first client-encrypted save. A2CR_CLIENT_KEY_FILE fixes the exact path, and A2CR_CONFIG_DIR chooses the directory containing workbaton.key.
+        - Defaults are %APPDATA%\\A2CR\\workbaton.key on Windows, and $XDG_CONFIG_HOME/a2cr/workbaton.key or ~/.config/a2cr/workbaton.key on macOS/Linux.
+        - To resume from another PC, the user needs both the A2CR API key and the same local client key file.
         - Client-encrypted WorkBaton slots cannot be decrypted by the A2CR server.
         - If the local client key is lost, old client-encrypted slots cannot be recovered.
         - Slots saved after creating a new local client key can be read with that new key.
@@ -316,9 +334,12 @@ ROUTE_SEO = {
         - ターミナルで python --version を実行するとバージョンを確認できます。
         - Python が使える状態になったら python -m pip install --upgrade a2cr-mcp で PyPI から wrapper をインストールします。
         - A2CR にログインし、Settings で API key を発行します。
+        - API keyの全文は発行時に一度だけ表示されます。再発行すると別のAPI keyになるため、MCP設定を更新してください。
         - API key は AI チャットに貼らず、ユーザー自身が MCP 設定ファイルに貼り付けます。
         - MCP 設定では command を a2cr-mcp、args を空配列にします。
         - MCP server 名は a2cr にします。既存 MCP server は消しません。
+        - local client keyファイルはa2cr-mcp wrapperが初回のclient-encrypted保存時に作成します。A2CR_CLIENT_KEY_FILEで保存場所を固定できます。
+        - 別のPCで同じWorkBatonを再開するには、A2CR API keyと同じlocal client keyファイルの両方が必要です。
         - 新しい AI セッションで get_account_limits と explain_a2cr_flows を呼び、接続と利用可能な flow を確認します。
 
         AGENTS.md / CLAUDE.md などへの追記:
@@ -369,9 +390,12 @@ ROUTE_SEO = {
         - Run python --version in a terminal to check the installed version.
         - After Python is available, install the wrapper from PyPI with python -m pip install --upgrade a2cr-mcp.
         - Sign in to A2CR and issue an API key from Settings.
+        - The full API key is shown only once when issued. Reissuing creates a different API key, so MCP configs must be updated.
         - Do not paste the API key into AI chat. The user should paste it into the MCP config locally.
         - In the MCP config, set command to a2cr-mcp and args to an empty array.
         - Add exactly one MCP server named a2cr. Preserve existing MCP servers.
+        - The a2cr-mcp wrapper creates the local client key file during the first client-encrypted save. A2CR_CLIENT_KEY_FILE can pin the key location.
+        - To resume the same WorkBaton from another PC, the user needs both the A2CR API key and the same local client key file.
         - In a new AI session, call get_account_limits and explain_a2cr_flows to verify the connection and learn the available flows.
 
         Add to AGENTS.md, CLAUDE.md, or another project memory file:

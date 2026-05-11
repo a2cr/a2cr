@@ -142,7 +142,11 @@ const text = {
     keyBody:
       "WorkBaton requires the local stdio MCP wrapper. The wrapper creates a local client key on the user's machine and encrypts WorkBaton content before sending it to A2CR.",
     keyPoints: [
+      "The full API key is shown only when it is issued. If you issue a new key, it is a different key, so update every MCP config that should keep using A2CR.",
       "The local client key is managed by the user, not by the service administrator.",
+      "The wrapper creates the local client key file during the first client-encrypted save when no key file exists. Set A2CR_CLIENT_KEY_FILE to choose the exact file path, or A2CR_CONFIG_DIR to choose the directory that contains workbaton.key.",
+      "If neither variable is set, the default path is %APPDATA%\\A2CR\\workbaton.key on Windows, and $XDG_CONFIG_HOME/a2cr/workbaton.key or ~/.config/a2cr/workbaton.key on macOS/Linux.",
+      "To resume from another PC, configure the A2CR API key and securely copy the same local client key file. The API key alone cannot decrypt saved WorkBaton bodies.",
       "A2CR stores and returns ciphertext for client-encrypted WorkBaton slots and cannot decrypt those bodies.",
       "If the local client key is lost, older client-encrypted slots cannot be recovered by A2CR.",
       "Creating a new local client key works for future saves, but it cannot decrypt old slots saved with the previous key."
@@ -164,13 +168,13 @@ const text = {
     ],
     setupTitle: "MCP setup",
     setupBody:
-      "Sign in to A2CR, issue an API key from Settings, install a2cr-mcp from PyPI, then add the local stdio wrapper to your MCP client using the config below. Paste the API key into the config file yourself — never share it in chat. The wrapper creates and manages a local client key on your machine.",
+      "Sign in to A2CR, issue an API key from Settings, install a2cr-mcp from PyPI, then add the local stdio wrapper to your MCP client using the config below. The API key is shown only once; issuing a new key creates a different key. Paste it into the config file yourself — never share it in chat. The wrapper creates and manages a local client key on your machine.",
     agentSetupTitle: "MCP setup — step by step",
     agentSetupBody:
       "Follow these steps in order. The API key must be entered by the user — never ask them to share it in chat, never generate or guess one.",
     agentSetupSteps: [
       "Tell the user to sign in at https://a2cr.app/ and go to Settings → API key → Issue new key.",
-      "Ask the user to copy the key and paste it into the MCP config themselves. Do not ask them to share it in chat.",
+      "Ask the user to copy the key and paste it into the MCP config themselves. The full key is shown only once; reissuing creates a different API key. Do not ask them to share it in chat.",
       "Ask the user to install or update the wrapper with python -m pip install --upgrade a2cr-mcp.",
       "Add exactly one MCP server named a2cr using the config snippet below that matches the user's client.",
       "Call get_account_limits to verify the connection is working.",
@@ -437,7 +441,11 @@ const text = {
     keyBody:
       "WorkBatonではローカルstdio MCP wrapperを使います。このwrapperがユーザーの端末上でlocal client keyを作り、WorkBaton本文を暗号化してからA2CRへ送ります。",
     keyPoints: [
+      "API key の全文は発行時に一度だけ表示されます。再発行すると別の API key になるため、A2CR を使い続ける MCP 設定は新しい key に更新してください。",
       "local client keyは利用者側が管理します。サービス管理者は管理しません。",
+      "local client key ファイルが存在しない場合、wrapper が初回の client-encrypted 保存時に作成します。保存場所を固定したい場合は A2CR_CLIENT_KEY_FILE にファイルパスを指定します。A2CR_CONFIG_DIR を指定すると、そのディレクトリ内の workbaton.key が使われます。",
+      "どちらも未指定の場合、Windows では %APPDATA%\\A2CR\\workbaton.key、macOS/Linux では $XDG_CONFIG_HOME/a2cr/workbaton.key または ~/.config/a2cr/workbaton.key が既定の保存場所です。",
+      "別のPCで同じ WorkBaton を再開するには、A2CR API key に加えて、同じ local client key ファイルを安全に移行してください。API key だけでは保存済み本文を復号できません。",
       "client-encrypted Slotでは、A2CRは暗号文だけを保存・返却し、本文を復号できません。",
       "local client keyを失うと、過去にその鍵で保存したclient-encrypted SlotはA2CR側でも復旧できません。",
       "local client keyを作り直した後に新しく保存したSlotは読めますが、旧鍵で保存したSlotは旧鍵なしでは読めません。"
@@ -459,13 +467,13 @@ const text = {
     ],
     setupTitle: "MCP設定",
     setupBody:
-      "A2CRにサインインし、設定からAPIキーを発行後、PyPIからa2cr-mcpをインストールし、下の設定スニペットを使ってMCPクライアントにローカルstdio wrapperを追加します。APIキーはご自身で設定ファイルに貼り付けてください。チャットでは共有しないでください。wrapperがlocal client keyを端末上に作成・管理します。",
+      "A2CRにサインインし、設定からAPIキーを発行後、PyPIからa2cr-mcpをインストールし、下の設定スニペットを使ってMCPクライアントにローカルstdio wrapperを追加します。APIキーは発行時に一度だけ表示され、再発行すると別のキーになります。ご自身で設定ファイルに貼り付け、チャットでは共有しないでください。wrapperがlocal client keyを端末上に作成・管理します。",
     agentSetupTitle: "MCP設定 — 手順",
     agentSetupBody:
       "以下の手順を順番に実行します。APIキーはユーザー本人が貼り付けます。チャットで共有させず、生成・推測も禁止です。",
     agentSetupSteps: [
       "ユーザーに https://a2cr.app/ でサインインし、設定 → APIキー → 新しいキーを発行 を行ってもらいます。",
-      "コピーしたAPIキーをMCPの設定ファイルに自分で貼り付けてもらいます。チャットでは共有させないでください。",
+      "コピーしたAPIキーをMCPの設定ファイルに自分で貼り付けてもらいます。API key の全文は発行時に一度だけ表示され、再発行すると別の API key になります。チャットでは共有させないでください。",
       "python -m pip install --upgrade a2cr-mcp でwrapperをインストールまたは更新してもらいます。",
       "下の設定スニペットを使い、ユーザーのクライアント（Codex または Generic）に合わせてa2crという名前のMCPサーバーを1つ追加します。",
       "get_account_limits を呼び出して接続を確認します。",

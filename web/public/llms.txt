@@ -45,7 +45,12 @@ Encryption notes:
 - Direct remote HTTP MCP saving is disabled for WorkBaton.
 - Official AI-agent setup is the PyPI package a2cr-mcp, registered as one local stdio MCP server named a2cr; do not configure the remote /mcp URL directly for WorkBaton.
 - Do not use the legacy local SQLite /v1/context API for AI-agent saves.
+- The full API key is shown only once when issued. Reissuing creates a different API key, so MCP configs must be updated.
 - The local client key is managed by the user, not by the service administrator.
+- The local stdio MCP wrapper creates the local client key file during the first client-encrypted save when no key file exists.
+- Set A2CR_CLIENT_KEY_FILE to choose the exact key file path, or A2CR_CONFIG_DIR to choose the directory that contains workbaton.key.
+- If neither variable is set, the default path is %APPDATA%\A2CR\workbaton.key on Windows, and $XDG_CONFIG_HOME/a2cr/workbaton.key or ~/.config/a2cr/workbaton.key on macOS/Linux.
+- To resume from another PC, the user needs the A2CR API key plus the same local client key file. The API key alone cannot decrypt saved WorkBaton bodies.
 - If the local client key is lost, old client-encrypted slots cannot be recovered by A2CR.
 
 Infrastructure notes:

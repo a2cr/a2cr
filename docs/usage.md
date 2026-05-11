@@ -149,6 +149,22 @@ Optional environment variables:
 | `A2CR_CLIENT_KEY_FILE` | Explicit local client key file path |
 | `A2CR_CONFIG_DIR` | Directory for the generated local client key file |
 
+The full API key is shown only once when it is issued. If you issue a new key,
+it is a different API key; update every MCP config that should keep using
+A2CR.
+
+The local client key file is created by the `a2cr-mcp` wrapper during the first
+client-encrypted save when no key file exists. Set `A2CR_CLIENT_KEY_FILE` to
+choose the exact file path, or set `A2CR_CONFIG_DIR` to choose the directory
+that contains `workbaton.key`. If neither variable is set, the default path is
+`%APPDATA%\A2CR\workbaton.key` on Windows, and
+`$XDG_CONFIG_HOME/a2cr/workbaton.key` or `~/.config/a2cr/workbaton.key` on
+macOS/Linux.
+
+To resume the same WorkBaton from another PC, configure the A2CR API key and
+securely copy the same local client key file. The API key alone can access
+encrypted slot data, but it cannot decrypt the WorkBaton body.
+
 If the local client key is lost, A2CR cannot recover client-encrypted WorkBaton bodies.
 
 ## Connect Before Starting Work

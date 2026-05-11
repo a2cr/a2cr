@@ -166,7 +166,20 @@ Generic MCP stdio example:
 }
 ```
 
-The local stdio MCP wrapper creates and stores the local client key in a local key file. Set `A2CR_CLIENT_KEY_FILE` to choose the path, or `A2CR_CONFIG_DIR` to choose the directory that contains `workbaton.key`.
+The full API key is shown only once when it is issued. If you issue a new key,
+it is a different API key; update every MCP config that should keep using A2CR.
+
+The local stdio MCP wrapper creates and stores the local client key in a local
+key file during the first client-encrypted save when no key file exists. Set
+`A2CR_CLIENT_KEY_FILE` to choose the path, or `A2CR_CONFIG_DIR` to choose the
+directory that contains `workbaton.key`. If neither variable is set, the default path is
+`%APPDATA%\A2CR\workbaton.key` on Windows, and
+`$XDG_CONFIG_HOME/a2cr/workbaton.key` or `~/.config/a2cr/workbaton.key` on
+macOS/Linux.
+
+To resume the same WorkBaton from another PC, configure the A2CR API key and
+securely copy the same local client key file. The API key alone can access
+encrypted slot data, but it cannot decrypt the WorkBaton body.
 
 ## Security Direction
 

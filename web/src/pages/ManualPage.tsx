@@ -88,7 +88,7 @@ const text = {
       },
       {
         title: "Sign in and issue an API key",
-        body: "Open A2CR, sign in, go to Settings, then issue an API key. The key is shown once. The user should paste it into their MCP config themselves; do not paste secrets into chat."
+        body: "Open A2CR, sign in, go to Settings, then issue an API key. The key is shown once. If you issue a new key later, it is a different key. Paste it into your MCP config yourself; do not paste secrets into chat."
       },
       {
         title: "Install the A2CR MCP wrapper",
@@ -114,6 +114,16 @@ const text = {
     configTitle: "MCP config examples",
     configBody:
       "Use one of these examples after installing a2cr-mcp. Replace placeholders locally. Do not send the API key to an AI chat.",
+    accessTitle: "Using the same WorkBaton from another PC",
+    accessBody:
+      "A2CR needs two different secrets for another PC to resume the same encrypted WorkBaton: the A2CR API key for access, and the same local client key for decryption.",
+    accessItems: [
+      "The full API key is shown only once when issued. Reissuing creates a different API key, so update every MCP config that should keep using A2CR.",
+      "The local client key file is created by the a2cr-mcp wrapper during the first client-encrypted save when no key file exists.",
+      "Set A2CR_CLIENT_KEY_FILE to choose the exact key file path. Set A2CR_CONFIG_DIR to choose the directory that contains workbaton.key.",
+      "If neither variable is set, the default path is %APPDATA%\\A2CR\\workbaton.key on Windows, and $XDG_CONFIG_HOME/a2cr/workbaton.key or ~/.config/a2cr/workbaton.key on macOS/Linux.",
+      "API key only: the PC can access encrypted slot data but cannot read the WorkBaton body. API key plus the same local client key: the PC can decrypt and resume it."
+    ],
     copyConfig: "Copy config",
     memoryTitle: "Project memory snippet",
     memoryBody:
@@ -236,7 +246,7 @@ const text = {
       },
       {
         title: "ログインして API key を発行する",
-        body: "A2CR にログインし、Settings から API key を発行します。キーは一度だけ表示されます。AI チャットに貼らず、ユーザー自身が MCP 設定ファイルへ貼り付けます。"
+        body: "A2CR にログインし、Settings から API key を発行します。キーは一度だけ表示されます。後から再発行すると別の API key になります。AI チャットに貼らず、ユーザー自身が MCP 設定ファイルへ貼り付けます。"
       },
       {
         title: "A2CR MCP wrapper をインストールする",
@@ -262,6 +272,16 @@ const text = {
     configTitle: "MCP 設定例",
     configBody:
       "a2cr-mcp をインストールした後、下の形を参考に MCP 設定を追加します。API key は AI チャットへ送らず、ローカル設定ファイルに貼り付けます。",
+    accessTitle: "別のPCで同じ WorkBaton を使う",
+    accessBody:
+      "別のPCで同じ暗号化済み WorkBaton を再開するには、A2CRへアクセスするための API key と、本文を復号するための同じ local client key の両方が必要です。",
+    accessItems: [
+      "API key の全文は発行時に一度だけ表示されます。再発行すると別の API key になるため、A2CR を使い続ける MCP 設定は新しい key に更新してください。",
+      "local client key ファイルは、既存ファイルがない状態で初回の client-encrypted 保存を行う時に、a2cr-mcp wrapper が作成します。",
+      "A2CR_CLIENT_KEY_FILE を指定すると、使う key ファイルのパスを固定できます。A2CR_CONFIG_DIR を指定すると、そのディレクトリ内の workbaton.key が使われます。",
+      "どちらも未指定の場合、Windows では %APPDATA%\\A2CR\\workbaton.key、macOS/Linux では $XDG_CONFIG_HOME/a2cr/workbaton.key または ~/.config/a2cr/workbaton.key が既定の保存場所です。",
+      "API key だけでは暗号化済み Slot へアクセスできても本文は読めません。API key と同じ local client key の両方があるPCだけが、保存済み WorkBaton を復号して再開できます。"
+    ],
     copyConfig: "設定をコピー",
     memoryTitle: "AGENTS.md / CLAUDE.md に追加する文章",
     memoryBody:
@@ -554,6 +574,10 @@ export function ManualPage() {
               );
             })}
           </div>
+        </Section>
+
+        <Section eyebrow="Keys" title={t.accessTitle} body={t.accessBody} tone="tint">
+          <BulletList items={t.accessItems} />
         </Section>
 
         <Section eyebrow="Project memory" title={t.memoryTitle} body={t.memoryBody} tone="tint">

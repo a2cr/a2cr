@@ -202,7 +202,7 @@
   <section id="setup">
     <div class="eyebrow">Setup</div>
     <h2>MCP setup — step by step</h2>
-    <p>Follow these steps in order. The API key must be entered by the user — never ask them to share it in chat, never generate or guess one.</p>
+    <p>Follow these steps in order. The API key must be entered by the user — never ask them to share it in chat, never generate or guess one. The full API key is shown only once when issued. If the user issues a new key later, it is a different API key and every MCP config that should keep using A2CR must be updated.</p>
     <ol>
       <li>Tell the user to sign in at <a href="https://a2cr.app/">https://a2cr.app/</a> and go to <strong>Settings → API key → Issue new key</strong>.</li>
       <li>Ask the user to copy the key and paste it into the MCP config themselves. Do not ask them to share it in chat.</li>
@@ -442,6 +442,10 @@ Both:
     <h2>Important: local client key</h2>
     <p>WorkBaton requires the local stdio MCP wrapper. The wrapper creates a local client key on the user's machine and encrypts WorkBaton content before sending it to A2CR.</p>
     <ul>
+      <li>The local client key file is created by the wrapper during the first client-encrypted save when no key file exists.</li>
+      <li>Set <code>A2CR_CLIENT_KEY_FILE</code> to choose the exact key file path, or <code>A2CR_CONFIG_DIR</code> to choose the directory that contains <code>workbaton.key</code>.</li>
+      <li>If neither variable is set, the default path is <code>%APPDATA%\A2CR\workbaton.key</code> on Windows, and <code>$XDG_CONFIG_HOME/a2cr/workbaton.key</code> or <code>~/.config/a2cr/workbaton.key</code> on macOS/Linux.</li>
+      <li>To resume from another PC, the user needs the A2CR API key plus the same local client key file. The API key alone cannot decrypt saved WorkBaton bodies.</li>
       <li>The local client key is managed by the user, not by the service administrator.</li>
       <li>A2CR stores and returns ciphertext for client-encrypted WorkBaton slots and cannot decrypt those bodies.</li>
       <li>If the local client key is lost, older client-encrypted slots cannot be recovered by A2CR.</li>
