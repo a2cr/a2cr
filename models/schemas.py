@@ -290,6 +290,7 @@ class DashboardStatsResponse(BaseModel):
     total_deletes: int
     total_tokens_saved: int
     active_slots: int
+    active_slot_limit: int
 
 
 class DashboardAccessLogItem(BaseModel):

@@ -163,6 +163,7 @@ def test_stats_return_no_content(client, monkeypatch):
             total_deletes=1,
             total_tokens_saved=20,
             active_slots=2,
+            active_slot_limit=5,
         ),
     )
 
@@ -170,6 +171,8 @@ def test_stats_return_no_content(client, monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["total_saves"] == 3
+    assert response.json()["active_slots"] == 2
+    assert response.json()["active_slot_limit"] == 5
     assert "content" not in response.json()
 
 

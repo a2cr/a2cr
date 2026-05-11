@@ -383,6 +383,33 @@ def test_build_access_log_row_hashes_ip_and_user_agent_without_raw_values():
     assert "content" not in row
 
 
+def test_build_access_log_row_infers_gpt_from_generic_mcp_user_agent():
+    row = build_access_log_row(
+        user_id=USER_ID,
+        action="context.load",
+        client_type="mcp",
+        result="success",
+        user_agent="ChatGPT-User/1.0",
+        hash_secret="audit-secret",
+    )
+
+    assert row["client_type"] == "gpt"
+    assert "user_agent" not in row
+
+
+def test_build_access_log_row_keeps_explicit_client_type():
+    row = build_access_log_row(
+        user_id=USER_ID,
+        action="context.save",
+        client_type="codex",
+        result="success",
+        user_agent="ChatGPT-User/1.0",
+        hash_secret="audit-secret",
+    )
+
+    assert row["client_type"] == "codex"
+
+
 def test_access_log_request_id_allows_only_safe_values():
     safe_row = build_access_log_row(
         user_id=USER_ID,

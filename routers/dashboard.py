@@ -173,6 +173,7 @@ def get_stats(user: AuthenticatedUser = Depends(get_current_dashboard_user)) -> 
         total_deletes=stats.total_deletes,
         total_tokens_saved=stats.total_tokens_saved,
         active_slots=stats.active_slots,
+        active_slot_limit=stats.active_slot_limit,
     )
 
 

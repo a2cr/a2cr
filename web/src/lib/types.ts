@@ -37,6 +37,7 @@ export type DashboardStats = {
   total_deletes: number;
   total_tokens_saved: number;
   active_slots: number;
+  active_slot_limit: number;
 };
 
 export type DashboardAccessLog = {

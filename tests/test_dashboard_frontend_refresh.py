@@ -81,3 +81,13 @@ def test_access_log_table_uses_slot_numbers_and_badges():
     assert "bg-rose-100 text-rose-800" in source
     assert "Claude Code" in source
     assert "Codex" in source
+
+
+def test_dashboard_active_slots_show_used_over_limit():
+    source = read("web/src/pages/DashboardPage.tsx")
+    types = read("web/src/lib/types.ts")
+
+    assert "active_slot_limit: number" in types
+    assert "slotUsageLabel(data?.stats)" in source
+    assert "stats?.active_slot_limit" in source
+    assert "`${formatNumber(used)}/${formatNumber(limit)}`" in source

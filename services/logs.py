@@ -13,6 +13,21 @@ from services.config import get_web_config
 
 
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
+_GENERIC_CLIENT_TYPES = {"", "api", "mcp"}
+
+
+def infer_access_log_client_type(client_type: str, user_agent: str | None = None) -> str:
+    explicit = (client_type or "").strip()
+    if explicit.lower() not in _GENERIC_CLIENT_TYPES:
+        return explicit
+    agent = (user_agent or "").lower()
+    if "chatgpt" in agent or "openai" in agent:
+        return "gpt"
+    if "claude" in agent or "anthropic" in agent:
+        return "claude"
+    if "codex" in agent:
+        return "codex"
+    return explicit or "api"
 
 
 def hash_log_value(value: str | None, secret: str | None = None) -> str | None:
@@ -50,7 +65,7 @@ def build_access_log_row(
         "user_id": str(user_id),
         "action": action,
         "slot_name": slot_name,
-        "client_type": client_type,
+        "client_type": infer_access_log_client_type(client_type, user_agent),
         "result": result,
         "error_code": error_code,
         "size_bytes": max(size_bytes, 0) if size_bytes is not None else None,

@@ -282,6 +282,12 @@ function formatBodyLimit(bytes: number): string {
   return formatBytes(bytes);
 }
 
+function slotUsageLabel(stats: DashboardData["stats"] | undefined): string {
+  const used = stats?.active_slots || 0;
+  const limit = stats?.active_slot_limit || 0;
+  return limit > 0 ? `${formatNumber(used)}/${formatNumber(limit)}` : formatNumber(used);
+}
+
 function sizeLimitLabel(sizeBytes: number, maxBodyBytes: number): string {
   return `${formatBytes(sizeBytes)} / ${formatBodyLimit(maxBodyBytes)}`;
 }
@@ -591,7 +597,7 @@ export function DashboardPage() {
       {error && <Notice tone="danger">{error}</Notice>}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Stat label={t("dashboard.activeSlots")} value={formatNumber(data?.stats.active_slots || 0)} icon={Boxes} />
+        <Stat label={t("dashboard.activeSlots")} value={slotUsageLabel(data?.stats)} icon={Boxes} />
         <Stat label={t("dashboard.totalSaves")} value={formatNumber(data?.stats.total_saves || 0)} icon={Save} />
         <Stat label={t("dashboard.totalLoads")} value={formatNumber(data?.stats.total_loads || 0)} icon={RotateCcw} />
         <Stat label={t("dashboard.totalDeletes")} value={formatNumber(data?.stats.total_deletes || 0)} icon={Activity} />

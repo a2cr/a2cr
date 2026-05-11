@@ -53,6 +53,7 @@ class DashboardStats:
     total_deletes: int
     total_tokens_saved: int
     active_slots: int
+    active_slot_limit: int
 
 
 @dataclass(frozen=True)
@@ -211,6 +212,8 @@ def list_contexts(user_id: UUID | str) -> list[DashboardContext]:
 
 
 def get_stats(user_id: UUID | str) -> DashboardStats:
+    profile = get_profile(user_id)
+    limits = get_plan_limits(profile.plan)
     with web_transaction(user_id) as session:
         row = session.execute(
             text(
@@ -230,13 +233,14 @@ def get_stats(user_id: UUID | str) -> DashboardStats:
             {"user_id": str(user_id)},
         ).mappings().first()
     if row is None:
-        return DashboardStats(0, 0, 0, 0, 0)
+        return DashboardStats(0, 0, 0, 0, 0, limits.active_slots)
     return DashboardStats(
         total_saves=row.total_saves,
         total_loads=row.total_loads,
         total_deletes=row.total_deletes,
         total_tokens_saved=row.total_tokens_saved,
         active_slots=row.active_slots,
+        active_slot_limit=limits.active_slots,
     )
 
 
