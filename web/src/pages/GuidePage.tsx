@@ -110,6 +110,15 @@ const text = {
     comparisonTitle: "What A2CR is different from",
     comparisonBody:
       "A2CR is not a chat summarizer, a file store, or a sub-agent feature. WorkBaton is a structured work-state handoff — carrying only what the next AI needs to continue, not the whole conversation.",
+    protocolCompareTitle: "MCP / A2A / A2CR",
+    protocolCompareHeaders: ["Surface", "What it connects", "A2CR relationship"],
+    protocolCompareRows: [
+      ["MCP", "An AI agent to tools, APIs, and external data", "A2CR is exposed to agents through MCP, but MCP itself is not the handoff memory."],
+      ["A2A", "AI agents to other AI agents for delegation, communication, and collaboration", "A2CR is not an agent-to-agent protocol. WorkBaton preserves the work state that a configured agent can resume."],
+      ["A2CR", "AI windows, models, tools, and time through compact work-state handoffs", "A2CR complements MCP and A2A by carrying goal, current_state, next_action, validation, and blockers across sessions."]
+    ],
+    protocolCompareNote:
+      "Short version: MCP connects agents to tools. A2A connects agents to agents. A2CR carries the work state across sessions.",
     agentTeaserTitle: "Let your AI read it",
     agentTeaserBody:
       "Show the AI agent guide to the AI you already use and ask it to explain A2CR in your context. The guide covers tools, rules, save timing, and what never to save — all in a format your AI can act on directly.",
@@ -370,6 +379,11 @@ const text = {
           "No. Permanent project knowledge should live in the repo, documentation, tickets, or the appropriate source of truth. A2CR is temporary handoff memory for AI sessions, not a durable knowledge base."
       },
       {
+        question: "How is A2CR different from MCP and A2A?",
+        answer:
+          "MCP connects an AI agent to tools, APIs, and external data. A2A connects AI agents to other AI agents so they can delegate and collaborate. A2CR preserves compact work state across AI windows, models, tools, and time so the next session can resume from a clean handoff. They are complementary, not replacements for each other."
+      },
+      {
         question: "Will every AI use A2CR automatically?",
         answer:
           "A2CR helps configured MCP-capable AI agents understand when to use WorkBaton and WorkStash, especially when project memory files include the snippet. Actual behavior still depends on the AI client and model following MCP/tool guidance."
@@ -409,6 +423,15 @@ const text = {
     comparisonTitle: "A2CRが何と違うか",
     comparisonBody:
       "A2CRはチャット要約でも、ファイル保存機能でも、サブエージェント機能でもありません。WorkBatonは構造化された作業状態の引き継ぎ — 次のAIが続きに必要なものだけを渡します。",
+    protocolCompareTitle: "MCP / A2A / A2CR",
+    protocolCompareHeaders: ["対象", "何を接続するか", "A2CRとの関係"],
+    protocolCompareRows: [
+      ["MCP", "AIエージェントをツール・API・外部データへ接続する", "A2CRはMCP経由でAIに提供されますが、MCPそのものが引き継ぎメモではありません。"],
+      ["A2A", "AIエージェント同士を委任・通信・協調のために接続する", "A2CRはA2Aの代替ではありません。WorkBatonは、設定済みAIが再開できる作業状態を保存します。"],
+      ["A2CR", "AI窓・モデル・ツール・時間をまたいで、コンパクトな作業状態を引き継ぐ", "MCPやA2Aを補完し、goal、current_state、next_action、validation、blockersを軽く渡します。"]
+    ],
+    protocolCompareNote:
+      "短く言うと、MCPはAIとツールをつなぎ、A2AはAI同士をつなぎ、A2CRは作業状態を次のセッションへ運びます。",
     agentTeaserTitle: "読むより、AIに読ませる",
     agentTeaserBody:
       "AI向けガイドを、ふだん使っているAIに見せて「このアプリを説明して」と頼んでください。ツール一覧・保存ルール・タイミング・禁止事項まで、そのままAIが動けるフォーマットで書かれています。",
@@ -666,6 +689,11 @@ const text = {
         question: "A2CR はドキュメント、Git、Issue 管理の代わりですか？",
         answer:
           "違います。永続的なプロジェクト知識は、リポジトリ、ドキュメント、Issue など本来の保存場所に置きます。A2CR は AI セッション間の一時的な引き継ぎメモであり、永続的なナレッジベースではありません。"
+      },
+      {
+        question: "A2CR は MCP や A2A と何が違いますか？",
+        answer:
+          "MCP は AI エージェントをツール、API、外部データへ接続します。A2A は AI エージェント同士が委任・通信・協調するための仕組みです。A2CR は、AI窓・モデル・ツール・時間をまたいで、次のセッションがきれいに再開できるコンパクトな作業状態を保存します。これらは競合ではなく補完関係です。"
       },
       {
         question: "すべての AI が自動で A2CR を使ってくれますか？",
@@ -966,6 +994,12 @@ export function GuidePage() {
         <section className="border-y border-neutral-200 bg-white">
           <Section eyebrow="Compare" title={t.comparisonTitle} body={t.comparisonBody}>
             <div className="grid gap-4">
+              <ComparisonTable
+                title={t.protocolCompareTitle}
+                headers={t.protocolCompareHeaders}
+                rows={t.protocolCompareRows}
+                note={t.protocolCompareNote}
+              />
               <ComparisonTable
                 title={t.compressionCompareTitle}
                 headers={t.compressionCompareHeaders}

@@ -308,6 +308,9 @@ Both:
     <h3>Does A2CR replace documentation, Git, or issue trackers?</h3>
     <p>No. Permanent project knowledge should live in the repository, documentation, tickets, or the appropriate source of truth. A2CR is temporary handoff memory for AI sessions, not a durable knowledge base.</p>
 
+    <h3>How is A2CR different from MCP and A2A?</h3>
+    <p>MCP connects an AI agent to tools, APIs, and external data. A2A connects AI agents to other AI agents so they can delegate and collaborate. A2CR preserves compact work state across AI windows, models, tools, and time so the next session can resume from a clean handoff. They are complementary, not replacements for each other.</p>
+
     <h3>Will every AI use A2CR automatically?</h3>
     <p>A2CR helps configured MCP-capable AI agents understand when to use WorkBaton and WorkStash, especially when project memory files include the snippet. Actual behavior still depends on the AI client and model following MCP/tool guidance.</p>
 
@@ -316,6 +319,23 @@ Both:
 
     <h3>What about WorkThreads?</h3>
     <p>WorkThreads is planned for multi-agent collaboration: shared threads, tasks, and agent-to-agent coordination. WorkBaton is available now and is for serial handoff from one AI window to the next. Until WorkThreads tools are available, do not treat WorkThreads as a WorkBaton replacement.</p>
+  </section>
+
+  <section id="protocol-positioning">
+    <div class="eyebrow">MCP / A2A / A2CR</div>
+    <h2>Protocol positioning</h2>
+    <p>A2CR should be described as complementary to MCP and A2A, not as a replacement for either one.</p>
+    <table>
+      <thead>
+        <tr><th>Surface</th><th>What it connects</th><th>A2CR relationship</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>MCP</strong></td><td>An AI agent to tools, APIs, and external data</td><td>A2CR is exposed to agents through MCP, but MCP itself is not the handoff memory.</td></tr>
+        <tr><td><strong>A2A</strong></td><td>AI agents to other AI agents for delegation, communication, and collaboration</td><td>A2CR is not an agent-to-agent protocol. WorkBaton preserves the work state that a configured agent can resume.</td></tr>
+        <tr><td><strong>A2CR</strong></td><td>AI windows, models, tools, and time through compact work-state handoffs</td><td>A2CR complements MCP and A2A by carrying goal, current_state, next_action, validation, and blockers across sessions.</td></tr>
+      </tbody>
+    </table>
+    <p>Short version: MCP connects agents to tools. A2A connects agents to agents. A2CR carries the work state across sessions.</p>
   </section>
 
   <!-- ── WORKFLOW ── -->

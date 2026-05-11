@@ -166,6 +166,12 @@ ROUTE_SEO = {
         - A2CRはChatGPT、Claude、Codex、Cursor、Roo、ローカルLLMなどを横断できます。
         - サブエージェントの状態共有は親エージェントの文脈に依存します。
         - A2CRは外部の一時リレーDBに保存し、TTLで消えます。
+
+        MCP / A2A / A2CR:
+        - MCPはAIエージェントをツール、API、外部データへ接続します。
+        - A2AはAIエージェント同士を委任、通信、協調のために接続します。
+        - A2CRはAI窓、モデル、ツール、時間をまたいで、次のセッションが再開できるコンパクトな作業状態を保存します。
+        - A2CRはMCPやA2Aの代替ではなく補完関係です。
         """,
     ),
     "en/guide": _seo(
@@ -227,6 +233,12 @@ ROUTE_SEO = {
         - A2CR can work across ChatGPT, Claude, Codex, Cursor, Roo, and local LLMs.
         - Sub-agent state sharing depends on the parent agent's context.
         - A2CR stores state in an external temporary relay DB and expires it by TTL.
+
+        MCP / A2A / A2CR:
+        - MCP connects an AI agent to tools, APIs, and external data.
+        - A2A connects AI agents to other AI agents for delegation, communication, and collaboration.
+        - A2CR preserves compact work state across AI windows, models, tools, and time so the next session can resume from a clean handoff.
+        - A2CR is complementary to MCP and A2A, not a replacement for either protocol.
         """,
     ),
     "agent-guide": _seo(
@@ -253,6 +265,7 @@ ROUTE_SEO = {
         - WorkBaton は今この瞬間の作業状態です。goal, current_state, next_action, validation, blockers を次の AI に渡します。
         - WorkStash は WorkBaton を肥大化させないための一時的な補助メモです。entry_key を WorkBaton に記録します。
         - WorkThreads は複数エージェントの共同作業向けに予定している機能です。現在使う WorkBaton は serial handoff 用です。
+        - MCPはAIエージェントをツール、API、外部データへ接続します。A2AはAIエージェント同士を委任・通信・協調のために接続します。A2CRは作業状態をセッション間で引き継ぎます。
 
         暗号化:
         - local client keyは利用者側が管理します。
@@ -299,6 +312,7 @@ ROUTE_SEO = {
         - WorkBaton is current handoff state: goal, current_state, next_action, validation, blockers, and what the next AI should do.
         - WorkStash is temporary supporting memory for safe details that would bloat the WorkBaton. Record returned entry_key values in WorkBaton references or next_action.
         - WorkThreads is planned for multi-agent collaboration. WorkBaton is available now for serial handoff from one AI window to the next.
+        - MCP connects agents to tools. A2A connects agents to agents. A2CR carries work state across sessions.
 
         Encryption:
         - The local client key is managed by the user.

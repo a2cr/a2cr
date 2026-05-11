@@ -50,6 +50,16 @@ A2CR does not run LLM inference on the server in the MVP. It does not think for 
 
 This keeps A2CR model-neutral and keeps pricing tied to storage, requests, and coordination rather than token burn.
 
+## MCP / A2A / A2CR Positioning
+
+A2CR is complementary to MCP and A2A, not a replacement for either protocol.
+
+| Surface | Primary role | A2CR relationship |
+|---|---|---|
+| MCP | Connects an AI agent to tools, APIs, and external data | A2CR is exposed to agents through MCP, but MCP itself is not the handoff memory |
+| A2A | Connects AI agents to other AI agents for delegation, communication, and collaboration | A2CR is not an agent-to-agent protocol; WorkBaton preserves the work state that a configured agent can resume |
+| A2CR | Carries compact work state across AI windows, models, tools, and time | Complements MCP and A2A by handing off `goal`, `current_state`, `next_action`, validation, and blockers across sessions |
+
 ## Current Status
 
 Legacy local prototype retained for development reference:
@@ -233,6 +243,8 @@ WorkBaton は、次の AI が作業を再開するために必要な最小限の
 CLAUDE.md / AGENTS.md などは、プロジェクトの永続的なルールやセットアップ手順を書く場所です。WorkBaton は、今この瞬間の作業状態、検証結果、ブロッカー、次のアクションを次の AI に渡す一時的な引き継ぎです。役割が違います。
 
 A2CR はサーバー側で LLM 推論を行いません。ユーザーは自分の AI クライアントを使い、それらのクライアントが MCP/API 経由で A2CR を呼び出します。
+
+MCP は AI エージェントをツール、API、外部データへ接続する仕組みです。A2A は AI エージェント同士が委任・通信・協調するための仕組みです。A2CR は、AI 窓・モデル・ツール・時間をまたいで、次のセッションが再開できる作業状態を引き継ぐ仕組みです。これらは競合ではなく補完関係です。
 
 WorkBaton 本文は、ローカル stdio MCP wrapper でアップロード前に暗号化されます。A2CR は暗号化済み本文とメタデータを保存しますが、ダッシュボードでは本文ではなくスロット名、時刻、サイズ、状態などのメタデータのみを扱う設計です。
 
