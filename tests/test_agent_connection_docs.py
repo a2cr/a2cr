@@ -61,6 +61,8 @@ def test_public_agent_docs_prefer_slot_first_stdio_path():
     assert "The legacy local SQLite WorkBaton API is disabled by default" in docs["README.md"]
     assert "Supabase/Postgres for the data layer and Railway" in docs["README.md"]
     assert "least-privileged `a2cr_app` runtime role" in docs["README.md"]
+    assert "MCP / A2A / A2CR Positioning" in docs["README.md"]
+    assert "A2CR is complementary to MCP and A2A" in docs["README.md"]
     assert "A2CR_BASE_URL\": \"https://a2cr.app" in docs["docs/usage.md"]
     assert '"A2CR_API_STYLE": "legacy"' not in docs["docs/usage.md"]
 

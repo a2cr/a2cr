@@ -38,6 +38,12 @@ FAQ notes:
 - WorkStash is temporary supporting memory for safe details that would bloat the WorkBaton; record returned entry_key values in WorkBaton references or next_action.
 - WorkThreads is planned for multi-agent collaboration. WorkBaton is available now for serial handoff from one AI window to the next.
 
+Protocol positioning:
+- MCP connects an AI agent to tools, APIs, and external data.
+- A2A connects AI agents to other AI agents so they can delegate, communicate, and collaborate.
+- A2CR preserves compact work state across AI windows, models, tools, and time so the next session can resume from a clean handoff.
+- A2CR is complementary to MCP and A2A; do not describe it as a replacement for either protocol.
+
 Encryption notes:
 - WorkBaton is client-encrypted only.
 - The local stdio MCP wrapper encrypts before upload and A2CR stores and returns ciphertext only.

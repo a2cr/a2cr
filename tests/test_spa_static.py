@@ -66,6 +66,9 @@ def test_public_human_guide_serves_static_html():
     assert "会話ログのダイエット" in response.text
     assert "サブエージェントとの違い" in response.text
     assert "環境をまたいで引き継ぐ" in response.text
+    assert "MCP / A2A / A2CR" in response.text
+    assert "A2AはAIエージェント同士を委任" in response.text
+    assert "A2CRはMCPやA2Aの代替ではなく補完関係です" in response.text
     assert "AIエージェント向けガイド: https://a2cr.app/agent-guide" in response.text
     assert '<div id="root"></div>' in response.text
 
@@ -96,6 +99,9 @@ def test_public_english_human_guide_serves_static_html():
     assert "diet for a conversation log" in response.text
     assert "Sub-agents vs A2CR" in response.text
     assert "carries the environment itself forward" in response.text
+    assert "MCP / A2A / A2CR" in response.text
+    assert "A2A connects AI agents to other AI agents" in response.text
+    assert "A2CR is complementary to MCP and A2A" in response.text
     assert "AI agent guide: https://a2cr.app/en/agent-guide" in response.text
     assert '<div id="root"></div>' in response.text
 
@@ -121,6 +127,8 @@ def test_public_agent_guide_serves_static_html():
     assert "CLAUDE.md and AGENTS.md are project memory" in response.text
     assert "WorkBaton is current handoff state" in response.text
     assert "WorkThreads is planned for multi-agent collaboration" in response.text
+    assert "MCP connects agents to tools" in response.text
+    assert "A2A connects agents to agents" in response.text
     assert "The local client key is managed by the user" in response.text
     assert "The full API key is shown only once when issued" in response.text
     assert "To resume from another PC" in response.text
@@ -178,6 +186,9 @@ def test_public_seo_support_files_are_served():
     assert "CLAUDE.md and AGENTS.md are project memory" in llms.text
     assert "WorkBaton is current handoff state" in llms.text
     assert "WorkThreads is planned for multi-agent collaboration" in llms.text
+    assert "Protocol positioning" in llms.text
+    assert "A2A connects AI agents to other AI agents" in llms.text
+    assert "A2CR is complementary to MCP and A2A" in llms.text
     assert 'first call resume_context(slot_name="...")' in llms.text
     assert "Use list_contexts only when no Slot is provided" in llms.text
     assert "Use WorkBaton and WorkStash proactively" in llms.text
