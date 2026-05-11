@@ -558,7 +558,7 @@ function PublicHeader({ language, kind }: { language: Language; kind: GuideKind 
     <header className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="h-8 w-auto object-contain" />
+          <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="h-10 w-auto object-contain" />
           <span className="sr-only">A2CR</span>
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -728,7 +728,7 @@ export function GuidePage() {
         <section className="border-b border-neutral-200 bg-white">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div>
-              <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="mb-6 w-full max-w-md object-contain" />
+              <img src="/brand/a2cr-logo-v2.png" alt="A2CR" className="mb-6 h-28 w-auto object-contain" />
               <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">{t.humanTitle}</h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">{t.humanBody}</p>
               <div className="mt-8 flex flex-wrap gap-3">
