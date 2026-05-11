@@ -32,6 +32,12 @@ Use case:
 - Keep future sessions focused on the next action instead of old chat history.
 - Follow the manual for login, API key setup, MCP config, project memory snippets, Slot saves, Slot resumes, and WorkStash retrieval.
 
+FAQ notes:
+- CLAUDE.md and AGENTS.md are project memory: durable rules, conventions, setup notes, and project-level guidance.
+- WorkBaton is current handoff state: goal, current_state, next_action, validation, blockers, and what the next AI should do.
+- WorkStash is temporary supporting memory for safe details that would bloat the WorkBaton; record returned entry_key values in WorkBaton references or next_action.
+- WorkThreads is planned for multi-agent collaboration. WorkBaton is available now for serial handoff from one AI window to the next.
+
 Encryption notes:
 - WorkBaton is client-encrypted only.
 - The local stdio MCP wrapper encrypts before upload and A2CR stores and returns ciphertext only.

@@ -327,6 +327,51 @@ const text = {
     ] as [string, string][],
     memoryFileNote: "The snippet content is the same for every AI — only the filename differs.",
     memoryFileSnippet,
+    faqTitle: "FAQ",
+    faqBody:
+      "Common questions when comparing A2CR with project memory files, docs, and planned collaboration features.",
+    faqItems: [
+      {
+        question: "Can CLAUDE.md or AGENTS.md replace WorkBaton?",
+        answer:
+          "No. CLAUDE.md and AGENTS.md are project memory: durable rules, conventions, setup notes, and project-level guidance. WorkBaton is current handoff state: what is happening right now, what changed, what passed validation, what is blocked, and what the next AI should do."
+      },
+      {
+        question: "What belongs in WorkBaton?",
+        answer:
+          "Keep WorkBaton compact. Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key values the next AI should retrieve. Do not save full transcripts, long logs, generated caches, or large source files."
+      },
+      {
+        question: "When should an AI save a WorkBaton?",
+        answer:
+          "Save at task milestones, after validation, before the conversation gets long, before switching windows/tools/models, or when context drift or contamination is detected. If unsure, call should_save_workbaton first."
+      },
+      {
+        question: "When should an AI use WorkStash?",
+        answer:
+          "Use WorkStash for safe supporting details that would make the WorkBaton too large: confirmed file paths, API findings, failed approaches, reproduction notes, and concise validation notes. Record the returned entry_key in WorkBaton references or next_action."
+      },
+      {
+        question: "Does A2CR replace documentation, Git, or issue trackers?",
+        answer:
+          "No. Permanent project knowledge should live in the repo, documentation, tickets, or the appropriate source of truth. A2CR is temporary handoff memory for AI sessions, not a durable knowledge base."
+      },
+      {
+        question: "Will every AI use A2CR automatically?",
+        answer:
+          "A2CR helps configured MCP-capable AI agents understand when to use WorkBaton and WorkStash, especially when project memory files include the snippet. Actual behavior still depends on the AI client and model following MCP/tool guidance."
+      },
+      {
+        question: "Can A2CR read saved WorkBaton content?",
+        answer:
+          "The official AI-agent path uses the PyPI-installed a2cr-mcp local stdio wrapper, which encrypts WorkBaton content before upload. A2CR stores ciphertext only and cannot decrypt the body. If the local client key is lost, old client-encrypted slots cannot be recovered."
+      },
+      {
+        question: "What about WorkThreads?",
+        answer:
+          "WorkThreads is planned for multi-agent collaboration: shared threads, tasks, and agent-to-agent coordination. WorkBaton is available now and is for serial handoff from one AI window to the next. Until WorkThreads tools are available, do not treat WorkThreads as a WorkBaton replacement."
+      }
+    ],
     copyConfig: "Copy config",
     copyPrompt: "Copy prompt",
     copySnippet: "Copy snippet"
@@ -567,6 +612,51 @@ const text = {
     ] as [string, string][],
     memoryFileNote: "スニペットの内容はどのAIでも同じです。ファイル名だけが異なります。",
     memoryFileSnippet,
+    faqTitle: "よくある質問",
+    faqBody:
+      "CLAUDE.md / AGENTS.md、ドキュメント、今後の WorkThreads との違いで迷いやすい点を整理します。",
+    faqItems: [
+      {
+        question: "CLAUDE.md や AGENTS.md で WorkBaton を代替できますか？",
+        answer:
+          "代替ではありません。CLAUDE.md / AGENTS.md は、プロジェクトの永続的なルール、設計方針、セットアップ手順を書く場所です。WorkBaton は、今この瞬間の作業状態、直近の変更、検証結果、ブロッカー、次のアクションを次の AI に渡す一時的な引き継ぎです。"
+      },
+      {
+        question: "WorkBaton には何を入れますか？",
+        answer:
+          "WorkBaton は短く保ちます。goal、current_state、next_action、重要な判断、blockers、validation、必要な WorkStash entry_key を保存します。会話全文、長いログ、生成キャッシュ、大きなソースファイルは入れません。"
+      },
+      {
+        question: "AI はいつ WorkBaton を保存すべきですか？",
+        answer:
+          "作業の節目、検証後、会話が長くなる前、ウィンドウ・ツール・モデルを切り替える前、または context drift / contamination を感じた時です。迷う場合は should_save_workbaton を先に呼びます。"
+      },
+      {
+        question: "WorkStash はいつ使いますか？",
+        answer:
+          "WorkBaton を肥大化させる安全な補足メモに使います。確認済みファイルパス、API 調査結果、失敗した試み、再現メモ、短い検証メモなどです。返ってきた entry_key は WorkBaton の references または next_action に記録します。"
+      },
+      {
+        question: "A2CR はドキュメント、Git、Issue 管理の代わりですか？",
+        answer:
+          "違います。永続的なプロジェクト知識は、リポジトリ、ドキュメント、Issue など本来の保存場所に置きます。A2CR は AI セッション間の一時的な引き継ぎメモであり、永続的なナレッジベースではありません。"
+      },
+      {
+        question: "すべての AI が自動で A2CR を使ってくれますか？",
+        answer:
+          "A2CR MCP を設定した MCP 対応 AI には、WorkBaton / WorkStash の使い方が伝わります。さらにプロジェクト memory file にスニペットを入れると安定します。ただし実際の挙動は、AI クライアントとモデルが MCP / tool guidance をどれだけ守るかにも依存します。"
+      },
+      {
+        question: "A2CR は保存内容を読めますか？",
+        answer:
+          "公式の AI エージェント向け経路では、PyPI から入れる a2cr-mcp local stdio wrapper が送信前に WorkBaton を暗号化します。A2CR は暗号文だけを保存し、本文を復号できません。local client key を失うと、古い client-encrypted Slot は復旧できません。"
+      },
+      {
+        question: "WorkThreads は何ですか？",
+        answer:
+          "WorkThreads は、複数エージェントの共同作業、共有スレッド、タスク調整のために予定している機能です。現在使う WorkBaton は、1つの AI ウィンドウから次の AI ウィンドウへ渡す serial handoff です。WorkThreads tools が利用可能になるまでは、WorkThreads を WorkBaton の代替として扱わないでください。"
+      }
+    ],
     copyConfig: "設定をコピー",
     copyPrompt: "プロンプトをコピー",
     copySnippet: "スニペットをコピー"
@@ -649,6 +739,19 @@ function BulletList({ items }: { items: string[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function FaqList({ items }: { items: { question: string; answer: string }[] }) {
+  return (
+    <div className="grid gap-3">
+      {items.map((item) => (
+        <article key={item.question} className="rounded-md border border-neutral-200 bg-white p-4">
+          <h3 className="text-sm font-semibold text-neutral-950">{item.question}</h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">{item.answer}</p>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -886,6 +989,12 @@ export function GuidePage() {
               <CopyButton value={t.memoryFileSnippet} label={t.copySnippet} compact />
             </div>
             <pre className="overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-50 whitespace-pre-wrap">{t.memoryFileSnippet}</pre>
+          </Section>
+        </section>
+
+        <section className="border-y border-neutral-200 bg-white">
+          <Section eyebrow="FAQ" title={t.faqTitle} body={t.faqBody}>
+            <FaqList items={t.faqItems} />
           </Section>
         </section>
 

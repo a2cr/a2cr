@@ -222,6 +222,12 @@ ROUTE_SEO = {
         - APIキー、Authorization header、DB URL、秘密情報、全文ログ、長い会話履歴は保存しません。
         - 自動保存前にはget_account_limitsで制限を確認します。
 
+        FAQ:
+        - CLAUDE.md / AGENTS.md はプロジェクトの永続情報です。ルール、設計方針、セットアップ手順を書きます。
+        - WorkBaton は今この瞬間の作業状態です。goal, current_state, next_action, validation, blockers を次の AI に渡します。
+        - WorkStash は WorkBaton を肥大化させないための一時的な補助メモです。entry_key を WorkBaton に記録します。
+        - WorkThreads は複数エージェントの共同作業向けに予定している機能です。現在使う WorkBaton は serial handoff 用です。
+
         暗号化:
         - local client keyは利用者側が管理します。
         - client-encrypted WorkBaton Slotは、A2CRサーバーでは復号できません。
@@ -251,6 +257,12 @@ ROUTE_SEO = {
         - Save only goal, current_state, next_action, and compact supporting facts.
         - Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
         - Call get_account_limits before automatic saves.
+
+        FAQ:
+        - CLAUDE.md and AGENTS.md are project memory: durable rules, conventions, setup notes, and project-level guidance.
+        - WorkBaton is current handoff state: goal, current_state, next_action, validation, blockers, and what the next AI should do.
+        - WorkStash is temporary supporting memory for safe details that would bloat the WorkBaton. Record returned entry_key values in WorkBaton references or next_action.
+        - WorkThreads is planned for multi-agent collaboration. WorkBaton is available now for serial handoff from one AI window to the next.
 
         Encryption:
         - The local client key is managed by the user.

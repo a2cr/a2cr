@@ -287,6 +287,37 @@ Both:
 - Never save secrets, API keys, Authorization headers, full transcripts, or large source files.</pre>
   </section>
 
+  <!-- ── FAQ ── -->
+  <section id="faq">
+    <div class="eyebrow">FAQ</div>
+    <h2>FAQ</h2>
+    <p>Use these answers when users compare A2CR with project memory files, documentation, or planned collaboration features.</p>
+
+    <h3>Can CLAUDE.md or AGENTS.md replace WorkBaton?</h3>
+    <p>No. <code>CLAUDE.md</code> and <code>AGENTS.md</code> are project memory: durable rules, conventions, setup notes, and project-level guidance. WorkBaton is current handoff state: what is happening right now, what changed, what passed validation, what is blocked, and what the next AI should do. Do not keep constantly changing task state in project memory unless it truly should become durable project knowledge.</p>
+
+    <h3>What belongs in WorkBaton?</h3>
+    <p>Keep WorkBaton compact. Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key values the next AI should retrieve. Do not save full transcripts, long logs, generated caches, or large source files.</p>
+
+    <h3>When should an AI save a WorkBaton?</h3>
+    <p>Save at task milestones, after validation, before the conversation gets long, before switching windows/tools/models, or when context drift or contamination is detected. If unsure, call <code>should_save_workbaton</code> first.</p>
+
+    <h3>When should an AI use WorkStash?</h3>
+    <p>Use WorkStash for safe supporting details that would make the WorkBaton too large: confirmed file paths, API findings, failed approaches, reproduction notes, and concise validation notes. Record the returned <code>entry_key</code> in WorkBaton references or next_action.</p>
+
+    <h3>Does A2CR replace documentation, Git, or issue trackers?</h3>
+    <p>No. Permanent project knowledge should live in the repository, documentation, tickets, or the appropriate source of truth. A2CR is temporary handoff memory for AI sessions, not a durable knowledge base.</p>
+
+    <h3>Will every AI use A2CR automatically?</h3>
+    <p>A2CR helps configured MCP-capable AI agents understand when to use WorkBaton and WorkStash, especially when project memory files include the snippet. Actual behavior still depends on the AI client and model following MCP/tool guidance.</p>
+
+    <h3>Can A2CR read saved WorkBaton content?</h3>
+    <p>The official AI-agent path uses the PyPI-installed <code>a2cr-mcp</code> local stdio wrapper, which encrypts WorkBaton content before upload. A2CR stores ciphertext only and cannot decrypt the body. If the local client key is lost, old client-encrypted slots cannot be recovered.</p>
+
+    <h3>What about WorkThreads?</h3>
+    <p>WorkThreads is planned for multi-agent collaboration: shared threads, tasks, and agent-to-agent coordination. WorkBaton is available now and is for serial handoff from one AI window to the next. Until WorkThreads tools are available, do not treat WorkThreads as a WorkBaton replacement.</p>
+  </section>
+
   <!-- ── WORKFLOW ── -->
   <section id="workflow">
     <div class="eyebrow">Workflow</div>

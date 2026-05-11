@@ -105,6 +105,9 @@ def test_public_agent_guide_serves_static_html():
     assert "Use WorkBaton and WorkStash proactively" in response.text
     assert "context_contamination" in response.text
     assert "suggest continuing in a fresh AI window" in response.text
+    assert "CLAUDE.md and AGENTS.md are project memory" in response.text
+    assert "WorkBaton is current handoff state" in response.text
+    assert "WorkThreads is planned for multi-agent collaboration" in response.text
     assert "The local client key is managed by the user" in response.text
     assert "old client-encrypted slots cannot be recovered" in response.text
     assert '<div id="root"></div>' in response.text
@@ -151,6 +154,9 @@ def test_public_seo_support_files_are_served():
     assert "MCP service URL: https://a2cr.app/mcp" in llms.text
     assert "A2CR is not an AI" in llms.text
     assert "Official AI-agent setup is the PyPI package a2cr-mcp" in llms.text
+    assert "CLAUDE.md and AGENTS.md are project memory" in llms.text
+    assert "WorkBaton is current handoff state" in llms.text
+    assert "WorkThreads is planned for multi-agent collaboration" in llms.text
     assert 'first call resume_context(slot_name="...")' in llms.text
     assert "Use list_contexts only when no Slot is provided" in llms.text
     assert "Use WorkBaton and WorkStash proactively" in llms.text
