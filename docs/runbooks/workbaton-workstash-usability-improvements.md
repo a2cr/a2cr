@@ -57,7 +57,7 @@ scratchpad for later design and implementation cleanup.
 ## Improvement Ideas
 
 - Carry the initial WorkStash quota decision into the implementation plan:
-  Free 256KB total encrypted storage, Pro 2048KB total encrypted storage, with
+  Free 256KB total encrypted storage, Pro 1024KB total encrypted storage, with
   no public entry-count limit. Pro is larger because the same stash budget also
   supports Threads-related stash use. Entry count may remain an internal abuse
   guard, but public plan limits should be storage-based. These limits are

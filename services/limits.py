@@ -134,7 +134,7 @@ FREE_STASH_LIMITS = WorkStashLimits(
 
 PRO_STASH_LIMITS = WorkStashLimits(
     plan="pro",
-    quota_bytes=2048 * 1024,
+    quota_bytes=1024 * 1024,
     ttl_seconds=30 * 24 * 60 * 60,
     max_entries=None,
     max_entry_bytes=32 * 1024,

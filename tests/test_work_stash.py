@@ -105,7 +105,7 @@ def test_free_stash_limits_values():
 def test_pro_stash_limits_values():
     limits = PRO_STASH_LIMITS
     assert limits.plan == "pro"
-    assert limits.quota_bytes == 2048 * 1024
+    assert limits.quota_bytes == 1024 * 1024
     assert limits.ttl_seconds == 30 * 24 * 60 * 60
     assert limits.max_entries is None
     assert limits.max_entry_bytes == 32 * 1024

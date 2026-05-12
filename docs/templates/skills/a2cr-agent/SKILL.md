@@ -113,9 +113,9 @@ file paths, API response notes, reproduction details, intermediate findings,
 approach notes, or concise validation summaries.
 
 Planned first public-preview quotas are based on total encrypted storage size,
-not number of notes: Free has 256KB total and Pro has 2048KB total because Pro
-also covers Threads-related stash use. Treat these as temporary-memory limits,
-not file storage capacity.
+not number of notes: Free has 256KB total and Pro has 1024KB total, exactly
+four times Free. Treat these as temporary-memory limits, not file storage
+capacity.
 
 Good triggers:
 

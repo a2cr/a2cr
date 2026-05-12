@@ -276,8 +276,8 @@ with `get_work_stash` after `resume_context` or `load_context`.
 
 Planned WorkStash quotas for the first public preview are intentionally based on
 total encrypted storage size, not number of notes: Free gets 256KB total, and
-Pro gets 2048KB total. Pro is larger because it also supports Threads-related
-stash use. WorkStash is not file storage; store concise notes and delete entries
+Pro gets 1024KB total. Pro is exactly four times Free for richer safe handoff
+notes. WorkStash is not file storage; store concise notes and delete entries
 when a task phase is complete.
 
 Good WorkStash entries:

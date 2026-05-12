@@ -82,7 +82,7 @@ Rules:
 
 - RLS must require `user_id = app.current_user_id()`.
 - API routes must be authenticated with API key or JWT.
-- Total encrypted storage is the public quota: Free 256KB, future Pro 2048KB.
+- Total encrypted storage is the public quota: Free 256KB, future Pro 1024KB.
 - Entry count may remain an internal abuse guard, but should not be the public promise.
 - `list_work_stash` returns metadata only.
 - `get_work_stash` returns encrypted value to the local stdio wrapper; only the wrapper decrypts locally.

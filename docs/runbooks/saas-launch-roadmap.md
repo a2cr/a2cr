@@ -84,8 +84,8 @@ Work:
 
 - Freeze Core WorkBaton MVP scope
 - Freeze WorkStash free-preview scope: Free starts at 256KB total encrypted
-  storage and Pro starts at 2048KB total encrypted storage because Pro WorkStash
-  also supports Threads-related stash use. Public plan limits should be based on
+  storage and Pro starts at 1024KB total encrypted storage, exactly four times
+  Free. Public plan limits should be based on
   total encrypted storage size, not entry count. Entry count can remain an
   internal abuse guard if needed.
 - Freeze first Pro plan limits and user-facing promises
@@ -107,7 +107,7 @@ Deliverables:
 
 - Core MVP scope note
 - WorkStash free-preview scope note, including Free 256KB total encrypted
-  storage and Pro 2048KB total encrypted storage, with no public entry-count
+  storage and Pro 1024KB total encrypted storage, with no public entry-count
   limit
 - Pro plan limits and entitlement rules
 - OSS license/publication decision

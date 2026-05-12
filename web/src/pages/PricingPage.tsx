@@ -63,7 +63,7 @@ export function PricingPage() {
     [t("pricing.slots"), "100"],
     [t("pricing.retention"), "15m / 30m / 1h / 3h / 6h / 12h / 24h / 3d / 7d / 10d / 14d / 30d"],
     [t("pricing.body"), "64 KB"],
-    [t("pricing.workStash"), "2,048 KB"],
+    [t("pricing.workStash"), "1,024 KB"],
     [t("pricing.handoff"), t("pricing.richerHandoff")],
     [t("pricing.saves"), "1,000 / hour"],
     [t("pricing.loads"), "3,000 / hour"],

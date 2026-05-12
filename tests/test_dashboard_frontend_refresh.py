@@ -54,7 +54,7 @@ def test_slot_card_shows_size_against_plan_limit():
     assert '"24 KB"' in pricing
     assert '"64 KB"' in pricing
     assert '"256 KB"' in pricing
-    assert '"2,048 KB"' in pricing
+    assert '"1,024 KB"' in pricing
 
 
 def test_pricing_copy_uses_planned_eight_dollar_pro_price():
