@@ -105,8 +105,9 @@ developer-tools
 Agent-to-Agent Context Relay.
 
 A2CR is an MCP-first context relay for AI-agent workflows. It helps an AI agent
-save a compact work checkpoint, then lets another AI window, model, or MCP-capable
-client resume from the useful state instead of carrying a full chat history.
+save a focused work checkpoint within the available size budget, then lets
+another AI window, model, or MCP-capable client resume from the useful state
+instead of carrying a full chat history.
 
 A2CR is not an AI runtime and does not run LLM inference on the server. Users
 bring their own AI clients. A2CR provides the handoff layer those clients can
@@ -144,7 +145,7 @@ WorkStash is included. Use:
 If WorkStash is complete and tested, use:
 
 ```markdown
-> The first public preview includes WorkBaton for compact checkpoints and
+> The first public preview includes WorkBaton for focused checkpoints and
 > WorkStash for small encrypted supporting notes referenced by WorkBaton.
 ```
 

@@ -298,7 +298,6 @@ def test_mcp_save_context_requires_local_stdio_wrapper(monkeypatch):
             content=CONTENT,
             model_source="codex",
             retention_seconds=86400,
-            detail_level="compact",
         )
 
     assert exc.value.code == "client_encryption_required"
@@ -319,7 +318,6 @@ def test_mcp_save_context_gate_runs_before_auth_or_service(monkeypatch):
             content={"goal": "secret goal", "current_state": "secret state", "next_action": "secret action"},
             model_source="codex",
             retention_seconds=86400,
-            detail_level="compact",
         )
 
     assert exc.value.code == "client_encryption_required"
@@ -342,7 +340,6 @@ def test_mcp_save_workthread_result_requires_local_stdio_wrapper(monkeypatch):
             slot_name="slot-a",
             content=secret_content,
             retention_seconds=86400,
-            detail_level="compact",
         )
 
     assert exc.value.code == "client_encryption_required"
@@ -369,7 +366,6 @@ def test_mcp_save_workthread_result_gate_runs_before_auth_or_service(monkeypatch
                 "next_action": "secret workthread action",
             },
             retention_seconds=86400,
-            detail_level="compact",
         )
 
     assert exc.value.code == "client_encryption_required"
@@ -466,7 +462,8 @@ def test_mcp_get_account_limits_returns_plan_settings(monkeypatch):
     assert result["active_slots"] == 5
     assert 86400 in result["allowed_retention_seconds"]
     assert result["max_body_bytes"] == 24 * 1024
-    assert result["allowed_detail_levels"] == ["compact"]
+    assert result["workstash_quota_bytes"] == 256 * 1024
+    assert result["handoff_policy"]["basis"] == "size_budget"
     assert result["response_language"] == "auto"
 
 

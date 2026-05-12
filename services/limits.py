@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from sqlalchemy import text
@@ -9,14 +9,12 @@ from sqlalchemy.orm import Session
 
 from services.exceptions import (
     BodyTooLarge,
-    DetailLevelNotAllowed,
     PlanLimitExceeded,
     RetentionNotAllowed,
 )
 from services.plan_constants import FREE_ACTIVE_SLOTS, PRO_ACTIVE_SLOTS
 
 PlanName = Literal["free", "pro"]
-DetailLevel = Literal["compact", "detailed"]
 
 FREE_RETENTION_SECONDS = (900, 1800, 3600, 10800, 21600, 43200, 86400)
 PRO_RETENTION_SECONDS = (
@@ -42,7 +40,6 @@ class PlanLimits:
     allowed_retention_seconds: tuple[int, ...]
     default_retention_seconds: int
     max_body_bytes: int
-    allowed_detail_levels: tuple[DetailLevel, ...]
     saves_per_hour: int
     loads_per_hour: int
     access_log_retention_seconds: int
@@ -55,7 +52,6 @@ FREE_LIMITS = PlanLimits(
     allowed_retention_seconds=FREE_RETENTION_SECONDS,
     default_retention_seconds=86400,
     max_body_bytes=24 * 1024,
-    allowed_detail_levels=("compact",),
     saves_per_hour=100,
     loads_per_hour=300,
     access_log_retention_seconds=86400,
@@ -67,7 +63,6 @@ PRO_LIMITS = PlanLimits(
     allowed_retention_seconds=PRO_RETENTION_SECONDS,
     default_retention_seconds=2592000,
     max_body_bytes=64 * 1024,
-    allowed_detail_levels=("compact", "detailed"),
     saves_per_hour=1000,
     loads_per_hour=3000,
     access_log_retention_seconds=2592000,
@@ -85,13 +80,6 @@ def validate_retention_seconds(requested: int | None, limits: PlanLimits) -> int
     if retention not in limits.allowed_retention_seconds:
         raise RetentionNotAllowed()
     return retention
-
-
-def validate_detail_level(requested: str | None, limits: PlanLimits) -> DetailLevel:
-    detail_level = requested or "compact"
-    if detail_level not in limits.allowed_detail_levels:
-        raise DetailLevelNotAllowed()
-    return detail_level  # type: ignore[return-value]
 
 
 def validate_body_size(size_bytes: int, limits: PlanLimits) -> None:
@@ -159,6 +147,39 @@ def get_stash_limits(plan: str | None) -> WorkStashLimits:
     if plan == "pro":
         return PRO_STASH_LIMITS
     return FREE_STASH_LIMITS
+
+
+def build_handoff_policy(limits: PlanLimits, stash_limits: WorkStashLimits) -> dict[str, Any]:
+    return {
+        "basis": "size_budget",
+        "workbaton": (
+            "Build the smallest useful WorkBaton that fits max_body_bytes. "
+            "Include additional resume-critical context only when it materially improves continuation quality."
+        ),
+        "workstash": (
+            "Move bulky, optional, or occasionally needed supporting notes to WorkStash and record the entry_key "
+            "in WorkBaton references or next_action."
+        ),
+        "plan_guidance": (
+            "Free has a smaller WorkBaton budget. Pro has a larger WorkBaton budget and larger WorkStash quota, "
+            "so agents can leave a richer safe handoff when it helps the next session."
+        ),
+        "workbaton_max_body_bytes": limits.max_body_bytes,
+        "workstash_quota_bytes": stash_limits.quota_bytes,
+        "forbidden": [
+            "secrets",
+            "API keys",
+            "Authorization headers",
+            "cookies",
+            "private database URLs",
+            "personal data",
+            "full transcripts",
+            "long logs",
+            "git diffs",
+            "generated caches",
+            "large source-code bodies",
+        ],
+    }
 
 
 def ensure_active_slot_capacity(

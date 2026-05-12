@@ -39,13 +39,13 @@ Use WorkThreads when the request involves any of these signals:
 Use WorkBaton when the request is a serial checkpoint for a future AI window:
 
 - Save the current work state so another window can resume later.
-- Resume or load a compact checkpoint.
+- Resume or load a focused checkpoint within the available size budget.
 - Finalize a WorkThread into a WorkBaton only through an explicit finalization
   step using the local stdio encryption path.
 
 Use WorkStash only as temporary supporting memory referenced by a WorkBaton:
 
-- Store safe intermediate notes that would bloat a compact WorkBaton.
+- Store safe intermediate notes that would bloat the WorkBaton body.
 - Retrieve only WorkStash entries referenced by the loaded WorkBaton and needed
   for the current task.
 

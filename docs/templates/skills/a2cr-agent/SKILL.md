@@ -21,7 +21,7 @@ Use this decision table:
 
 | Situation | Use |
 |---|---|
-| A future AI window needs a compact resume checkpoint | WorkBaton |
+| A future AI window needs focused resume-critical state | WorkBaton |
 | A future AI window may need a small supporting note that would bloat WorkBaton | WorkStash |
 | The task is short and no intermediate state needs to survive | No save |
 | Multiple active agents need to coordinate, answer, wait, claim, or complete tasks | WorkThreads |
@@ -72,13 +72,20 @@ When saving after loading a previous Slot or after another AI window continued t
 
 Use `completed_since_previous` for what changed after the earlier Slot was loaded, `remaining_tasks_ordered` for the next concrete tasks, `validation` for tests/builds/smoke checks, and `workspace_status` for branch, dirty state, and key changed file paths. Keep these concise.
 
-Free/compact saves should contain only the minimum handoff needed to resume:
+Size-budget handoff: WorkBaton saves should contain the smallest useful handoff
+needed to resume:
 
 - required: `goal`, `current_state`, `next_action`
 - optional but short: blockers or risks, `latest_slot_hint`, `previous_slot`, retained WorkStash `entry_key` values, and one-line `validation`
-- avoid detailed rationale, long failed-attempt history, large workspace listings, and verbose references
+- include additional resume-critical rationale, test results, failed attempts,
+  and file responsibility notes only when they materially improve resume
+  quality and fit the plan's WorkBaton body budget
+- move bulky or occasionally needed supporting notes to WorkStash and record
+  the returned `entry_key`
 
-For Pro detailed saves, include useful rationale, test results, failed attempts, and file responsibility notes when they improve resume quality.
+Free has a smaller WorkBaton budget. Pro has a larger WorkBaton budget and
+larger WorkStash quota, so agents can leave a richer safe handoff when it helps
+the next session.
 
 Forbidden for both Free and Pro:
 
@@ -91,9 +98,9 @@ Forbidden for both Free and Pro:
 
 These restrictions are identical for Free and Pro. Pro allows more safe handoff context, not more sensitive data.
 
-When available, call `should_save_workbaton` before autonomous saves if the trigger, Slot, or current MCP surface is unclear. Then call `get_account_limits` before automatic or large saves so the checkpoint respects the user's current retention, size, and detail-level limits.
+When available, call `should_save_workbaton` before autonomous saves if the trigger, Slot, or current MCP surface is unclear. Then call `get_account_limits` before automatic or large saves so the checkpoint respects the user's current retention, WorkBaton size budget, WorkStash quota, and rate limits.
 
-Never save prohibited material even when the user asks for a detailed Pro handoff.
+Never save prohibited material even when the user asks for a richer Pro handoff.
 
 ## Use WorkStash
 
@@ -148,8 +155,8 @@ Rules:
 
 Context freshness is heuristic, not perfect. If the conversation becomes noisy,
 contradictory, stale, or polluted by old task state, call `should_save_workbaton`,
-save a compact WorkBaton when recommended, and suggest continuing in a fresh AI
-window before quality drops.
+save a focused WorkBaton within the current size budget when recommended, and
+suggest continuing in a fresh AI window before quality drops.
 
 Warning signs include newer user instructions conflicting with older decisions,
 completed work being treated as unfinished, stale assumptions competing with
@@ -160,10 +167,10 @@ Routine saves should report `user_facing_summary` by default. Show the full
 `resume_prompt` when the user is switching windows or asks for it.
 
 Loaded `agent_continuity_guidance` exists to make autonomous A2CR use harder to
-miss in fresh AI windows. It should remind agents to save compact WorkBaton
-checkpoints at useful boundaries, move safe bulky support notes into WorkStash,
-record retained `entry_key` values in WorkBaton, and avoid saving prohibited
-material.
+miss in fresh AI windows. It should remind agents to save focused WorkBaton
+checkpoints within the available size budget at useful boundaries, move safe
+bulky support notes into WorkStash, record retained `entry_key` values in
+WorkBaton, and avoid saving prohibited material.
 
 ## Use WorkThreads
 

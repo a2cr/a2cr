@@ -6,7 +6,7 @@ import { CopyButton } from "../components/CopyButton";
 import { Notice } from "../components/Notice";
 import { createApiKey, dashboardFetch, revokeApiKey, updateProfile } from "../lib/api";
 import { buildGenericResumePrompt } from "../lib/prompts";
-import type { DashboardApiKey, DashboardProfile, DetailLevel, ProfilePatch } from "../lib/types";
+import type { DashboardApiKey, DashboardProfile, ProfilePatch } from "../lib/types";
 import {
   FREE_RETENTION_SECONDS,
   PRO_RETENTION_SECONDS,
@@ -214,21 +214,6 @@ export function SettingsPage() {
                     {retentionLabel(seconds)}
                   </option>
                 ))}
-              </select>
-            </label>
-
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium">{t("settings.detailLevel")}</span>
-              <select
-                value={profile.context_detail_level}
-                disabled={busy || profile.plan !== "pro"}
-                onChange={(event) =>
-                  void patchProfile({ context_detail_level: event.target.value as DetailLevel })
-                }
-                className="h-10 rounded-md border border-neutral-300 bg-white px-3 disabled:bg-neutral-100"
-              >
-                <option value="compact">{t("common.compact")}</option>
-                {profile.plan === "pro" && <option value="detailed">{t("common.detailed")}</option>}
               </select>
             </label>
 

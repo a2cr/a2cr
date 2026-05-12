@@ -1,6 +1,6 @@
 # A2CR WorkBaton Save/Load Quality Specification
 
-Updated: 2026-05-05
+Updated: 2026-05-13
 
 この文書は、WorkBatonの保存・ロード・新窓再開の品質を固定するための仕様書である。APIが動くだけでは不十分で、AIエージェントが何を保存し、何を捨て、ロード後にどう作業を再開するかまでを仕様として扱う。
 
@@ -15,7 +15,7 @@ WorkBatonの価値は、新しいAI窓が短時間で作業を再開できるこ
 - 既に失敗した方法を繰り返しにくい。
 - 必要なファイル、コマンド、テスト結果への参照がある。
 - 保存本文にsecret、長大ログ、会話全文、不要な雑談が入らない。
-- FreeとProで保存粒度の違いが明確である。
+- FreeとProで利用できるWorkBaton本文サイズ予算とWorkStash容量の違いが明確である。
 
 ## 2. 用語
 
@@ -26,8 +26,8 @@ WorkBatonの価値は、新しいAI窓が短時間で作業を再開できるこ
 | `resume_prompt` | 新しいAI窓へ貼るための再開指示文 |
 | `resume_context` | 新しいAI窓で最初に呼ぶ再開用MCP tool |
 | `load_context` | slot名またはslot番号を指定して本文を読む操作 |
-| compact | Free固定、Proでも選択可能な短い保存粒度 |
-| detailed | Proのみ。判断根拠や失敗履歴まで含める保存粒度 |
+| size budget | WorkBaton本文に使えるプラン別のサイズ上限。AIはこの範囲で引き継ぎの厚みを調整する |
+| WorkStash | WorkBatonを肥大化させないための一時的な補助メモ。`entry_key`をWorkBatonに記録して参照する |
 
 ## 3. 保存タイミング
 
@@ -66,25 +66,27 @@ AIエージェントは、次のタイミングで `save_context` を検討す�
 - `failed_attempts`
 - `references`
 
-Pro detailedで必要になるファイル単位の作業、テスト結果、コマンド、判断理由は、当面はこの既存スキーマ内に圧縮して保存する。将来、互換性を保てる段階で `files_changed`、`tests_run`、`commands_run`、`open_questions` などの明示フィールド追加を検討する。
+ファイル単位の作業、テスト結果、コマンド、判断理由は、当面はこの既存スキーマ内に圧縮して保存する。Proの大きいサイズ予算ではより厚い引き継ぎを許容し、肥大化しそうな補助情報はWorkStashへ分ける。将来、互換性を保てる段階で `files_changed`、`tests_run`、`commands_run`、`open_questions` などの明示フィールド追加を検討する。
 
-## 5. FreeとProの保存粒度
+## 5. FreeとProのサイズ予算
 
 ### 5.1 プラン差分
 
-| 項目 | Free / compact | Pro / compact | Pro / detailed |
-|---|---|---|---|
-| 主目的 | 短時間の作業再開 | 軽量運用の作業再開 | 高品質な作業再開 |
-| 保存方針 | 必要最小限 | Free相当だが保持期間・slot数に余裕 | 判断根拠、失敗履歴、検証結果まで保存 |
-| 保存サイズ | 24KB予定 | 64KB内でcompact | 64KB内でdetailed |
-| 保持期間 | 最大24時間予定 | 最大30日予定 | 最大30日予定 |
-| slot数 | 5 | 100 | 100 |
-| 保存対象 | 現在地と次アクション中心 | 同左 | ファイル、テスト、リスク、背景まで |
-| 捨てるもの | 詳細な試行錯誤、長いログ、古い話題 | 同左 | 会話全文、secret、大量ログ、再取得可能な本文 |
+| 項目 | Free | Pro |
+|---|---|---|
+| 主目的 | 短時間の作業再開 | より厚みのある高品質な作業再開 |
+| 保存方針 | 再開に必要な状態へ絞る | サイズ予算の範囲で判断根拠、失敗履歴、検証結果も残す |
+| WorkBaton本文サイズ | 24KB予定 | 64KB予定 |
+| WorkStash容量 | 256KB予定 | 2048KB予定 |
+| 保持期間 | 最大24時間予定 | 最大30日予定 |
+| slot数 | 5 | 100 |
+| WorkBaton保存対象 | 現在地と次アクション中心 | ファイル、テスト、リスク、背景を含む richer handoff |
+| WorkStashへ分けるもの | 詳細な試行錯誤、補助メモ | 詳細メモ、長めの調査結果、再開時に必要かもしれない補助情報 |
+| 捨てるもの | 会話全文、secret、大量ログ、再取得可能な本文 | 同左 |
 
-Proだから何でも保存するわけではない。Pro detailedは「再開に必要な判断情報を多めに残す」だけであり、会話ログ倉庫ではない。
+Proだから何でも保存するわけではない。Proは「再開に必要な判断情報を多めに残せる」だけであり、会話ログ倉庫ではない。
 
-### 5.2 Free / compactで残すもの
+### 5.2 Freeのサイズ予算で残すもの
 
 Freeでは、新しいAIが次の一手を間違えないための最小情報を残す。
 
@@ -112,9 +114,9 @@ Freeでは、新しいAIが次の一手を間違えないための最小情報�
 
 Freeでは「次に何をすればよいか」が最優先であり、「なぜそうなったか」は重要な判断に限って短く残す。
 
-### 5.3 Pro / detailedで残すもの
+### 5.3 Proのサイズ予算で残すもの
 
-Pro detailedでは、新しいAIがより深い作業文脈を再構築できるようにする。
+Proでは、新しいAIがより深い作業文脈を再構築できるよう、サイズ予算の範囲で引き継ぎを厚くできる。
 
 Freeに加えて残す:
 
@@ -129,7 +131,7 @@ Freeに加えて残す:
 - ユーザーが強くこだわった判断や表現
 - 途中で見つけたが未対応の関連問題
 
-Pro detailedでも捨てる:
+Proでも捨てる:
 
 - 会話全文
 - secretや認証情報
@@ -138,7 +140,7 @@ Pro detailedでも捨てる:
 - リポジトリから容易に再取得できる長いコード本文
 - 結論に影響しない雑談や古い迷い
 
-Pro detailedの目的は「次のAIが設計意図を失わないこと」であり、「すべてを保存すること」ではない。
+Proの目的は「次のAIが設計意図を失わないこと」であり、「すべてを保存すること」ではない。
 
 ## 6. 取捨選択ルール
 
@@ -148,7 +150,7 @@ AIエージェントは保存前に次の順で情報を選別する。
 2. ファイルを読めば分かることは、本文ではなくファイルパスや行き先だけ残す。
 3. 決定、制約、失敗、未解決リスクは優先して残す。
 4. 再開直後に実行すべき作業を `next_action` に1つ以上具体化する。
-5. Freeでは詳細を削り、Pro detailedでは判断理由と検証結果を追加する。
+5. Freeでは再開に必要な状態へ絞り、Proではサイズ予算の範囲で判断理由と検証結果を厚くする。
 6. secret、API key、Authorization header、DB URL、OAuth secretが混ざっていないか確認する。
 7. 保存本文がプラン別サイズ上限を超えないように圧縮する。
 
@@ -159,7 +161,7 @@ AIエージェントは保存前に次の順で情報を選別する。
 | 次のAIが知らないと間違える | 保存する |
 | ファイルを読めば正確に分かる | パスだけ保存する |
 | 過去の失敗を繰り返す防止になる | 保存する |
-| 意思決定の根拠になる | Freeは短く、Pro detailedは理由も保存 |
+| 意思決定の根拠になる | Freeは短く、Proはサイズ予算の範囲で理由も保存 |
 | ただの会話経緯 | 原則捨てる |
 | secretまたは個人情報 | 絶対に保存しない |
 
@@ -247,7 +249,7 @@ A2CRはMCP-firstで設計する。AIエージェントへの誘導は、特定�
 MCP tool descriptions / schemaには少なくとも次を入れる。
 
 - `save_context` は `goal`、`current_state`、`next_action` を必須にする。
-- Freeではcompact、Pro detailedでは判断根拠・失敗履歴・検証結果を追加できることを示す。
+- `get_account_limits` のWorkBatonサイズ予算とWorkStash quotaに従い、Proでは判断根拠・失敗履歴・検証結果をより厚く残せることを示す。
 - secret、API key、Authorization header、private DB URL、長大ログ、会話全文を保存してはいけないことを明記する。
 - `resume_context` は新窓の最初に呼ぶtoolであり、HTTP APIを直接推測しないことを明記する。
 - ロード後は、保存本文だけでなく必要なプロジェクトファイルを参照してよいことを明記する。
@@ -342,8 +344,8 @@ MCP設定ファイルに長いプロンプトを埋め込む設計は避ける�
 - `save_context` 成功時に `resume_context_call` と `resume_prompt` を返す。
 - `resume_prompt` はservice URL、MCP tool指示、slot名、必要ならslot番号を含む。
 - `resume_prompt` はAPI key、Authorization header、保存本文を含まない。
-- Freeは `detailed` を設定できない。
-- Proは `compact` / `detailed` を選択できる。
+- `save_context` の公開schemaに旧mode指定が残っていない。
+- `get_account_limits` はWorkBatonサイズ予算、WorkStash quota、handoff policyを返す。
 - `resume_context` の候補metadata返却はload countを増やさない。
 - 本文ロード成功時だけload countを増やす。
 
@@ -357,11 +359,11 @@ MCP設定ファイルに長いプロンプトを埋め込む設計は避ける�
 - AIが必要なプロジェクトファイルを読みに行ける。
 - AIがユーザーの現在メッセージの言語で回答する。
 - Free保存では簡潔に再開できる。
-- Pro detailed保存では判断理由、失敗履歴、検証結果まで再開できる。
+- Pro保存ではサイズ予算の範囲で判断理由、失敗履歴、検証結果まで再開できる。
 
 ## 13. 現行実装との差分
 
-ローカルMVPはFree compact相当として扱う。現行実装は次を満たしている。
+ローカルMVPはFreeの小さいサイズ予算相当として扱う。現行実装は次を満たしている。
 
 - `goal` / `current_state` / `next_action` 必須
 - slot 1〜5
@@ -374,8 +376,8 @@ Web SaaS実装は次を満たしている。
 
 - Supabase Auth/JWTとA2CR API key認証
 - Postgres RLS/access log連携
-- Free/Pro planによるretention/body size/detail level制限
-- Dashboard APIからの保存粒度、retention、locale/language/timezone設定
+- Free/Pro planによるretention、WorkBaton body size、WorkStash quota制限
+- Dashboard APIからのretention、locale/language/timezone設定
 - HTTP MCP `/mcp` の `save_context` / `resume_context` / `load_context` / `list_contexts` / `get_account_limits`
 - `slot_name` と `slot_number` のload/resume
 

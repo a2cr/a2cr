@@ -76,7 +76,7 @@ def _seo(
 ROUTE_SEO = {
     "": _seo(
         title="A2CR - Agent-to-Agent Context Relay",
-        description="A2CR keeps long AI sessions light by saving compact WorkBaton checkpoints, reducing context waste, and resuming work across Codex, Claude, Cursor, and other MCP clients.",
+        description="A2CR keeps long AI sessions light by saving focused WorkBaton checkpoints within the available size budget, reducing context waste, and resuming work across Codex, Claude, Cursor, and other MCP clients.",
         canonical="https://a2cr.app/",
         og_type="website",
         json_ld_type="SoftwareApplication",
@@ -88,11 +88,11 @@ ROUTE_SEO = {
 
         A2CR is an MCP-first work-continuation layer.
 
-        It lets MCP-capable tools save compact WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
+        It lets MCP-capable tools save focused WorkBaton checkpoints and resume work later from another window, model, or AI agent configured with A2CR MCP.
 
         Long AI sessions get heavy because the work history grows. Later turns often need earlier requirements, decisions, files, errors, and corrections, so the active context can become slower and more token-hungry.
 
-        A2CR keeps context light. When work reaches a milestone or context pressure appears, an agent can save a compact WorkBaton with the goal, current state, next action, blockers, and validation. A fresh AI session can resume from that distilled state instead of carrying the entire chat history forward.
+        A2CR keeps context light. When work reaches a milestone or context pressure appears, an agent can save a focused WorkBaton with the goal, current state, next action, blockers, and validation. Pro has a larger size budget, so it can carry a richer handoff while still moving bulky support notes to WorkStash. A fresh AI session can resume from that distilled state instead of carrying the entire chat history forward.
 
         Important URLs:
         - Guide: https://a2cr.app/en/guide
@@ -302,8 +302,8 @@ ROUTE_SEO = {
         - During work, call save_context before the conversation gets long or at important milestones.
         - Use WorkBaton and WorkStash proactively when they help preserve useful work state; do not wait for the user to ask.
         - If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
-        - If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
-        - Save only goal, current_state, next_action, and compact supporting facts.
+        - If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
+        - Save only goal, current_state, next_action, and resume-critical supporting facts.
         - Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
         - Call get_account_limits before automatic saves.
 
@@ -365,7 +365,7 @@ ROUTE_SEO = {
         - Never save secrets, API keys, Authorization headers, cookies, private DB URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.
 
         Slot への保存:
-        - get_account_limits で plan limit と detail level を確認します。
+        - get_account_limits で plan limit、WorkBaton size budget、WorkStash quota を確認します。
         - should_save_workbaton で保存判断を確認します。
         - save_context には goal, current_state, next_action, decisions, blockers, validation, references を compact に入れます。
         - 詳細な file path, API notes, failed attempts, validation notes は WorkStash に分けます。
@@ -377,14 +377,14 @@ ROUTE_SEO = {
         - WorkStash entry_key がある場合、現在の作業に必要な entry だけ get_work_stash で取得します。
 
         MCP 接続時に AI が受け取る情報:
-        - WorkBaton は compact serial checkpoint handoff であり、chat log や file store ではありません。
+        - WorkBaton はサイズ予算内の focused serial checkpoint handoff であり、chat log や file store ではありません。
         - WorkStash は一時的な補助メモであり、永続的な knowledge base ではありません。
         - local stdio wrapper が公式 WorkBaton 保存経路です。A2CR は client-encrypted WorkBaton body を復号できません。
         - explain_a2cr_flows, get_account_limits, should_save_workbaton, save_context, resume_context, get_work_stash などの tool description と safety rule を AI が受け取ります。
 
         自発利用:
         - MCP tool descriptions、AGENTS.md / CLAUDE.md、読み込んだ WorkBaton が揃うと、対応 AI は必要に応じて WorkBaton / WorkStash を自発利用できます。
-        - context drift または context contamination を感じたら should_save_workbaton を呼び、必要なら compact WorkBaton を保存して新しい AI 窓への移行を提案します。
+        - context drift または context contamination を感じたら should_save_workbaton を呼び、必要なら現在のサイズ予算内で focused WorkBaton を保存して新しい AI 窓への移行を提案します。
         """,
     ),
     "en/manual": _seo(
@@ -421,9 +421,9 @@ ROUTE_SEO = {
         - Never save secrets, API keys, Authorization headers, cookies, private DB URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.
 
         Saving to a Slot:
-        - Call get_account_limits to confirm plan limits and detail level.
+        - Call get_account_limits to confirm plan limits, WorkBaton size budget, and WorkStash quota.
         - Call should_save_workbaton when the save is discretionary.
-        - Save compact goal, current_state, next_action, decisions, blockers, validation, and references with save_context.
+        - Save focused goal, current_state, next_action, decisions, blockers, validation, and references with save_context.
         - Move detailed file paths, API notes, failed attempts, and validation notes to WorkStash.
 
         Reading from a Slot:
@@ -440,7 +440,7 @@ ROUTE_SEO = {
 
         Autonomy:
         - With MCP tool descriptions, AGENTS.md / CLAUDE.md, and a loaded WorkBaton, capable AI agents can use WorkBaton and WorkStash proactively when needed.
-        - If context drift or context contamination appears, the agent can call should_save_workbaton, save a compact WorkBaton when recommended, and suggest continuing in a fresh AI window.
+        - If context drift or context contamination appears, the agent can call should_save_workbaton, save a focused WorkBaton within the current size budget when recommended, and suggest continuing in a fresh AI window.
         """,
     ),
     "pricing": _seo(
@@ -455,14 +455,14 @@ ROUTE_SEO = {
         Free plan:
         - 5 Slots
         - Retention options up to 24 hours
-        - 32KB compact saves
+        - 24KB WorkBaton body budget
         - 100 saves per hour
         - 300 loads per hour
 
         Planned Pro plan:
         - 100 Slots
         - Longer retention options
-        - 128KB saves
+        - 64KB WorkBaton body budget
         - Higher rate limits
         - Planned WorkThreads support
         """,

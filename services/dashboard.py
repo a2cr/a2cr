@@ -10,8 +10,8 @@ from sqlalchemy import text
 from services.auth import hash_api_key
 from services.config import get_web_config
 from services.db import web_transaction
-from services.exceptions import DetailLevelNotAllowed, RetentionNotAllowed
-from services.limits import get_plan_limits, validate_detail_level, validate_retention_seconds
+from services.exceptions import RetentionNotAllowed
+from services.limits import get_plan_limits, validate_retention_seconds
 from services.prompts import build_resume_context_call, build_resume_prompt
 
 
@@ -126,7 +126,6 @@ def get_profile(user_id: UUID | str) -> DashboardProfile:
 def update_profile(
     *,
     user_id: UUID | str,
-    context_detail_level: str | None = None,
     default_retention_seconds: int | None = None,
     preferred_locale: str | None = None,
     response_language: str | None = None,
@@ -134,12 +133,7 @@ def update_profile(
 ) -> DashboardProfile:
     current = get_profile(user_id)
     limits = get_plan_limits(current.plan)
-    detail = context_detail_level or current.context_detail_level
     retention = default_retention_seconds or current.default_retention_seconds
-    try:
-        validate_detail_level(detail, limits)
-    except DetailLevelNotAllowed:
-        raise
     try:
         validate_retention_seconds(retention, limits)
     except RetentionNotAllowed:
@@ -150,8 +144,7 @@ def update_profile(
             text(
                 """
                 UPDATE public.user_profiles
-                SET context_detail_level = :context_detail_level,
-                    default_retention_seconds = :default_retention_seconds,
+                SET default_retention_seconds = :default_retention_seconds,
                     preferred_locale = :preferred_locale,
                     response_language = :response_language,
                     timezone = :timezone
@@ -162,7 +155,6 @@ def update_profile(
             ),
             {
                 "user_id": str(user_id),
-                "context_detail_level": detail,
                 "default_retention_seconds": retention,
                 "preferred_locale": preferred_locale or current.preferred_locale,
                 "response_language": response_language or current.response_language,

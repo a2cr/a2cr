@@ -8,10 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from models.schemas import WebContextSaveRequest
 from services.abuse_limits import (
     enforce_authenticated_rate_limit,
     ensure_auth_attempt_allowed,
@@ -20,7 +18,7 @@ from services.abuse_limits import (
 from services.auth import AuthError, AuthenticatedUser, authenticate_api_key
 from services.db import get_web_engine
 from services.exceptions import AppError, SlotNotFound
-from services.limits import get_plan_limits
+from services.limits import build_handoff_policy, get_plan_limits, get_stash_limits
 from services.logs import hash_log_value
 from services.web_context import (
     RequestMeta,
@@ -148,7 +146,7 @@ LIST_CONTEXTS_DESCRIPTION = (
 )
 
 GET_LIMITS_DESCRIPTION = (
-    "Return the current account plan, retention choices, body limits, detail level, language, timezone, "
+    "Return the current account plan, retention choices, WorkBaton body budget, WorkStash limits, language, timezone, "
     "and hourly save/load limits. Use this before automatic saves so the checkpoint matches the user's plan."
     " Use this MCP tool; do not guess direct HTTP API endpoints."
 )
@@ -394,11 +392,11 @@ def _workbaton_save_advice(
         },
         "call_get_account_limits_first": True,
         "recommended_slot_name": _suggest_slot_name(project, known_slot_name),
-        "recommended_detail_level": "compact",
+        "handoff_policy": "Use the available WorkBaton body budget intelligently; move bulky supporting notes to WorkStash.",
         "required_fields": ["goal", "current_state", "next_action"],
         "optional_fields": ["decisions", "constraints", "problems", "blockers", "validation", "workspace_status"],
         "workstash_guidance": {
-            "use_when": "Safe supporting details are useful later but too bulky for a compact WorkBaton.",
+            "use_when": "Safe supporting details are useful later but too bulky or optional for the WorkBaton body budget.",
             "tools": ["should_use_work_stash", "store_work_stash", "get_work_stash", "delete_work_stash"],
             "record_entry_key_in": ["content.references", "content.next_action"],
             "good_examples": ["confirmed file paths", "API behavior notes", "reproduction details", "small decision summaries"],
@@ -500,7 +498,6 @@ def _metadata_result(result: WebContextMetadata) -> dict[str, Any]:
         "updated_at": _iso(result.updated_at),
         "size_bytes": result.size_bytes,
         "compressed_tokens": result.compressed_tokens,
-        "detail_level": result.detail_level,
         "model_source": result.model_source,
         "load_count": result.load_count,
         "encryption_mode": result.encryption_mode,
@@ -516,7 +513,6 @@ def _load_result(result: WebLoadResult) -> dict[str, Any]:
         "encrypted_content": result.encrypted_content,
         "expires_at": _iso(result.expires_at),
         "compressed_tokens": result.compressed_tokens,
-        "detail_level": result.detail_level,
         "model_source": result.model_source,
         "load_count": result.load_count,
         "agent_continuity_guidance": _continuity_guidance(),
@@ -591,30 +587,6 @@ def _workthread_task_result(result) -> dict[str, Any]:
     }
 
 
-def _validate_save_request(
-    *,
-    slot_name: str,
-    content: dict[str, Any],
-    original_length: int | None,
-    model_source: str | None,
-    slot_number: int | None,
-    retention_seconds: int | None,
-    detail_level: str | None,
-) -> WebContextSaveRequest:
-    try:
-        return WebContextSaveRequest(
-            slot_name=slot_name,
-            slot_number=slot_number,
-            content=content,
-            original_length=original_length,
-            model_source=model_source,
-            retention_seconds=retention_seconds,
-            detail_level=detail_level or "compact",
-        )
-    except ValidationError as exc:
-        raise AppError("invalid_tool_input", "Invalid save_context input", 422, {"details": exc.errors()}) from exc
-
-
 @web_mcp.tool(name="explain_a2cr_flows", description=EXPLAIN_A2CR_FLOWS_DESCRIPTION)
 def explain_a2cr_flows() -> dict:
     return A2CR_FLOW_EXPLANATION
@@ -657,7 +629,6 @@ def save_context(
     model_source: str | None = None,
     slot_number: int | None = None,
     retention_seconds: int | None = None,
-    detail_level: str | None = "compact",
 ) -> dict:
     raise AppError(
         "client_encryption_required",
@@ -722,14 +693,17 @@ def get_account_limits() -> dict:
     enforce_authenticated_rate_limit(user.user_id, "context.read")
     profile = dashboard_service.get_profile(user.user_id)
     limits = get_plan_limits(profile.plan)
+    stash_limits = get_stash_limits(profile.plan)
     return {
         "plan": profile.plan,
         "active_slots": limits.active_slots,
         "allowed_retention_seconds": list(limits.allowed_retention_seconds),
         "default_retention_seconds": profile.default_retention_seconds,
         "max_body_bytes": limits.max_body_bytes,
-        "allowed_detail_levels": list(limits.allowed_detail_levels),
-        "context_detail_level": profile.context_detail_level,
+        "workstash_quota_bytes": stash_limits.quota_bytes,
+        "workstash_max_entry_bytes": stash_limits.max_entry_bytes,
+        "workstash_ttl_seconds": stash_limits.ttl_seconds,
+        "handoff_policy": build_handoff_policy(limits, stash_limits),
         "saves_per_hour": limits.saves_per_hour,
         "loads_per_hour": limits.loads_per_hour,
         "access_log_retention_seconds": limits.access_log_retention_seconds,
@@ -952,7 +926,6 @@ def save_workthread_result(
     model_source: str | None = None,
     slot_number: int | None = None,
     retention_seconds: int | None = None,
-    detail_level: str | None = "compact",
 ) -> dict:
     raise AppError(
         "client_encryption_required",

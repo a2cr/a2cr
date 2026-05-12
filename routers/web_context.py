@@ -17,7 +17,7 @@ from services.abuse_limits import (
 )
 from services.auth import AuthError, AuthenticatedUser, authenticate_api_key
 from services.db import get_web_engine
-from services.limits import get_plan_limits
+from services.limits import build_handoff_policy, get_plan_limits, get_stash_limits
 from services.logs import hash_log_value
 from services.web_context import RequestMeta
 import services.dashboard as dashboard_service
@@ -82,7 +82,6 @@ def _metadata_response(result) -> WebContextMetadataItem:
         updated_at=result.updated_at,
         size_bytes=result.size_bytes,
         compressed_tokens=result.compressed_tokens,
-        detail_level=result.detail_level,
         model_source=result.model_source,
         load_count=result.load_count,
     )
@@ -97,7 +96,6 @@ def _load_response(result) -> WebContextLoadResponse:
         encrypted_content=result.encrypted_content,
         expires_at=result.expires_at,
         compressed_tokens=result.compressed_tokens,
-        detail_level=result.detail_level,
         model_source=result.model_source,
         load_count=result.load_count,
     )
@@ -127,7 +125,6 @@ def save_context(
         model_source=req.model_source,
         slot_number=req.slot_number,
         retention_seconds=req.retention_seconds,
-        detail_level=req.detail_level,
         meta=meta,
     )
     return _save_response(result)
@@ -144,14 +141,17 @@ def get_account_limits(user: AuthenticatedUser = Depends(get_current_api_user)) 
     enforce_authenticated_rate_limit(user.user_id, "context.read")
     profile = dashboard_service.get_profile(user.user_id)
     limits = get_plan_limits(profile.plan)
+    stash_limits = get_stash_limits(profile.plan)
     return {
         "plan": profile.plan,
         "active_slots": limits.active_slots,
         "allowed_retention_seconds": list(limits.allowed_retention_seconds),
         "default_retention_seconds": profile.default_retention_seconds,
         "max_body_bytes": limits.max_body_bytes,
-        "allowed_detail_levels": list(limits.allowed_detail_levels),
-        "context_detail_level": profile.context_detail_level,
+        "workstash_quota_bytes": stash_limits.quota_bytes,
+        "workstash_max_entry_bytes": stash_limits.max_entry_bytes,
+        "workstash_ttl_seconds": stash_limits.ttl_seconds,
+        "handoff_policy": build_handoff_policy(limits, stash_limits),
         "saves_per_hour": limits.saves_per_hour,
         "loads_per_hour": limits.loads_per_hour,
         "access_log_retention_seconds": limits.access_log_retention_seconds,

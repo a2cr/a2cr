@@ -89,9 +89,6 @@ function SlotCard({
             <span className="rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
               Slot {item.slot_number}
             </span>
-            <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
-              {item.detail_level}
-            </span>
             <span className="rounded bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900">
               {encryptionLabel}
             </span>

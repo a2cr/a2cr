@@ -11,7 +11,6 @@ from services.abuse_limits import (
 )
 from services.exceptions import (
     BodyTooLarge,
-    DetailLevelNotAllowed,
     PlanLimitExceeded,
     RateLimitExceeded,
     RetentionNotAllowed,
@@ -23,7 +22,6 @@ from services.limits import (
     ensure_hourly_limit,
     get_plan_limits,
     validate_body_size,
-    validate_detail_level,
     validate_retention_seconds,
 )
 from services.plan_constants import FREE_ACTIVE_SLOTS, PRO_ACTIVE_SLOTS
@@ -69,11 +67,6 @@ def test_validate_retention_allows_free_24h_and_pro_30d():
 def test_validate_retention_rejects_free_30d():
     with pytest.raises(RetentionNotAllowed):
         validate_retention_seconds(2592000, FREE_LIMITS)
-
-
-def test_validate_detail_level_rejects_free_detailed():
-    with pytest.raises(DetailLevelNotAllowed):
-        validate_detail_level("detailed", FREE_LIMITS)
 
 
 def test_validate_body_size_uses_plan_limits():

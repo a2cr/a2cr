@@ -790,7 +790,6 @@ def save_workthread_result(
     model_source: str | None = None,
     slot_number: int | None = None,
     retention_seconds: int | None = None,
-    detail_level: str | None = "compact",
 ) -> WorkThreadResult:
     raise AppError(
         "client_encryption_required",

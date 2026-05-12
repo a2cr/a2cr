@@ -100,8 +100,12 @@ Recommended optional fields:
 - `remaining_tasks_ordered`
 - `do_not_use_slots`
 
-Free/compact saves should keep optional fields short. Pro/detailed saves may
-include more useful context, but Pro never permits secrets or sensitive data.
+WorkBaton saves are size-budget based. The AI should build the smallest useful
+handoff that fits the current plan's `max_body_bytes`, then include additional
+resume-critical context only when it materially improves continuation quality.
+Free has a smaller WorkBaton budget. Pro has a larger WorkBaton budget and
+larger WorkStash quota, so agents can leave a richer safe handoff when it helps
+the next session. Pro never permits secrets or sensitive data.
 
 ## Save Before Or After Asking The User
 
@@ -129,9 +133,9 @@ Recommended autonomous save order:
    to use WorkBaton or WorkThreads.
 2. Call `should_save_workbaton` when available if the save trigger or safety
    boundary is uncertain.
-3. Call `get_account_limits` when available, especially before automatic,
-   large, or detailed saves.
-4. Build a compact WorkBaton body.
+3. Call `get_account_limits` when available, especially before automatic or
+   large saves.
+4. Build a focused WorkBaton body within the plan size budget.
 5. Call local stdio `save_context`.
 6. Inspect the result for `user_facing_summary`, `resume_prompt`, `slot_name`,
    expiry, and token metadata.
@@ -165,7 +169,7 @@ Output:
   "can_save_here": true,
   "required_save_path": "local stdio A2CR MCP wrapper",
   "recommended_slot_name": "a2cr-main",
-  "recommended_detail_level": "compact",
+  "handoff_policy": "Use the available WorkBaton body budget intelligently; move bulky supporting notes to WorkStash.",
   "call_get_account_limits_first": true,
   "warnings": [
     "Do not save secrets or full transcripts",
@@ -182,7 +186,7 @@ the only WorkBaton save path.
 The MCP surface must keep these facts visible to ordinary AI agents:
 
 - `explain_a2cr_flows` explains the Baton/Threads split.
-- `should_save_workbaton` explains whether a compact checkpoint is appropriate
+- `should_save_workbaton` explains whether a focused checkpoint is appropriate
   and whether the current MCP surface can save it.
 - `save_context` says when autonomous WorkBaton saves are appropriate.
 - `save_context` says the local stdio wrapper encrypts before upload.

@@ -706,11 +706,11 @@ def _workbaton_save_advice(
         },
         "call_get_account_limits_first": True,
         "recommended_slot_name": _suggest_slot_name(project, known_slot_name),
-        "recommended_detail_level": "compact",
+        "handoff_policy": "Use the available WorkBaton body budget intelligently; move bulky supporting notes to WorkStash.",
         "required_fields": ["goal", "current_state", "next_action"],
         "optional_fields": ["decisions", "constraints", "problems", "blockers", "validation", "workspace_status"],
         "workstash_guidance": {
-            "use_when": "Safe supporting details are useful later but too bulky for a compact WorkBaton.",
+            "use_when": "Safe supporting details are useful later but too bulky or optional for the WorkBaton body budget.",
             "tools": ["should_use_work_stash", "store_work_stash", "get_work_stash", "delete_work_stash"],
             "record_entry_key_in": ["content.references", "content.next_action"],
             "good_examples": ["confirmed file paths", "API behavior notes", "reproduction details", "small decision summaries"],
@@ -841,14 +841,16 @@ Token savings:
   If the user's response language is known, pass preferred_response_language
   (for example "ja" or "en") so the next AI can resume replies in that language.
 
-Plan detail levels:
-  Free/compact saves should contain only the minimum handoff needed to resume:
-  goal, current_state, next_action, optional short blockers or risks,
-  latest_slot_hint, previous_slot, and one-line validation.
-  Avoid detailed rationale, long failed-attempt history, large workspace
-  listings, and verbose references in Free/compact saves.
-  Pro/detailed saves may include useful rationale, test results, failed
-  attempts, and file responsibility notes when they improve resume quality.
+Size-budget handoff:
+  Call get_account_limits before automatic or large saves. Use max_body_bytes
+  as the WorkBaton budget and build the smallest useful handoff that lets the
+  next AI resume. Include additional resume-critical context only when it
+  materially improves continuation quality and fits the plan budget.
+  Free has a smaller WorkBaton budget. Pro has a larger WorkBaton budget and
+  larger WorkStash quota, so agents can leave a richer safe handoff when it
+  helps the next session.
+  Move bulky, optional, or occasionally needed supporting notes to WorkStash
+  and record the entry_key in WorkBaton references or next_action.
 
 Forbidden for both Free and Pro:
   Never save local client key or recovery key material.
@@ -900,7 +902,6 @@ def save_context(
     original_length: int | None = None,
     model_source: str | None = None,
     slot_number: int | None = None,
-    detail_level: str | None = "compact",
     preferred_response_language: str | None = None,
 ) -> dict:
     """Save context to a named slot. Optionally overwrite a fixed Slot number."""
@@ -912,7 +913,6 @@ def save_context(
         "original_length": original_length,
         "compressed_tokens": _count_workbaton_tokens(content_to_save),
         "model_source": model_source,
-        "detail_level": detail_level or "compact",
     }
     body["encrypted_content"] = _encrypt_content(content_to_save)
     with httpx.Client() as client:
@@ -1066,8 +1066,8 @@ def list_contexts() -> list:
 @mcp.tool(
     description=(
         "Return the current account plan, Slot limit, retention choices, body size "
-        "limit, and allowed detail levels. Use this before automatic saves; Free "
-        "accounts should save compact WorkBaton content."
+        "limit, WorkStash limits, and handoff policy. Use this before automatic "
+        "or large saves so the checkpoint fits the user's size budget."
     )
 )
 def get_account_limits() -> dict:

@@ -4,7 +4,7 @@ from uuid import UUID
 import pytest
 
 from services.dashboard import create_api_key, update_profile
-from services.exceptions import DetailLevelNotAllowed
+from services.exceptions import RetentionNotAllowed
 
 
 USER_ID = UUID("00000000-0000-0000-0000-0000000000a1")
@@ -65,7 +65,7 @@ def test_create_api_key_stores_hmac_hash_not_plaintext(monkeypatch):
     assert "key_hash" in statement
 
 
-def test_update_profile_rejects_free_detailed(monkeypatch):
+def test_update_profile_rejects_free_30_day_retention(monkeypatch):
     current = type(
         "Profile",
         (),
@@ -80,5 +80,5 @@ def test_update_profile_rejects_free_detailed(monkeypatch):
     )()
     monkeypatch.setattr("services.dashboard.get_profile", lambda user_id: current)
 
-    with pytest.raises(DetailLevelNotAllowed):
-        update_profile(user_id=USER_ID, context_detail_level="detailed")
+    with pytest.raises(RetentionNotAllowed):
+        update_profile(user_id=USER_ID, default_retention_seconds=2592000)

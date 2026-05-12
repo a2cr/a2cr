@@ -61,11 +61,6 @@ class RetentionNotAllowed(AppError):
         super().__init__("retention_not_allowed", "Retention is not allowed for this plan", 422)
 
 
-class DetailLevelNotAllowed(AppError):
-    def __init__(self):
-        super().__init__("detail_level_not_allowed", "Detail level is not allowed for this plan", 422)
-
-
 class BodyTooLarge(AppError):
     def __init__(self):
         super().__init__("body_too_large", "Request body exceeds this plan's limit", 413)

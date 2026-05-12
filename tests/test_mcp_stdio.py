@@ -159,7 +159,6 @@ def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypat
     assert "Authorization" in captured["headers"]
     assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
     assert captured["json"]["slot_number"] == 5
-    assert captured["json"]["detail_level"] == "compact"
     assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(CONTENT)
     assert "content" not in captured["json"]
     assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
@@ -298,8 +297,9 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
         def json(self):
             return {
                 "plan": "free",
-                "allowed_detail_levels": ["compact"],
                 "max_body_bytes": 24576,
+                "workstash_quota_bytes": 262144,
+                "handoff_policy": {"basis": "size_budget"},
             }
 
     class FakeClient:
@@ -322,7 +322,8 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
     assert captured["url"].endswith("/api/v1/account/limits")
     assert "Authorization" in captured["headers"]
     assert result["plan"] == "free"
-    assert result["allowed_detail_levels"] == ["compact"]
+    assert result["workstash_quota_bytes"] == 262144
+    assert result["handoff_policy"]["basis"] == "size_budget"
 
 
 def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
@@ -551,7 +552,7 @@ def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():
         "workspace_status",
         "do_not_use_slots",
         "language_context",
-        "Free/compact saves",
+        "Size-budget handoff",
         "user_facing_summary",
         "agent_continuity_guidance",
     ]

@@ -124,7 +124,6 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
             "compressed_tokens": 12,
             "model_source": "codex",
             "retention_seconds": 86400,
-            "detail_level": "compact",
         },
         headers={"Authorization": "Bearer sk-test-secret", "X-A2CR-Client-Type": "mcp"},
     )
@@ -146,7 +145,6 @@ def test_web_save_context_returns_resume_prompt_without_content_or_key(client, m
     assert captured["compressed_tokens"] == 12
     assert captured["model_source"] == "codex"
     assert captured["retention_seconds"] == 86400
-    assert captured["detail_level"] == "compact"
     assert captured["meta"].client_type == "mcp"
 
 
@@ -184,7 +182,6 @@ def test_web_save_context_uses_model_source_as_client_type_when_header_missing(c
             "slot_number": 1,
             "encrypted_content": encrypted("slot-a"),
             "model_source": "codex",
-            "detail_level": "compact",
         },
         headers={"Authorization": "Bearer sk-test-secret"},
     )
@@ -217,7 +214,6 @@ def test_web_save_context_accepts_fixed_slot_five(client, monkeypatch):
             "slot_number": 5,
             "encrypted_content": encrypted("slot-five"),
             "model_source": "codex",
-            "detail_level": "compact",
         },
         headers={"Authorization": "Bearer sk-test-secret"},
     )
@@ -317,7 +313,7 @@ def test_web_list_contexts_returns_429_when_abuse_limited(client, monkeypatch):
     assert response.json()["code"] == "context_read_rate_limited"
 
 
-def test_web_account_limits_returns_free_compact_plan(client, monkeypatch):
+def test_web_account_limits_returns_size_budget_policy(client, monkeypatch):
     monkeypatch.setattr(dashboard_service, "get_profile", lambda user_id: profile())
 
     response = client.get("/api/v1/account/limits", headers={"Authorization": "Bearer sk-test-secret"})
@@ -326,9 +322,9 @@ def test_web_account_limits_returns_free_compact_plan(client, monkeypatch):
     body = response.json()
     assert body["plan"] == "free"
     assert body["active_slots"] == 5
-    assert body["allowed_detail_levels"] == ["compact"]
-    assert body["context_detail_level"] == "compact"
     assert body["max_body_bytes"] == 24 * 1024
+    assert body["workstash_quota_bytes"] == 256 * 1024
+    assert body["handoff_policy"]["basis"] == "size_budget"
 
 
 def test_web_load_context_returns_ciphertext_for_api_key_route(client, monkeypatch):

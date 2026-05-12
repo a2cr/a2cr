@@ -138,16 +138,16 @@ const text = {
       ["GitHub Copilot", ".github/copilot-instructions.md"]
     ] as [string, string][],
     memorySnippet:
-      "## A2CR WorkBaton / WorkStash Autonomy\n\nA2CR MCP tools may be used proactively when they help preserve useful work state. Use the configured MCP tools only; do not invent direct HTTP API calls.\n\nAt the start of a session, when the tools are available, call get_account_limits and explain_a2cr_flows to confirm the connection and understand the available flows.\n\nUse WorkBaton for compact handoff checkpoints at task milestones, after validation, before likely context loss, or when context drift/contamination is detected. If unsure, call should_save_workbaton, then save_context when recommended.\n\nUse WorkStash for safe supporting notes that would bloat the WorkBaton, such as confirmed file paths, API findings, failed attempts, or concise validation notes. Record the returned entry_key in the WorkBaton references or next_action.\n\nIf the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason=\"context_drift\" or reason=\"context_contamination\". If saving is recommended, save a compact WorkBaton, move safe bulky notes into WorkStash, record entry_key values, and suggest continuing in a fresh AI window.\n\nNever save secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.",
+      "## A2CR WorkBaton / WorkStash Autonomy\n\nA2CR MCP tools may be used proactively when they help preserve useful work state. Use the configured MCP tools only; do not invent direct HTTP API calls.\n\nAt the start of a session, when the tools are available, call get_account_limits and explain_a2cr_flows to confirm the connection, WorkBaton size budget, WorkStash quota, and available flows.\n\nUse WorkBaton for focused handoff checkpoints at task milestones, after validation, before likely context loss, or when context drift/contamination is detected. If unsure, call should_save_workbaton, then save_context when recommended.\n\nUse WorkStash for safe supporting notes that would bloat the WorkBaton body, such as confirmed file paths, API findings, failed attempts, or concise validation notes. Record the returned entry_key in the WorkBaton references or next_action.\n\nIf the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason=\"context_drift\" or reason=\"context_contamination\". If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky notes into WorkStash, record entry_key values, and suggest continuing in a fresh AI window.\n\nNever save secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.",
     copySnippet: "Copy snippet",
     saveTitle: "Saving to a Slot",
     saveBody:
       "A WorkBaton Slot should contain enough state for the next AI to continue, not a full transcript. Routine saves should happen at clear boundaries.",
     saveChecklist: [
-      "Call get_account_limits before automatic or large saves so the AI knows plan limits and detail level.",
+      "Call get_account_limits before automatic or large saves so the AI knows plan limits and WorkBaton size budget.",
       "Call should_save_workbaton when the save is discretionary or related to context pressure.",
       "Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key references.",
-      "Keep the body compact. Move detailed notes to WorkStash instead of making the WorkBaton large.",
+      "Keep the body focused on resume-critical state. Move bulky supporting notes to WorkStash instead of making the WorkBaton large.",
       "Never include secrets, .env content, API keys, authorization headers, long logs, or full transcripts."
     ],
     saveExample:
@@ -161,7 +161,7 @@ const text = {
     ],
     loadItems: [
       "The saved handoff content: goal, current_state, next_action, decisions, blockers, validation, and references.",
-      "Slot metadata such as slot_name, slot_number, expiry, encryption mode, load count, status, and detail level.",
+      "Slot metadata such as slot_name, slot_number, expiry, encryption mode, load count, and status.",
       "Language hints such as response_language_hint or language_context when present.",
       "Advisory agent_continuity_guidance about using WorkBaton and WorkStash proactively.",
       "Any referenced WorkStash entry_key values. The AI should call get_work_stash only for entries needed to continue."
@@ -175,7 +175,7 @@ const text = {
       "The local stdio wrapper is the official WorkBaton save path because it encrypts content locally before upload.",
       "Direct guessed HTTP API calls should not be used. The configured MCP tools are the supported path.",
       "The AI should call explain_a2cr_flows when newly connected or unsure which flow applies.",
-      "The AI should call get_account_limits before automatic saves so it respects plan, size, detail, and rate limits.",
+      "The AI should call get_account_limits before automatic saves so it respects plan, size budget, WorkStash limits, and rate limits.",
       "The AI receives safety rules for material that must not be stored."
     ],
     stashTitle: "What WorkStash adds",
@@ -296,16 +296,16 @@ const text = {
       ["GitHub Copilot", ".github/copilot-instructions.md"]
     ] as [string, string][],
     memorySnippet:
-      "## A2CR WorkBaton / WorkStash Autonomy\n\nA2CR MCP tools may be used proactively when they help preserve useful work state. Use the configured MCP tools only; do not invent direct HTTP API calls.\n\nAt the start of a session, when the tools are available, call get_account_limits and explain_a2cr_flows to confirm the connection and understand the available flows.\n\nUse WorkBaton for compact handoff checkpoints at task milestones, after validation, before likely context loss, or when context drift/contamination is detected. If unsure, call should_save_workbaton, then save_context when recommended.\n\nUse WorkStash for safe supporting notes that would bloat the WorkBaton, such as confirmed file paths, API findings, failed attempts, or concise validation notes. Record the returned entry_key in the WorkBaton references or next_action.\n\nIf the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason=\"context_drift\" or reason=\"context_contamination\". If saving is recommended, save a compact WorkBaton, move safe bulky notes into WorkStash, record entry_key values, and suggest continuing in a fresh AI window.\n\nNever save secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.",
+      "## A2CR WorkBaton / WorkStash Autonomy\n\nA2CR MCP tools may be used proactively when they help preserve useful work state. Use the configured MCP tools only; do not invent direct HTTP API calls.\n\nAt the start of a session, when the tools are available, call get_account_limits and explain_a2cr_flows to confirm the connection, WorkBaton size budget, WorkStash quota, and available flows.\n\nUse WorkBaton for focused handoff checkpoints at task milestones, after validation, before likely context loss, or when context drift/contamination is detected. If unsure, call should_save_workbaton, then save_context when recommended.\n\nUse WorkStash for safe supporting notes that would bloat the WorkBaton body, such as confirmed file paths, API findings, failed attempts, or concise validation notes. Record the returned entry_key in the WorkBaton references or next_action.\n\nIf the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason=\"context_drift\" or reason=\"context_contamination\". If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky notes into WorkStash, record entry_key values, and suggest continuing in a fresh AI window.\n\nNever save secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.",
     copySnippet: "文章をコピー",
     saveTitle: "Slot へ保存する",
     saveBody:
       "WorkBaton Slot には、次の AI が作業を再開するために必要な状態だけを入れます。会話全文ではなく、区切りのよい作業状態です。",
     saveChecklist: [
-      "自動保存や大きめの保存の前に get_account_limits を呼び、プラン制限と保存 detail を確認します。",
+      "自動保存や大きめの保存の前に get_account_limits を呼び、プラン制限、WorkBaton サイズ予算、WorkStash quota を確認します。",
       "保存すべきか迷う時や context 圧迫を感じた時は should_save_workbaton を呼びます。",
       "goal、current_state、next_action、重要な決定、blockers、validation、WorkStash entry_key 参照を保存します。",
-      "WorkBaton は短く保ち、詳しいメモは WorkStash に分けます。",
+      "WorkBaton は再開に必要な状態へ絞り、詳しいメモは WorkStash に分けます。",
       "secrets、.env、API key、認証ヘッダー、長いログ、会話全文は保存しません。"
     ],
     saveExample:
@@ -319,7 +319,7 @@ const text = {
     ],
     loadItems: [
       "保存された引き継ぎ本文: goal、current_state、next_action、decisions、blockers、validation、references。",
-      "Slot のメタ情報: slot_name、slot_number、expires_at、encryption_mode、load_count、status、detail_level など。",
+      "Slot のメタ情報: slot_name、slot_number、expires_at、encryption_mode、load_count、status など。",
       "存在する場合は response_language_hint や language_context などの応答言語ヒント。",
       "WorkBaton / WorkStash を継続利用するための advisory な agent_continuity_guidance。",
       "WorkStash entry_key の参照。AI は現在の作業に必要なものだけ get_work_stash で取得します。"
@@ -328,7 +328,7 @@ const text = {
     mcpBody:
       "A2CR MCP に接続すると、AI は単に tool 名だけを受け取るのではありません。tool descriptions と flow guidance から、A2CR の用途と安全な使い方を読み取ります。",
     mcpItems: [
-      "WorkBaton は短い serial checkpoint handoff であり、chat log、file store、live multi-agent task lease ではないこと。",
+      "WorkBaton はサイズ予算内の focused serial checkpoint handoff であり、chat log、file store、live multi-agent task lease ではないこと。",
       "WorkStash は、WorkBaton を肥大化させないための一時的な補助メモであること。",
       "local stdio wrapper が公式の WorkBaton 保存経路であり、送信前にローカルで暗号化すること。",
       "直接 HTTP API を推測して呼ばず、設定済み MCP tools を使うこと。",

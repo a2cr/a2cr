@@ -26,7 +26,7 @@ Pricing: https://a2cr.app/pricing
 MCP service URL: https://a2cr.app/mcp
 
 Use case:
-- Save compact WorkBaton checkpoints before an AI agent conversation gets too long.
+- Save focused WorkBaton checkpoints within the available size budget before an AI agent conversation gets too long.
 - Resume a saved slot from another window, another model, or any MCP-capable AI agent configured with A2CR MCP.
 - Use MCP tools instead of guessing direct HTTP API endpoints.
 - Keep future sessions focused on the next action instead of old chat history.
@@ -113,9 +113,9 @@ Agent rules:
 - Some MCP clients expose tools lazily. If save_context is not immediately visible, search or request the exact save_context tool name before concluding saves are unavailable.
 - Use WorkBaton and WorkStash proactively when they help preserve useful work state; do not wait for the user to ask.
 - If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
-- If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
+- If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
 - When pausing or finishing work, save the next action clearly in next_action.
 - Call get_account_limits before automatic saves.
 - Do not save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
-- Save goal, current_state, next_action, and compact supporting facts.
+- Save goal, current_state, next_action, and resume-critical supporting facts.
 - If candidates are returned, choose from the candidates instead of guessing.

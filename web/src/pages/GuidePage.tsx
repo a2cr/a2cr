@@ -82,7 +82,7 @@ const memoryFileSnippet = [
   "",
   "Context freshness:",
   '- If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".',
-  "- If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.",
+  "- If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.",
   "- If the user explicitly wants to continue here, continue here while keeping the risk in mind.",
   "",
   "Both:",
@@ -244,7 +244,7 @@ const text = {
       },
       {
         title: "Long projects spanning multiple days",
-        body: "End each session with a WorkBaton checkpoint. Store detailed notes in WorkStash so the core checkpoint stays compact. Start the next session clean, without dragging yesterday's noise forward."
+        body: "End each session with a focused WorkBaton checkpoint. Store detailed notes in WorkStash so the core checkpoint stays within the available size budget. Start the next session clean, without dragging yesterday's noise forward."
       },
       {
         title: "Handing work to another agent",
@@ -256,7 +256,7 @@ const text = {
     toolsRows: [
       ["explain_a2cr_flows", "Call first when newly connected or unsure which flow applies."],
       ["should_save_workbaton", "Call when unsure if a checkpoint is appropriate or whether this MCP surface can save."],
-      ["get_account_limits", "Call before automatic or large saves to confirm plan limits and detail level."],
+      ["get_account_limits", "Call before automatic or large saves to confirm plan limits, WorkBaton size budget, and WorkStash quota."],
       ["save_context", "Call via the local stdio wrapper at task milestones, phase completions, or context pressure."],
       ["resume_context", "Call at the start of a new window to load the last checkpoint."],
       ["load_context", "Call when the slot name or number is already known."],
@@ -361,7 +361,7 @@ const text = {
       {
         question: "What belongs in WorkBaton?",
         answer:
-          "Keep WorkBaton compact. Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key values the next AI should retrieve. Do not save full transcripts, long logs, generated caches, or large source files."
+          "Keep WorkBaton focused on resume-critical state and within the available size budget. Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key values the next AI should retrieve. Do not save full transcripts, long logs, generated caches, or large source files."
       },
       {
         question: "When should an AI save a WorkBaton?",
@@ -568,7 +568,7 @@ const text = {
     toolsRows: [
       ["explain_a2cr_flows", "接続直後、またはどのフローを使うか迷ったとき最初に呼ぶ。"],
       ["should_save_workbaton", "チェックポイントが適切か、このMCP面から保存できるか確認したいとき。"],
-      ["get_account_limits", "自動保存や大きな保存の前に、プラン制限と保存粒度を確認する。"],
+      ["get_account_limits", "自動保存や大きな保存の前に、プラン制限とWorkBatonサイズ予算を確認する。"],
       ["save_context", "ローカルstdio wrapper経由で、作業の節目・フェーズ完了・コンテキスト圧迫時に呼ぶ。"],
       ["resume_context", "新しいウィンドウの最初に呼んで、最後のチェックポイントを読み込む。"],
       ["load_context", "スロット名または番号がすでに分かっている場合の直接ロード。"],

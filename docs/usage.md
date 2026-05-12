@@ -228,7 +228,7 @@ to clarify the Baton/Stash/Threads boundary.
 |---|---|
 | `explain_a2cr_flows` | Distinguish WorkBaton handoff, WorkStash temporary memory, and WorkThreads collaboration |
 | `should_save_workbaton` | Check whether a checkpoint is appropriate before saving |
-| `get_account_limits` | Check plan limits before automatic or large saves |
+| `get_account_limits` | Check plan limits, WorkBaton size budget, and WorkStash quota before automatic or large saves |
 | `save_context` | Save a client-encrypted WorkBaton checkpoint |
 | `resume_context` | Load a checkpoint in a new window |
 | `list_contexts` | Find active slots |
@@ -255,17 +255,21 @@ Use this decision table:
 
 | Situation | Use |
 |---|---|
-| A future AI window needs a compact resume checkpoint | WorkBaton |
+| A future AI window needs focused resume-critical state | WorkBaton |
 | A future AI window may need a small supporting note that would bloat WorkBaton | WorkStash |
 | The task is short and no intermediate state needs to survive | No save |
 | Multiple active agents need to coordinate, answer, wait, claim, or complete tasks | WorkThreads |
 
 WorkBaton is a serial checkpoint flow: `window -> new window -> new window`.
 The local stdio MCP wrapper encrypts the checkpoint before upload, and A2CR
-stores ciphertext plus metadata.
+stores ciphertext plus metadata. Agents should call `get_account_limits` before
+automatic or large saves and use the returned WorkBaton size budget
+intelligently. Free has a smaller body budget; Pro has a larger one, so Pro can
+carry a richer handoff without changing the same safety rules.
 
 WorkStash is temporary work memory for safe supporting notes. It is useful when
-details would bloat a compact WorkBaton but a future AI window may need them.
+details would bloat the WorkBaton body or are optional support notes that a
+future AI window may need.
 The agent stores the note with `store_work_stash`, records the retained
 `entry_key` in WorkBaton `references` or `next_action`, and later retrieves it
 with `get_work_stash` after `resume_context` or `load_context`.
@@ -300,8 +304,8 @@ or overwrite WorkBaton Slots.
 
 Agents should treat context freshness as a heuristic. If the current conversation
 is getting noisy, contradictory, stale, or polluted by old task state, the agent
-should call `should_save_workbaton`, save a compact WorkBaton when recommended,
-and suggest continuing in a fresh AI window.
+should call `should_save_workbaton`, save a focused WorkBaton within the current
+size budget when recommended, and suggest continuing in a fresh AI window.
 
 Warning signs include newer user instructions conflicting with older decisions,
 completed work being treated as unfinished, stale assumptions competing with

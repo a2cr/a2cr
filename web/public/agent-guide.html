@@ -280,7 +280,7 @@ WorkStash - save supporting details:
 
 Context freshness:
 - If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
-- If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
+- If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
 - If the user explicitly wants to continue here, continue here while keeping the risk in mind.
 
 Both:
@@ -297,7 +297,7 @@ Both:
     <p>No. <code>CLAUDE.md</code> and <code>AGENTS.md</code> are project memory: durable rules, conventions, setup notes, and project-level guidance. WorkBaton is current handoff state: what is happening right now, what changed, what passed validation, what is blocked, and what the next AI should do. Do not keep constantly changing task state in project memory unless it truly should become durable project knowledge.</p>
 
     <h3>What belongs in WorkBaton?</h3>
-    <p>Keep WorkBaton compact. Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key values the next AI should retrieve. Do not save full transcripts, long logs, generated caches, or large source files.</p>
+    <p>Keep WorkBaton focused on resume-critical state and within the available size budget. Save goal, current_state, next_action, key decisions, blockers, validation status, and any WorkStash entry_key values the next AI should retrieve. Do not save full transcripts, long logs, generated caches, or large source files.</p>
 
     <h3>When should an AI save a WorkBaton?</h3>
     <p>Save at task milestones, after validation, before the conversation gets long, before switching windows/tools/models, or when context drift or contamination is detected. If unsure, call <code>should_save_workbaton</code> first.</p>
@@ -380,7 +380,7 @@ Both:
       <tbody>
         <tr><td><code>explain_a2cr_flows</code></td><td>Call first when newly connected or unsure which flow applies.</td></tr>
         <tr><td><code>should_save_workbaton</code></td><td>Call when unsure if a checkpoint is appropriate or whether this MCP surface can save.</td></tr>
-        <tr><td><code>get_account_limits</code></td><td>Call before automatic or large saves to confirm plan limits and detail level.</td></tr>
+        <tr><td><code>get_account_limits</code></td><td>Call before automatic or large saves to confirm plan limits, WorkBaton size budget, and WorkStash quota.</td></tr>
         <tr><td><code>save_context</code></td><td>Call via the local stdio wrapper at task milestones, phase completions, or context pressure.</td></tr>
         <tr><td><code>resume_context</code></td><td>Call at the start of a new window to load the last checkpoint.</td></tr>
         <tr><td><code>load_context</code></td><td>Call when the slot name or number is already known.</td></tr>
@@ -532,8 +532,8 @@ During work, call save_context before the conversation gets long or at important
 Some MCP clients expose tools lazily. If save_context is not immediately visible, search or request the exact save_context tool name before concluding saves are unavailable.
 Use WorkBaton and WorkStash proactively when they help preserve useful work state; do not wait for the user to ask.
 If the conversation feels noisy, contradictory, stale, or polluted by old task state, call should_save_workbaton with reason="context_drift" or reason="context_contamination".
-If saving is recommended, save a compact WorkBaton, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
-Save only goal, current_state, next_action, and compact supporting facts.
+If saving is recommended, use the available WorkBaton size budget intelligently, move safe bulky support notes into WorkStash, record the entry_key in WorkBaton, and suggest continuing in a fresh AI window.
+Save only goal, current_state, next_action, and resume-critical supporting facts.
 Never save secrets, API keys, Authorization headers, private database URLs, full transcripts, or long logs.
 Call get_account_limits before automatic saves.
 After loading, use the loaded response_language_hint or language_context.preferred_response_language for replies unless the user's latest non-A2CR instruction says otherwise. Do not infer the user's preferred language from this resume prompt itself.</div>

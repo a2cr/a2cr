@@ -66,7 +66,6 @@ def _profile_response(profile) -> DashboardProfileResponse:
     return DashboardProfileResponse(
         user_id=profile.user_id,
         plan=profile.plan,
-        context_detail_level=profile.context_detail_level,
         default_retention_seconds=profile.default_retention_seconds,
         preferred_locale=profile.preferred_locale,
         response_language=profile.response_language,
@@ -87,7 +86,6 @@ def _context_response(item) -> DashboardContextItem:
         size_bytes=item.size_bytes,
         compressed_tokens=item.compressed_tokens,
         saved_tokens=item.saved_tokens,
-        detail_level=item.detail_level,
         model_source=item.model_source,
         load_count=item.load_count,
         resume_context_call=item.resume_context_call,
@@ -128,7 +126,6 @@ def update_profile(
     return _profile_response(
         dashboard_service.update_profile(
             user_id=user.user_id,
-            context_detail_level=req.context_detail_level,
             default_retention_seconds=req.default_retention_seconds,
             preferred_locale=req.preferred_locale,
             response_language=req.response_language,

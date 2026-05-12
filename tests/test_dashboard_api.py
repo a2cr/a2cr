@@ -77,7 +77,6 @@ def test_get_profile_returns_current_settings(client, monkeypatch):
     body = response.json()
     assert body["user_id"] == str(USER_ID)
     assert body["plan"] == "free"
-    assert body["context_detail_level"] == "compact"
 
 
 def test_patch_profile_does_not_accept_plan_change(client, monkeypatch):

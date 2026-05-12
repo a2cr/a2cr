@@ -153,7 +153,6 @@ class WebContextSaveRequest(BaseModel):
     compressed_tokens: Optional[int] = None
     model_source: Optional[ModelSource] = None
     retention_seconds: Optional[int] = None
-    detail_level: Optional[Literal["compact", "detailed"]] = "compact"
 
     @model_validator(mode="after")
     def validate_exactly_one_body(self) -> "WebContextSaveRequest":
@@ -209,7 +208,6 @@ class WebContextMetadataItem(BaseModel):
     updated_at: datetime
     size_bytes: int
     compressed_tokens: int
-    detail_level: str
     model_source: Optional[str] = None
     load_count: int
 
@@ -222,7 +220,6 @@ class WebContextLoadResponse(BaseModel):
     encrypted_content: Optional[EncryptedContentSchema] = None
     expires_at: datetime
     compressed_tokens: int
-    detail_level: str
     model_source: Optional[str] = None
     load_count: int
 
@@ -236,7 +233,6 @@ class WebContextResumeResponse(BaseModel):
 class DashboardProfileResponse(BaseModel):
     user_id: str
     plan: str
-    context_detail_level: str
     default_retention_seconds: int
     preferred_locale: str
     response_language: str
@@ -246,7 +242,6 @@ class DashboardProfileResponse(BaseModel):
 
 
 class DashboardProfileUpdateRequest(BaseModel):
-    context_detail_level: Optional[Literal["compact", "detailed"]] = None
     default_retention_seconds: Optional[int] = None
     preferred_locale: Optional[str] = None
     response_language: Optional[str] = None
@@ -277,7 +272,6 @@ class DashboardContextItem(BaseModel):
     size_bytes: int
     compressed_tokens: int
     saved_tokens: int
-    detail_level: str
     model_source: Optional[str] = None
     load_count: int
     resume_context_call: str
@@ -452,7 +446,6 @@ class WorkThreadResultSaveRequest(BaseModel):
     model_source: Optional[ModelSource] = None
     slot_number: Optional[int] = None
     retention_seconds: Optional[int] = None
-    detail_level: Optional[Literal["compact", "detailed"]] = "compact"
 
     @field_validator("slot_name")
     @classmethod

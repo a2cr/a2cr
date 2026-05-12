@@ -16,7 +16,6 @@ from services.limits import (
     ensure_hourly_limit,
     get_plan_limits,
     validate_body_size,
-    validate_detail_level,
     validate_retention_seconds,
 )
 from services.logs import build_access_log_row, write_access_log
@@ -244,7 +243,6 @@ def save_context(
     model_source: Optional[str] = None,
     slot_number: Optional[int] = None,
     retention_seconds: Optional[int] = None,
-    detail_level: Optional[str] = None,
     meta: RequestMeta | None = None,
 ) -> WebSaveResult:
     meta = meta or RequestMeta()
@@ -275,7 +273,8 @@ def save_context(
         if retention_seconds is None:
             retention_seconds = default_retention
         retention_seconds = validate_retention_seconds(retention_seconds, limits)
-        detail_level = validate_detail_level(detail_level, limits)
+        # Legacy DB/API field. Public save behavior is size-budget based now.
+        detail_level = "compact"
         validate_body_size(len(content_bytes), limits)
         if slot_number is not None and slot_number > limits.active_slots:
             raise AppError("slot_number_not_allowed", "slot_number is not allowed for this plan", 422)

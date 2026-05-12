@@ -14,7 +14,7 @@ scratchpad for later design and implementation cleanup.
   the full `resume_prompt`.
 - `should_save_workbaton` returns the exact deferred-tool search phrase,
   save-readiness guidance, WorkStash examples, and fresh-window guidance.
-- A2CR flow explanations include a compact WorkBaton / WorkStash / no save /
+- A2CR flow explanations include a focused WorkBaton / WorkStash / no save /
   WorkThreads decision table.
 - Usage docs and the A2CR agent skill include good and bad WorkStash examples.
 - Agent guidance now includes context freshness heuristics and recommends
@@ -69,8 +69,8 @@ scratchpad for later design and implementation cleanup.
   - include the exact deferred-tool search phrase in the advisory result;
   - expose a short "save readiness" helper that confirms both limits and save
     capability.
-- Add a compact decision table to A2CR docs and tool descriptions:
-  - WorkBaton: compact resume checkpoint for a future window;
+- Add a focused decision table to A2CR docs and tool descriptions:
+  - WorkBaton: focused resume checkpoint for a future window;
   - WorkStash: safe supporting note referenced by a WorkBaton;
   - no save: short task, no durable intermediate state;
   - WorkThreads: live shared coordination, not a Baton/Stash substitute.
@@ -87,7 +87,7 @@ scratchpad for later design and implementation cleanup.
   conversation context is becoming noisy, contradictory, stale, or polluted by
   old task state, it should:
   - call `should_save_workbaton`;
-  - save a compact WorkBaton if recommended and possible;
+  - save a focused WorkBaton within the current size budget if recommended and possible;
   - tell the user that continuing in a fresh AI window would reduce context
     confusion;
   - provide the resume instruction or Slot name needed to continue;
@@ -109,9 +109,9 @@ scratchpad for later design and implementation cleanup.
   - the user repeatedly says "next" through a multi-stage review;
   - edits span several documents or implementation areas;
   - the active task goal is no longer easy to state in one sentence;
-  - a compact WorkBaton is becoming hard to keep compact.
+  - a focused WorkBaton is becoming hard to keep within the current size budget.
 - Keep `should_save_workbaton` advisory. The current explicit save step is useful
-  because it gives the agent a final chance to keep the checkpoint compact and
+  because it gives the agent a final chance to keep the checkpoint focused and
   safe.
 
 ## Success Criteria For Later Changes

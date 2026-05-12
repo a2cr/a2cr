@@ -1,11 +1,9 @@
 export type Plan = "free" | "pro";
-export type DetailLevel = "compact" | "detailed";
 export type EncryptionMode = "client";
 
 export type DashboardProfile = {
   user_id: string;
   plan: Plan | string;
-  context_detail_level: DetailLevel | string;
   default_retention_seconds: number;
   preferred_locale: string;
   response_language: string;
@@ -24,7 +22,6 @@ export type DashboardContext = {
   size_bytes: number;
   compressed_tokens: number;
   saved_tokens: number;
-  detail_level: string;
   model_source: string | null;
   load_count: number;
   resume_context_call: string;
@@ -98,7 +95,6 @@ export type DashboardData = {
 };
 
 export type ProfilePatch = Partial<{
-  context_detail_level: DetailLevel;
   default_retention_seconds: number;
   preferred_locale: string;
   response_language: string;

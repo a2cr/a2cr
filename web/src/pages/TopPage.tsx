@@ -11,7 +11,7 @@ const pageContent = {
   en: {
     heroTitle: "At every milestone,\nthe next AI already knows.",
     heroBody:
-      "Stop re-explaining your project every session. A2CR saves compact WorkBaton checkpoints at task milestones — so any MCP-capable AI configured with A2CR MCP picks up exactly where the last one left off.",
+      "Stop re-explaining your project every session. A2CR saves focused WorkBaton checkpoints at task milestones — so any MCP-capable AI configured with A2CR MCP picks up exactly where the last one left off.",
 
     painEyebrow: "The problem",
     painTitle: "Starting from zero, every single session?",
@@ -45,7 +45,7 @@ const pageContent = {
       },
       {
         title: "Fresh session",
-        body: "The next AI resumes from a compact checkpoint instead of dragging the whole chat forward."
+        body: "The next AI resumes from a focused checkpoint instead of dragging the whole chat forward."
       }
     ],
     contextNote:
