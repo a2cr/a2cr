@@ -45,6 +45,7 @@ coverage/
 掲載用イラスト/
 
 # Internal working notes not intended for public GitHub
+AGENTS.md
 CLAUDE.md
 ai_clipboard_handover.md
 service_selection.md
