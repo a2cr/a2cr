@@ -151,6 +151,8 @@ def get_account_limits(user: AuthenticatedUser = Depends(get_current_api_user)) 
         "workstash_quota_bytes": stash_limits.quota_bytes,
         "workstash_max_entry_bytes": stash_limits.max_entry_bytes,
         "workstash_ttl_seconds": stash_limits.ttl_seconds,
+        "workstash_writes_per_hour": stash_limits.writes_per_hour,
+        "workstash_reads_per_hour": stash_limits.reads_per_hour,
         "handoff_policy": build_handoff_policy(limits, stash_limits),
         "saves_per_hour": limits.saves_per_hour,
         "loads_per_hour": limits.loads_per_hour,

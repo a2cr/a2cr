@@ -53,7 +53,7 @@ FREE_LIMITS = PlanLimits(
     default_retention_seconds=86400,
     max_body_bytes=24 * 1024,
     saves_per_hour=100,
-    loads_per_hour=300,
+    loads_per_hour=200,
     access_log_retention_seconds=86400,
 )
 
@@ -63,8 +63,8 @@ PRO_LIMITS = PlanLimits(
     allowed_retention_seconds=PRO_RETENTION_SECONDS,
     default_retention_seconds=2592000,
     max_body_bytes=64 * 1024,
-    saves_per_hour=1000,
-    loads_per_hour=3000,
+    saves_per_hour=300,
+    loads_per_hour=600,
     access_log_retention_seconds=2592000,
 )
 
@@ -128,7 +128,7 @@ FREE_STASH_LIMITS = WorkStashLimits(
     ttl_seconds=7 * 24 * 60 * 60,
     max_entries=None,
     max_entry_bytes=8 * 1024,
-    writes_per_hour=60,
+    writes_per_hour=200,
     reads_per_hour=300,
 )
 
@@ -138,8 +138,8 @@ PRO_STASH_LIMITS = WorkStashLimits(
     ttl_seconds=30 * 24 * 60 * 60,
     max_entries=None,
     max_entry_bytes=32 * 1024,
-    writes_per_hour=600,
-    reads_per_hour=3000,
+    writes_per_hour=400,
+    reads_per_hour=800,
 )
 
 

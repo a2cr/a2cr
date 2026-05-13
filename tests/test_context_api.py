@@ -324,6 +324,10 @@ def test_web_account_limits_returns_size_budget_policy(client, monkeypatch):
     assert body["active_slots"] == 5
     assert body["max_body_bytes"] == 24 * 1024
     assert body["workstash_quota_bytes"] == 256 * 1024
+    assert body["saves_per_hour"] == 100
+    assert body["loads_per_hour"] == 200
+    assert body["workstash_writes_per_hour"] == 200
+    assert body["workstash_reads_per_hour"] == 300
     assert body["handoff_policy"]["basis"] == "size_budget"
 
 

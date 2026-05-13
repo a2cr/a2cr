@@ -463,6 +463,10 @@ def test_mcp_get_account_limits_returns_plan_settings(monkeypatch):
     assert 86400 in result["allowed_retention_seconds"]
     assert result["max_body_bytes"] == 24 * 1024
     assert result["workstash_quota_bytes"] == 256 * 1024
+    assert result["saves_per_hour"] == 100
+    assert result["loads_per_hour"] == 200
+    assert result["workstash_writes_per_hour"] == 200
+    assert result["workstash_reads_per_hour"] == 300
     assert result["handoff_policy"]["basis"] == "size_budget"
     assert result["response_language"] == "auto"
 

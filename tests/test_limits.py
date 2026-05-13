@@ -56,7 +56,14 @@ def test_get_plan_limits_defaults_to_free():
 
 def test_plan_slot_limits_match_public_preview_constants():
     assert FREE_LIMITS.active_slots == FREE_ACTIVE_SLOTS == 5
-    assert PRO_LIMITS.active_slots == PRO_ACTIVE_SLOTS == 100
+    assert PRO_LIMITS.active_slots == PRO_ACTIVE_SLOTS == 50
+
+
+def test_plan_hourly_limits_match_public_preview_constants():
+    assert FREE_LIMITS.saves_per_hour == 100
+    assert FREE_LIMITS.loads_per_hour == 200
+    assert PRO_LIMITS.saves_per_hour == 300
+    assert PRO_LIMITS.loads_per_hour == 600
 
 
 def test_validate_retention_allows_free_24h_and_pro_30d():

@@ -352,11 +352,12 @@ such as `myapp_api_spec_v1` or `session:2026-05-08:parsed_schema`.
 
 | | Free | Pro |
 |---|---|---|
-| Quota | 256 KB | 2 MB |
+| Quota | 256 KB | 1,024 KB |
 | TTL | 7 days | 30 days |
 | Public entry-count limit | none | none |
 | Max per entry | 8 KB | 32 KB |
-| Writes / hour | 60 | 600 |
+| Writes / hour | 200 | 400 |
+| Reads / hour | 300 | 800 |
 
 Check limits with `get_account_limits` before large or frequent writes.
 

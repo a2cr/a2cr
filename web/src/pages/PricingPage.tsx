@@ -55,18 +55,18 @@ export function PricingPage() {
     [t("pricing.workStash"), "256 KB"],
     [t("pricing.handoff"), t("pricing.focusedHandoff")],
     [t("pricing.saves"), "100 / hour"],
-    [t("pricing.loads"), "300 / hour"],
+    [t("pricing.loads"), "200 / hour"],
     [t("pricing.logs"), "24h"],
     [t("pricing.workthreads"), t("pricing.notIncluded")]
   ];
   const proRows: Array<[string, string]> = [
-    [t("pricing.slots"), "100"],
+    [t("pricing.slots"), "50"],
     [t("pricing.retention"), "15m / 30m / 1h / 3h / 6h / 12h / 24h / 3d / 7d / 10d / 14d / 30d"],
     [t("pricing.body"), "64 KB"],
     [t("pricing.workStash"), "1,024 KB"],
     [t("pricing.handoff"), t("pricing.richerHandoff")],
-    [t("pricing.saves"), "1,000 / hour"],
-    [t("pricing.loads"), "3,000 / hour"],
+    [t("pricing.saves"), "300 / hour"],
+    [t("pricing.loads"), "600 / hour"],
     [t("pricing.logs"), "30d"],
     [t("pricing.workthreads"), t("pricing.planned")]
   ];

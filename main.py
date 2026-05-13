@@ -457,13 +457,14 @@ ROUTE_SEO = {
         - Retention options up to 24 hours
         - 24KB WorkBaton body budget
         - 100 saves per hour
-        - 300 loads per hour
+        - 200 loads per hour
 
         Planned Pro plan:
-        - 100 Slots
+        - 50 Slots
         - Longer retention options
         - 64KB WorkBaton body budget
-        - Higher rate limits
+        - 300 saves per hour
+        - 600 loads per hour
         - Planned WorkThreads support
         """,
     ),

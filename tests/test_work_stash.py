@@ -98,7 +98,7 @@ def test_free_stash_limits_values():
     assert limits.ttl_seconds == 7 * 24 * 60 * 60
     assert limits.max_entries is None
     assert limits.max_entry_bytes == 8 * 1024
-    assert limits.writes_per_hour == 60
+    assert limits.writes_per_hour == 200
     assert limits.reads_per_hour == 300
 
 
@@ -109,8 +109,8 @@ def test_pro_stash_limits_values():
     assert limits.ttl_seconds == 30 * 24 * 60 * 60
     assert limits.max_entries is None
     assert limits.max_entry_bytes == 32 * 1024
-    assert limits.writes_per_hour == 600
-    assert limits.reads_per_hour == 3000
+    assert limits.writes_per_hour == 400
+    assert limits.reads_per_hour == 800
 
 
 def test_get_stash_limits_returns_free_by_default():
