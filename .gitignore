@@ -36,9 +36,13 @@ coverage/
 # Local tool/editor state
 .claude/
 .codex/
+.codex_tmp/
 .superpowers/
 .vscode/
 .idea/
+
+# Local publication asset sources
+掲載用イラスト/
 
 # Internal working notes not intended for public GitHub
 CLAUDE.md

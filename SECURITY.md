@@ -4,7 +4,27 @@ A2CR is an early prototype and is not production-ready yet.
 
 ## Reporting a Vulnerability
 
-Until a public contact channel is decided, please do not publish vulnerability details publicly. Use a private GitHub security advisory or contact the repository owner directly.
+Please do not publish vulnerability details in public issues, discussions, or
+social posts.
+
+Preferred reporting path:
+
+- GitHub Private Vulnerability Reporting, when enabled on the public repository
+
+Backup reporting path:
+
+- a2cr.mcp@gmail.com
+
+General support and privacy requests should also go to a2cr.mcp@gmail.com.
+
+When reporting a vulnerability, include a concise reproduction, affected
+version or commit, affected surface, and sanitized logs if useful. Do not
+include secrets, API keys, Authorization headers, cookies, private database
+URLs, local client key files, decrypted WorkBaton or WorkStash bodies, full
+chat transcripts, or other user data.
+
+A2CR is an early public-preview project, so response times are best effort. The
+target for security reports is an initial human response within 7 days.
 
 ## Security Scope
 

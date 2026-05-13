@@ -9,6 +9,8 @@ This design covers three related goals:
 - publish WorkBaton and WorkStash as the first free public SaaS preview
 - prepare a clean open-source GitHub repository for public cloning/forking
 - prepare submissions or install paths for official MCP registries, Claude connectors/plugins, OpenAI Apps SDK, Cursor, and GitHub Copilot/VS Code
+- prepare public launch communication through X and technical articles after
+  the repo, website, docs, and setup path are stable
 
 ## Assumptions
 
@@ -357,8 +359,11 @@ Before official submissions, audit every MCP tool:
 
 Minimum for free preview:
 
-- `support@a2cr.app`
-- security reporting path
+- GitHub Organization: `a2cr`
+- `a2cr.mcp@gmail.com`
+- X: `@A2CR_MCP`
+- Discord: `a2cr.mcp`
+- GitHub Private Vulnerability Reporting after the public repository exists
 - privacy policy
 - terms
 - legal/contact page that does not expose personal home address or phone

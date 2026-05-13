@@ -219,9 +219,24 @@ Important principles:
 
 Users must understand that losing the local client key makes those WorkBaton slots unrecoverable. Creating a new key works for future saves, but it cannot decrypt slots saved with the old key.
 
+## Support And Security
+
+- General support: a2cr.mcp@gmail.com
+- Security reports: a2cr.mcp@gmail.com, or GitHub Private Vulnerability Reporting
+  when enabled on the public repository
+- Privacy requests: a2cr.mcp@gmail.com
+- X: @A2CR_MCP
+- Discord: a2cr.mcp (reserved; public community/support use is pending a
+  moderation policy)
+
+Do not include secrets, API keys, Authorization headers, private database URLs,
+local client key files, decrypted WorkBaton or WorkStash bodies, full chat
+transcripts, or other user data in public issues.
+
 ## Documentation
 
 - Usage guide: `docs/usage.md`
+- Public contact email setup: `docs/runbooks/public-contact-email-setup.md`
 - MCP Baton vs Threads flow: `docs/runbooks/mcp-baton-vs-threads-flow.md`
 - WorkBaton autonomous save spec: `docs/runbooks/workbaton-autonomous-save-spec.md`
 - Deploy runbook: `docs/runbooks/deploy.md`

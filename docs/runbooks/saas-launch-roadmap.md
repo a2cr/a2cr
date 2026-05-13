@@ -1,8 +1,8 @@
 # A2CR SaaS Launch Roadmap
 
-Last updated: 2026-05-10
+Last updated: 2026-05-13
 
-Status: Draft / not started as a unified launch program
+Status: Draft / redesigned for OSS-first public preview
 
 This roadmap connects the work required to move A2CR from the current hosted
 prototype state to a public SaaS release. It is intentionally gate-based: do not
@@ -23,6 +23,10 @@ verified.
 Known current state:
 
 - Domain `a2cr.app` exists in Cloudflare
+- GitHub Organization `a2cr` exists for OSS/public ownership
+- Public-preview contact mailbox is `a2cr.mcp@gmail.com`
+- Public X account is `@A2CR_MCP`
+- Discord account `a2cr.mcp` is reserved
 - Supabase production-like project `a2cr-production` exists
 - Google OAuth is configured for Supabase Auth
 - Railway production candidate exists, but canonical production service still
@@ -48,8 +52,45 @@ Primary references:
 - `docs/superpowers/specs/2026-05-06-a2cr-operations-legal-admin-spec.md`
 - `docs/superpowers/specs/2026-05-06-a2cr-security-resilience-plan.md`
 
+## Immediate Public Launch Goals
+
+This is the current near-term sequence.
+
+1. Publish OSS.
+   - Public owner: GitHub Organization `a2cr`.
+   - Publish only after README, SECURITY, LICENSE, contact details, and secret
+     scans are clean.
+
+2. Start the free preview service.
+   - Keep the first launch free.
+   - Focus on WorkBaton/WorkStash setup, the local stdio MCP wrapper, hosted
+     account/API-key flow, and clear known limitations.
+
+3. Apply to official MCP registries, directories, and relevant tool ecosystems.
+   - Apply only after the public repository, website, docs, privacy/support
+     contacts, and tested install path are available.
+   - Do not promise remote features that only the local encrypted stdio wrapper
+     can safely provide.
+
+4. Publish through X.
+   - Use `@A2CR_MCP`.
+   - Announce OSS publication, free preview availability, and any successful
+     listing or registry approval as separate updates.
+
+5. Publish technical articles.
+   - Use the articles to explain the AI work handoff problem, WorkBaton,
+     WorkStash, MCP setup, and security boundaries.
+   - Candidate surfaces can include developer blogs and tech communities, but
+     each article should point back to `github.com/a2cr/...` and `a2cr.app`.
+
+Near-term success means an external developer can find A2CR, understand the
+problem it solves, install the MCP wrapper, try the free preview, and know where
+to report issues without seeing personal/private contact details.
+
 ## Guiding Rules
 
+- Keep the public identity split clear: `akagi819` is the human/operator and
+  private development account; `a2cr` is the public OSS Organization.
 - Do not publish A2CR as production-ready until hosted deployment, auth, RLS,
   logging hygiene, backup/restore, and smoke checks are verified.
 - Release WorkBaton and WorkStash first as a free public preview, then use
@@ -76,7 +117,8 @@ Primary references:
 
 ## Stage 0: Product Scope Freeze
 
-Goal: decide the free preview, OSS, and later paid scope before changing public copy.
+Goal: decide the free preview, OSS, MCP submission, communication, and later
+paid scope before changing public copy.
 
 Status: Not started
 
@@ -96,6 +138,7 @@ Work:
   or hidden behind a feature gate
 - Decide the GitHub OSS license and publication checklist
 - Decide official MCP listing/application owner and submission package
+- Decide first X announcement themes and technical article topics
 - Decide whether the first public operator identity is individual, sole
   proprietor, or corporation, and select a virtual office path that can support
   that path.
@@ -112,6 +155,7 @@ Deliverables:
 - Pro plan limits and entitlement rules
 - OSS license/publication decision
 - Official MCP listing/application checklist
+- X announcement outline and technical article outline
 - Business address decision: provider shortlist, allowed uses, mail forwarding,
   phone/contact handling, and later corporation migration path
 - WorkThreads release scope decision
@@ -125,36 +169,54 @@ Exit criteria:
 - README and public docs do not overclaim production readiness
 - Public copy says WorkBaton and WorkStash are free-preview first, with
   WorkThreads, payment, and remaining legal work following later
+- The five near-term launch goals are ordered as OSS publication, free preview
+  service, MCP registry/directory submissions, X announcements, and technical
+  articles
 - Public contact/legal planning does not require exposing a personal home
   address or personal phone number.
 
-## Stage 1: Free Preview Publication
+## Stage 1: OSS-First Public Launch Program
 
-Goal: release WorkBaton and WorkStash first, free, and start forming a community.
+Goal: publish A2CR publicly, start a free preview, submit to MCP ecosystems,
+and begin public communication without claiming production maturity.
 
 Status: Not started
 
 Work:
 
-- Publish the GitHub repository as OSS after license and secret checks pass
+- Publish the GitHub repository as OSS under the GitHub Organization `a2cr`
+  after license and secret checks pass.
 - Keep the public README focused on WorkBaton, WorkStash, MCP setup, and known
-  limitations
-- Confirm `python -m pip install --upgrade a2cr-mcp` works from a clean user environment
-- Publish a free-preview guide for WorkBaton and WorkStash
+  limitations.
+- Use `a2cr.mcp@gmail.com` for public support, privacy, and backup security
+  intake during the free preview.
+- Confirm `python -m pip install --upgrade a2cr-mcp` works from a clean user
+  environment.
+- Start the free preview service only after hosted smoke checks pass for the
+  shipped scope.
+- Publish a free-preview guide for WorkBaton and WorkStash only if the shipped
+  backend and local encryption paths match the guide.
 - Keep public legal/contact copy minimal and non-paid while the virtual
-  office/business address decision is being finalized.
-- Prepare and submit the official MCP listing/application package once setup
-  docs are stable
+  office/business address decision is deferred.
+- Prepare and submit official MCP registry/directory packages once setup docs,
+  website, contact paths, and clean install flow are stable.
+- Publish launch updates through X `@A2CR_MCP`.
+- Draft technical articles explaining the AI work handoff problem, MCP setup,
+  WorkBaton/WorkStash, and security boundaries.
 - Route feedback through GitHub issues/discussions or another visible community
-  surface
-- Keep paid checkout disabled and WorkThreads hidden/internal-only
+  surface.
+- Keep paid checkout disabled and WorkThreads hidden/internal-only.
 
 Deliverables:
 
 - OSS repository with LICENSE and SECURITY guidance
+- Public README, usage guide, security policy, and contact policy
 - Free-preview release note
-- WorkBaton + WorkStash onboarding guide
+- WorkBaton onboarding guide
+- WorkStash onboarding guide only if WorkStash is actually enabled
 - Official MCP listing/application package
+- X launch thread draft
+- First technical article outline
 - Community feedback intake path
 
 Exit criteria:
@@ -162,9 +224,13 @@ Exit criteria:
 - No secrets, local DBs, or private MCP configs are published
 - `python -m pytest -q` and `cd web && npm run build` pass before the public push
 - A clean PyPI install can configure the MCP wrapper and use WorkBaton/WorkStash
+- Hosted preview docs match the real shipped feature scope
+- MCP submission copy does not overclaim remote save support or production
+  readiness
+- X posts and articles link to `github.com/a2cr/...` and `https://a2cr.app`
 - Public docs say billing and WorkThreads are not part of the first free preview
 - Public docs do not expose a personal home address, personal phone number, or
-  personal Gmail address.
+  personal/private inbox.
 - Feedback/community intake is visible from the repository
 
 ## Stage 2: STG Foundation
@@ -352,7 +418,14 @@ Status: Spec exists, final content and review pending
 
 Work:
 
-- Configure `support@a2cr.app`
+- Configure the preview contact mailbox: `a2cr.mcp@gmail.com`
+- Record the GitHub Organization: `a2cr`
+- Record the public X account: `@A2CR_MCP`
+- Record the Discord account: `a2cr.mcp`
+- Confirm replies can be sent from `a2cr.mcp@gmail.com`, not a personal/private
+  inbox
+- Decide whether `@a2cr.app` support/security/privacy mail must be upgraded
+  before paid sales
 - Select a virtual office/business address provider, or explicitly decide not
   to use one, before paid sales.
 - Confirm the provider permits the required uses: public contact/legal display,
@@ -387,7 +460,9 @@ Deliverables:
 Exit criteria:
 
 - Public legal/support pages are reachable without login
-- Personal email is not exposed as the public support contact
+- Personal/private email is not exposed as the public support contact
+- The public preview contact is `a2cr.mcp@gmail.com`
+- The public repository owner is the GitHub Organization `a2cr`
 - Personal home address and personal phone number are not exposed in public
   docs, dashboard pages, public repository metadata, or support templates unless
   explicitly approved.
@@ -544,7 +619,8 @@ Record decisions here as they are made:
 - What is the first paid price and currency?
 - Should public launch start as a free preview with Lemon Squeezy disabled, or
   should any private paid beta happen before public checkout?
-- Which inbox receives `support@a2cr.app`?
+- If domain mail is upgraded later, which operator mailbox or group receives
+  `support@a2cr.app`, `security@a2cr.app`, and `privacy@a2cr.app`?
 - Which legal entity/name/address/phone are used for paid sales display?
 - Which virtual office provider is used, and does it support public display,
   mail forwarding, phone handling, payment review, and possible corporation

@@ -404,10 +404,16 @@ A2CR rejects plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabl
 - Add or confirm `.gitignore`.
 - Add a `LICENSE` file before OSS publication.
 - Confirm public docs, repository metadata, support templates, and screenshots
-  do not expose a personal home address, personal phone number, or personal
-  Gmail address.
-- Decide the public contact path for the free preview: `support@a2cr.app` plus
-  virtual office/business address planning for later paid legal display.
+  do not expose a personal home address, personal phone number, or
+  personal/private email address.
+- Publish the public repository under the GitHub Organization `a2cr`.
+- Use the dedicated public-preview contact account: `a2cr.mcp@gmail.com`.
+- Use the reserved public social accounts where appropriate: X `@A2CR_MCP` and
+  Discord `a2cr.mcp`.
+- Prepare X launch copy and technical article outlines after the repository,
+  website, support contact, and clean install path are stable.
+- Keep virtual office/business address planning as a paid-launch gate for later
+  legal display.
 - Run `python -m pytest -q`.
 - Run `cd web && npm run build`.
 - Confirm public-facing Markdown does not contain mojibake or private planning notes.
@@ -420,6 +426,8 @@ A2CR rejects plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabl
 - Keep `.env.example` placeholder-only.
 - Add screenshots only after the UI is stable and does not expose private data.
 - Prepare a concise MCP server submission/listing package after the public setup path is tested.
+- Prepare the first technical article around the AI work handoff problem,
+  WorkBaton, MCP setup, and security boundaries.
 - Keep paid legal-display details out of public preview copy until the virtual
   office/business address and phone/contact handling decision is recorded.
 
@@ -470,5 +478,6 @@ Not production-ready yet:
 - first hosted deployment is not complete
 - billing is not implemented
 - WorkThreads is not production-ready
-- public support/security contact is not finalized
+- public support/security/privacy contact uses the dedicated preview mailbox,
+  but the final domain-mail policy should be decided before paid launch
 ```
