@@ -1,0 +1,57 @@
+A2CR Source-Available License Notice
+BUSL-1.1 style terms
+
+Copyright (c) 2026 A2CR
+
+IMPORTANT:
+This repository is source-available, not OSI-approved open source.
+The official A2CR MCP client is made public so users can inspect it, use it,
+contribute fixes, and connect AI agents to the official A2CR service.
+
+The licensed work is:
+
+  a2cr-mcp, including the local stdio MCP wrapper, package source code,
+  public examples, and wrapper tests in this repository.
+
+Additional Use Grant:
+
+You may use the Licensed Work for personal use, internal business use,
+research, evaluation, contribution, documentation, testing, and for connecting
+to the official A2CR hosted service at https://a2cr.app.
+
+Internal business use does not include offering the Licensed Work, or a service
+substantially based on it, to third parties as a hosted, managed, or relay
+service.
+
+Commercial Restriction:
+
+Offering a competing hosted or managed A2CR-compatible relay service based on
+the Licensed Work, including the official A2CR MCP client, requires a
+commercial license from A2CR.
+
+Change Date:
+
+  2030-05-13
+
+Change License:
+
+  Apache License, Version 2.0
+
+On the Change Date, the Licensed Work will be made available under the Change
+License.
+
+Specification License Separation:
+
+The WorkBaton Format specification is licensed separately. See
+docs/spec/LICENSE.md. You may implement the WorkBaton Format without permission,
+subject to the trademark rules in TRADEMARK.md.
+
+Disclaimer:
+
+These terms are intended to express A2CR's source-available/open-core project
+model. They should be reviewed by a qualified legal professional before major
+commercial use, enforcement, or relicensing decisions.
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.

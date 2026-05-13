@@ -1,6 +1,13 @@
+## Summary
+
+-
+
+## Validation
+
+- [ ] `python -m pytest -q`
+
 ## Security Review
 
-- [ ] This change does not add file attachment, file rendering, URL fetch, HTML/render preview, shell/process execution, or AI-execution features.
-- [ ] If it does add one of those features, the PR includes a dedicated security review, abuse-case regression tests, and a rollback plan.
-- [ ] WorkBaton saves still require local stdio client encryption before upload; remote/server-side plaintext save paths remain disabled.
-- [ ] Dashboard/admin surfaces still expose metadata only unless the PR explicitly documents and reviews a narrower exception.
+- [ ] This change does not add secret storage, plaintext WorkBaton/WorkStash handling, remote code execution, file rendering, or shell/process execution.
+- [ ] WorkBaton and WorkStash saves still require local stdio client encryption before upload.
+- [ ] Examples and docs do not contain real API keys, tokens, local client keys, `.env` contents, decrypted bodies, full transcripts, or long logs.

@@ -1,10 +1,11 @@
 include README.md
+include LICENSE
+include SECURITY.md
+include CONTRIBUTING.md
 include pyproject.toml
 recursive-include a2cr_mcp *.py
+recursive-include mcp *.py
+recursive-include docs *.md *.png *.gif
+recursive-include examples *.json
+prune docs/old
 prune tests
-prune web
-prune docs
-prune dashboard
-prune routers
-prune services
-prune supabase

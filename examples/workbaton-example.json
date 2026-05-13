@@ -1,0 +1,15 @@
+{
+  "goal": "Fix login error",
+  "current_state": "Confirmed the API returns 401 after token refresh.",
+  "next_action": "Check token refresh logic in src/auth.",
+  "decisions": [
+    "Do not change the database schema yet."
+  ],
+  "blockers": [],
+  "validation": [
+    "Reproduction confirmed with existing test fixture."
+  ],
+  "references": [
+    "WorkStash: login-refresh-notes-v1"
+  ]
+}

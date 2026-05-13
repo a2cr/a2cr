@@ -2,90 +2,193 @@
   <img src="docs/assets/github/a2cr-logo.png" alt="A2CR logo" width="420">
 </p>
 
-<p align="center">
-  <img src="docs/assets/github/a2cr-story.gif" alt="A2CR turns messy AI work context into WorkBaton and WorkStash handoff state" width="900">
-</p>
-
 # A2CR
 
 Agent-to-Agent Context Relay.
 
-A2CR helps AI agents hand off real work between conversation windows, models,
-tools, and time. It gives an AI client a small, structured place to save where
-the work stands now, then resume from that state later.
+A2CR is a lightweight context relay layer for AI agents. It lets an agent save
+a compact WorkBaton checkpoint, move optional supporting notes into WorkStash,
+and resume the work from a fresh AI window without carrying a long, noisy chat
+history forward.
 
-A2CR does not run an LLM on the server. It does not choose models, think for
-your agent, or generate code reviews. You bring your own AI client, and that
-client calls A2CR through MCP/API.
+<p align="center">
+  <img src="docs/assets/github/a2cr-story.gif" alt="A2CR turns long AI conversation history into compact WorkBaton and WorkStash handoff state" width="900">
+</p>
 
-## Status
+This public repository contains the source-available A2CR client and public
+reference material:
 
-A2CR is an early public-preview project, not production-ready software.
+- the local stdio MCP wrapper package: `a2cr-mcp`
+- the early WorkBaton Format specification entrypoint
+- AI-agent usage guidance and safety rules
+- MCP configuration examples
+- WorkBaton and WorkStash sample payloads
+- tests for the public wrapper behavior
 
-Current focus:
+It does not contain the hosted SaaS service implementation, production database
+schema, billing code, admin tooling, or deployment secrets.
 
-- Free public preview for WorkBaton and WorkStash
-- Local stdio MCP wrapper through the PyPI package `a2cr-mcp`
-- Hosted account, API key, dashboard, and metadata views at `https://a2cr.app`
-- OSS publication, community feedback, and official MCP listing/application work
+## Project Model
 
-Later work:
+A2CR uses a lightweight open-core model:
 
-- Lemon Squeezy billing after the free preview and smoke checks are stable
-- WorkThreads for shared AI-agent coordination
-- More mature legal, support, operations, and security review processes
+| Layer | Public surface | License / posture |
+|---|---|---|
+| WorkBaton Format | Public specification in `docs/spec/` | Spec text: CC BY 4.0. Schemas/examples/tests: Apache-2.0 |
+| `a2cr-mcp` | Official local stdio MCP client | Source-available under BUSL-1.1 style terms |
+| `a2cr.app` | Hosted relay service, dashboard, billing, operations | Proprietary SaaS |
 
-## What A2CR Solves
+The WorkBaton Format is intended to be implementable by anyone. The official
+client and hosted relay are maintained by A2CR. Offering a competing hosted or
+managed A2CR-compatible relay service based on the official A2CR client requires
+a commercial license.
 
-Long AI-assisted work often fails at the handoff point:
-
-- the chat gets too long
-- a model switch loses details
-- a new AI window does not know what was already tried
-- tests, blockers, and next steps are scattered in conversation history
-- project memory files become stale or overloaded
-
-A2CR keeps the handoff compact. A WorkBaton says: goal, current state, next
-action, decisions, blockers, and validation. WorkStash can hold small temporary
-supporting notes that would make the WorkBaton too bulky.
+See `LICENSE`, `NOTICE`, `TRADEMARK.md`, and `docs/spec/LICENSE.md` for the
+current boundaries.
 
 ## Visual Overview
 
-### A2CR Basics
+### 1. The Basic Idea
 
-![A2CR Basics](docs/assets/github/a2cr-basics.png)
+A2CR keeps the useful resume state, not the whole conversation.
 
-### Save Rules and Cautions
+<p align="center">
+  <img src="docs/assets/github/a2cr-basics.png" alt="A2CR basics: WorkBaton stores compact handoff state and WorkStash stores optional supporting notes" width="900">
+</p>
 
-![Save Rules and Cautions](docs/assets/github/a2cr-save-rules.png)
+### 2. Save Rules
 
-### Basic Workflow
+Use A2CR for work state. Keep secrets, credentials, raw logs, and full
+transcripts out.
 
-![How to Use A2CR](docs/assets/github/a2cr-workflow.png)
+<p align="center">
+  <img src="docs/assets/github/a2cr-save-rules.png" alt="A2CR save rules and cautions: store only safe work state and avoid secrets or full logs" width="900">
+</p>
 
-## Product Layers
+### 3. Typical Workflow
 
-| Layer | Purpose | Status |
-| --- | --- | --- |
-| WorkBaton | Save a short-lived work checkpoint and resume it in a new AI window | First public-preview scope |
-| WorkStash | Store temporary supporting notes referenced by WorkBaton checkpoints | First public-preview scope |
-| WorkThreads | Shared work threads for active AI-agent coordination | Planned later |
+Save a WorkBaton, optionally reference WorkStash notes, then resume from a fresh
+AI window.
 
-## Quick Start
+<p align="center">
+  <img src="docs/assets/github/a2cr-workflow.png" alt="A2CR workflow: save compact state, store optional notes, and resume work in a new AI window" width="900">
+</p>
 
-Install or update the local MCP wrapper:
+## Why A2CR Exists
+
+Long AI work often fails at the handoff point. A new window needs the goal,
+current state, decisions, blockers, validation, and next action, but not the
+entire conversation.
+
+A2CR separates those jobs:
+
+| Layer | Purpose | Not for |
+|---|---|---|
+| WorkBaton | Compact resume checkpoint for the next AI window | Full transcripts, secrets, large files |
+| WorkStash | Temporary supporting notes referenced from WorkBaton | Durable knowledge base, credentials |
+| WorkThreads | Planned multi-agent coordination surface | Replacing WorkBaton handoff |
+
+Project memory files such as `AGENTS.md` or `CLAUDE.md` tell an AI how to work
+in a repository. WorkBaton tells the next AI where the current task stands.
+
+## Future Possibilities
+
+A2CR starts with a modest goal: make AI handoffs small, explicit, testable, and
+safer than copying a whole conversation history.
+
+There is a broader design question behind that goal:
+
+> What is the smallest useful state one agent can pass to another so real work
+> can continue safely?
+
+A2CR is an early attempt to explore that question in public. If different
+agents, tools, and developers settle on similar handoff shapes, context relay
+becomes easier to reuse across systems instead of staying inside one product.
+The goal is not to preserve everything an AI said. The goal is to give the next
+agent the few facts it needs to act with continuity, accountability, and
+restraint.
+
+If this pattern becomes a shared convention, it could apply beyond coding
+agents. Any AI system that needs to hand off work across tools, models, devices,
+or time can benefit from a compact state relay:
+
+- cross-client handoff between Codex, Claude Code, Roo Code, and other MCP clients
+- long-running research, support, operations, and documentation agents
+- multi-agent workspaces where agents coordinate without treating chat history
+  as the source of truth
+- industrial, operational, embodied, or physical AI, where a system may need to
+  pass the current task, asset or environment notes, inspection results, safety
+  constraints, validation status, and next action without exposing raw logs or
+  credentials
+
+That future depends on clear schemas, careful security boundaries, and real
+feedback from people building agent workflows. A2CR-style handoffs should not
+replace certified safety systems, human approval, or industrial control
+requirements; they are a way to make AI work state easier to inspect and relay.
+
+As WorkThreads matures, A2CR could also support richer coordination patterns.
+WorkBaton is for serial handoff, while WorkThreads is the planned space for
+shared work: agents could claim tasks, ask for review, record decisions, hand
+off partial results, surface blockers, and let humans inspect what changed
+before the next action. This could make A2CR useful not only for restarting one
+AI window, but also for coordinating teams of agents across software projects,
+research workflows, operations, and field or industrial tasks.
+
+One possible direction is portable IDs. Instead of tying a handoff to one chat
+window, one tool, or one vendor, a future handoff shape could carry stable
+identifiers that other agents can understand:
+
+```json
+{
+  "relay_id": "a2cr:relay:example-001",
+  "workspace_id": "workspace:demo-lab",
+  "task_id": "task:inspect-shelf-042",
+  "handoff_id": "handoff:agent-a-to-agent-b:001",
+  "actor_id": "agent:mobile-unit-01",
+  "environment_id": "env:warehouse-zone-3",
+  "asset_id": "asset:conveyor-07",
+  "inspection_id": "inspection:visual-check-2026-05-13",
+  "safety_case_id": "safety:keep-clear-zone-a"
+}
+```
+
+These IDs are examples, not required fields in the current wrapper. They show
+the kind of stable references that could make context relay reusable across
+software agents, physical systems, and future agent runtimes. They should not
+contain credentials, personal data, or secrets.
+
+If you are building agents, MCP clients, developer tools, robotics workflows,
+industrial AI systems, or long-running automation, this is the part we want to
+explore with you: what should a useful handoff contain, and what must it never
+contain?
+
+## Security Boundary
+
+WorkBaton and WorkStash bodies are encrypted locally by the stdio MCP wrapper
+before upload. A2CR stores ciphertext and cannot decrypt those bodies.
+
+A2CR is not a secret manager. Do not store API keys, passwords,
+access tokens, Authorization headers, cookies, private database URLs, local
+client keys, customer data, full transcripts, long logs, or large source-code
+bodies in WorkBaton or WorkStash.
+
+Use A2CR for work state, not credentials.
+
+## Install
 
 ```bash
 python -m pip install --upgrade a2cr-mcp
 ```
 
-Configure exactly one MCP server named `a2cr` through the local stdio wrapper.
-WorkBaton requires the local stdio wrapper so content is encrypted before upload.
-Do not configure the hosted `/mcp` URL directly for WorkBaton, do not guess REST
-endpoints, and do not use the old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings
-for normal AI-agent setup.
+Python 3.12 or 3.13 is recommended. Python 3.15 development builds are not
+supported.
 
-Codex-style local stdio example:
+## Configure MCP
+
+Create an A2CR API key from the hosted A2CR dashboard, then configure exactly
+one local stdio MCP server named `a2cr`.
+
+Codex-style TOML:
 
 ```toml
 [mcp_servers."a2cr"]
@@ -93,13 +196,12 @@ command = "a2cr-mcp"
 args = []
 
 [mcp_servers."a2cr".env]
-A2CR_API_KEY = "<your-a2cr-api-key>"
+A2CR_API_KEY = "YOUR_A2CR_API_KEY"
 A2CR_BASE_URL = "https://a2cr.app"
 A2CR_SERVICE_URL = "https://a2cr.app/mcp"
-# Optional: A2CR_CLIENT_KEY_FILE = "<path-to-workbaton.key>"
 ```
 
-Generic MCP stdio example:
+Generic MCP JSON:
 
 ```json
 {
@@ -108,7 +210,7 @@ Generic MCP stdio example:
       "command": "a2cr-mcp",
       "args": [],
       "env": {
-        "A2CR_API_KEY": "<your-a2cr-api-key>",
+        "A2CR_API_KEY": "YOUR_A2CR_API_KEY",
         "A2CR_BASE_URL": "https://a2cr.app",
         "A2CR_SERVICE_URL": "https://a2cr.app/mcp"
       }
@@ -117,253 +219,90 @@ Generic MCP stdio example:
 }
 ```
 
-The full API key is shown only once when it is issued. If you issue a new key,
-it is a different API key; update every MCP config that should keep using A2CR.
+The local wrapper creates a client key file on first encrypted save. If you need
+to resume the same WorkBaton from another PC, you need both the A2CR API key and
+the same local client key file.
 
-The local stdio MCP wrapper creates and stores the local client key in a local
-key file during the first client-encrypted save when no key file exists. Set
-`A2CR_CLIENT_KEY_FILE` to choose the path, or `A2CR_CONFIG_DIR` to choose the
-directory that contains `workbaton.key`. If neither variable is set, the default
-path is `%APPDATA%\A2CR\workbaton.key` on Windows, and
-`$XDG_CONFIG_HOME/a2cr/workbaton.key` or `~/.config/a2cr/workbaton.key` on
-macOS/Linux.
+## MCP Tools
 
-To resume the same WorkBaton from another PC, configure the A2CR API key and
-securely copy the same local client key file. The API key alone can access
-encrypted slot data, but it cannot decrypt the WorkBaton body.
+The wrapper exposes tools for:
 
-## How Agents Should Use It
+- `explain_a2cr_flows`
+- `get_account_limits`
+- `should_save_workbaton`
+- `save_context`
+- `resume_context`
+- `load_context`
+- `list_contexts`
+- `delete_context`
+- `should_use_work_stash`
+- `store_work_stash`
+- `get_work_stash`
+- `list_work_stash`
+- `delete_work_stash`
 
-Useful WorkBaton checkpoints are small:
+Primary save path: `save_context`.
 
-- goal
-- current state
-- next action
-- decisions
-- blockers
-- validation status
-- references to any needed WorkStash `entry_key` values
+Some MCP clients expose tools lazily. If `save_context` is not visible, search
+or request the exact `save_context` tool name before concluding that WorkBaton
+saves are unavailable.
 
-Avoid saving:
+## Examples
 
-- secrets
-- API keys
-- Authorization headers
-- private database URLs
-- local client key files
-- full chat transcripts
-- long logs
-- generated caches
-- large source files
+See:
 
-## Project Memory Files vs A2CR
+- `examples/codex-mcp-config.json`
+- `examples/claude-code-mcp-config.json`
+- `examples/roo-code-mcp-config.json`
+- `examples/workbaton-example.json`
+- `examples/workstash-example.json`
 
-`CLAUDE.md`, `AGENTS.md`, and similar project memory files are not a replacement
-for WorkBaton. They have different jobs:
+## Docs
 
-| Surface | Best for | Avoid using it for |
-| --- | --- | --- |
-| `CLAUDE.md` / `AGENTS.md` | Durable project rules, setup notes, coding conventions, and instructions the AI should read at the start of every session | Constantly changing task state, latest validation status, and "where we stopped just now" |
-| WorkBaton | Current handoff state: goal, `current_state`, `next_action`, recent decisions, blockers, and validation needed by the next AI window | Permanent documentation, full chat transcripts, long logs, secrets, or large source files |
-| WorkStash | Temporary supporting notes that would bloat the WorkBaton, such as confirmed file paths, API findings, failed approaches, and concise validation notes | Durable knowledge base content, secrets, full transcripts, or generated caches |
+- `docs/concepts.md`
+- `docs/mcp-setup.md`
+- `docs/security-model.md`
+- `docs/spec/README.md`
+- `docs/usage.md`
+- `docs/templates/skills/a2cr-agent/SKILL.md`
 
-Short version: project memory files describe how the AI should work in a
-repository. WorkBaton describes where the work is right now.
-
-## MCP / A2A / A2CR Positioning
-
-A2CR is complementary to MCP and A2A, not a replacement for either protocol.
-
-| Surface | Primary role | A2CR relationship |
-| --- | --- | --- |
-| MCP | Connects an AI agent to tools, APIs, and external data | A2CR is exposed to agents through MCP, but MCP itself is not the handoff memory |
-| A2A | Connects AI agents to other AI agents for delegation, communication, and collaboration | A2CR is not an agent-to-agent protocol; WorkBaton preserves the work state that a configured agent can resume |
-| A2CR | Carries compact work state across AI windows, models, tools, and time | Complements MCP and A2A by handing off `goal`, `current_state`, `next_action`, validation, and blockers across sessions |
-
-## Security Boundaries
-
-A2CR's hosted service uses Supabase/Postgres for the data layer and Railway for
-the app runtime. User-owned rows are separated with Supabase Row Level Security
-(RLS) and a least-privileged `a2cr_app` runtime role. Official WorkBaton saves
-are encrypted locally before upload, so the service stores ciphertext for
-WorkBaton bodies rather than plaintext.
-
-A2CR is designed so human-facing dashboards do not display saved context bodies.
-Dashboards should show metadata only, such as slot names, timestamps, sizes,
-counts, status, and logs.
-
-WorkBaton is client-encrypted only. The local stdio MCP wrapper encrypts
-WorkBaton content before sending it to A2CR and keeps the client key in a local
-key file. A2CR stores and returns ciphertext and cannot decrypt the WorkBaton
-body.
-
-Important principles:
-
-- do not log API keys or Authorization headers
-- do not log saved context bodies
-- do not expose decrypted content through dashboard APIs
-- reject plaintext WorkBaton bodies on A2CR APIs
-- use RLS and user-scoped access in the Web SaaS design
-- do not put Supabase service-role keys in normal runtime environments
-
-Users must understand that losing the local client key makes those WorkBaton
-slots unrecoverable. Creating a new key works for future saves, but it cannot
-decrypt slots saved with the old key.
-
-Supabase and Railway publish SOC 2 / compliance information for their platforms.
-That helps with vendor risk, but it does not make A2CR itself SOC 2 certified
-and does not replace A2CR's own RLS, client encryption, key hygiene, and smoke
-tests.
-
-## Current Implementation
-
-Implemented Web SaaS foundation:
-
-- Supabase/Postgres schema, RLS, and least-privileged runtime role design
-- API key and Supabase JWT auth foundation
-- WorkBaton Web Context API with plan limits and sanitized access logs
-- client-encrypted-only WorkBaton storage
-- Dashboard API that returns metadata, stats, logs, and API key state without saved content bodies
-- Streamable HTTP MCP `/mcp` as a service surface; the official AI-agent path for WorkBaton is the local stdio MCP wrapper so client encryption happens before upload
-- React/Vite dashboard UI for login, WorkBaton metadata, settings, API key management, and pricing
-- Railway Docker build wiring, production startup guards, same-origin guard, and deployment/security runbooks
-
-Legacy local prototype retained for development reference:
-
-- FastAPI context API
-- SQLite local storage
-- fixed Slot 1-5 support
-- Streamlit local dashboard
-- pytest coverage
-
-The legacy local SQLite WorkBaton API is disabled by default. It must not be
-used as the official AI-agent save path.
-
-## Local Development
+## Development
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -e . pytest
 python -m pytest -q
-cd web
-npm install
-npm run build
 ```
 
-Optional local services for development:
-
-```text
-API:     uvicorn main:app --host 127.0.0.1 --port 8000
-Web dev: npm run dev
-```
-
-## Deployment
-
-The MVP deployment target is one Railway Dockerfile service. The Dockerfile
-builds the React/Vite app, installs the Python runtime, copies `web/dist`, and
-starts FastAPI with Uvicorn.
-
-Railway health check:
-
-```text
-/api/v1/health
-```
-
-Maintenance cleanup command:
-
-```bash
-python -m services.maintenance expire-contexts
-```
-
-See [deploy runbook](docs/runbooks/deploy.md) and
-[security runbook](docs/runbooks/security.md).
+The compatibility entrypoint `mcp/server.py` imports the packaged
+`a2cr_mcp.server`. New setups should prefer the installed `a2cr-mcp` command.
 
 ## Contributing
 
-A2CR is an early public-preview project, and community feedback is very welcome.
+This project was started by a non-programmer using GPT and Claude as no-code /
+AI-assisted development partners. Contributions are welcome, especially around
+agent workflow design, MCP client setup, documentation clarity, safety review,
+and small reproducible tests.
 
-Useful contributions include:
+This is a source-available/open-core project, not a broad OSI-approved open
+source release. Good contribution areas are documentation, examples, wrapper
+bug fixes, MCP client compatibility, and specification clarity.
 
-- trying the MCP wrapper in real AI coding workflows
-- reporting confusing setup steps or documentation gaps
-- filing bugs with clear reproduction steps
-- suggesting safer defaults for WorkBaton and WorkStash
-- improving docs, examples, onboarding, and compatibility notes
-- reviewing security boundaries and privacy wording
-
-Please do not include secrets, API keys, Authorization headers, private database
-URLs, local client key files, decrypted WorkBaton or WorkStash bodies, full chat
-transcripts, or other user data in public issues.
-
-A2CR is being built in the open because AI-assisted development has a real
-context handoff problem, and solving it well will take more than one person's
-workflow.
-
-## Support And Security
-
-- General support: a2cr.mcp@gmail.com
-- Security reports: a2cr.mcp@gmail.com, or GitHub Private Vulnerability Reporting
-  when enabled on the public repository
-- Privacy requests: a2cr.mcp@gmail.com
-- X: @A2CR_MCP
-- Discord: a2cr.mcp (reserved; public community/support use is pending a
-  moderation policy)
-
-## Documentation
-
-- Usage guide: `docs/usage.md`
-- Public contact email setup: `docs/runbooks/public-contact-email-setup.md`
-- MCP Baton vs Threads flow: `docs/runbooks/mcp-baton-vs-threads-flow.md`
-- WorkBaton autonomous save spec: `docs/runbooks/workbaton-autonomous-save-spec.md`
-- Deploy runbook: `docs/runbooks/deploy.md`
-- Disaster recovery runbook: `docs/runbooks/disaster-recovery.md`
-- Security runbook: `docs/runbooks/security.md`
-- Data lifecycle runbook: `docs/runbooks/data-lifecycle.md`
-- WorkThreads runbook: `docs/runbooks/workthreads.md`
-- Security/resilience baseline: `docs/superpowers/specs/2026-05-06-a2cr-security-resilience-plan.md`
-- Optional AI client Skill template: `docs/templates/skills/a2cr-agent/SKILL.md`
-- Service cost estimate: `docs/a2cr-service-cost-estimate.md`
-- GitHub publication draft: `docs/github-publication-draft.md`
-
-## Project Note
-
-A2CR started as an AI-assisted project by a solo builder without a traditional
-software engineering background. GPT and Claude were used heavily for
-implementation, review, documentation, and iteration.
-
-That origin is part of why A2CR focuses on durable AI work handoff: when AI
-tools help build real software, losing context between sessions becomes a
-practical engineering problem.
-
-## License
-
-TBD before OSS publication. Choose and add an open-source license before making
-the repository public.
-
----
+Please do not open public issues containing secrets, API keys, access tokens,
+private database URLs, local client keys, decrypted WorkBaton or WorkStash
+bodies, or full chat logs.
 
 ## 日本語概要
 
-A2CR は、AI エージェントの作業状態を次の会話窓、別のモデル、別の MCP 対応クライアントへ引き継ぐためのコンテキスト中継レイヤーです。
+A2CR は、AI エージェントが作業状態を短く保存し、新しい AI 窓で続きを再開するためのコンテキスト引き継ぎレイヤーです。
 
-たとえば、長い実装作業の途中でチャットが長くなったり、モデルを切り替えたり、新しい AI 窓へ移ったりすると、「何をやっていたか」「何が検証済みか」「次に何をするべきか」が失われがちです。A2CR はその引き継ぎ状態を WorkBaton として短く保存し、必要に応じて WorkStash に補助メモを分けて残します。
+- WorkBaton: 次の AI に渡す短い引き継ぎ
+- WorkStash: WorkBaton に入れると大きすぎる一時的な補助メモ
+- WorkThreads: 将来予定の複数エージェント協調
 
-### 主な考え方
+この公開リポジトリは、source-available なローカル stdio MCP wrapper、WorkBaton Format の公開仕様入口、設定例、ドキュメント、サンプルを中心にしています。ホスト型サービス本体、DB、課金、管理画面、デプロイ秘密情報は含めません。
 
-- WorkBaton は、次の AI が作業を再開するための短い引き継ぎです。
-- WorkStash は、WorkBaton に入れると大きくなりすぎる補助メモを一時的に置く場所です。
-- A2CR はサーバー側で LLM 推論を行いません。
-- 公式の WorkBaton 保存経路では、ローカル stdio MCP wrapper がアップロード前に本文を暗号化します。
-- A2CR のダッシュボードは、保存本文ではなくメタデータを扱う設計です。
-- Free public preview では WorkBaton と WorkStash を中心に進め、課金や WorkThreads は後続フェーズです。
+A2CR は軽量な open-core モデルです。WorkBaton Format は広く実装できるように公開し、公式クライアント `a2cr-mcp` は source-available として提供し、ホスト型 relay service は proprietary SaaS として維持します。BUSL 系の条件を使うため、このリポジトリ全体を OSI 認定の OSS としては扱いません。
 
-### OSSとして協力してほしいこと
+WorkBaton / WorkStash の本文はローカルで暗号化されますが、A2CR は秘密情報保管庫ではありません。API キー、パスワード、トークン、DB URL、ローカル client key、個人情報、全文ログなどは保存しないでください。
 
-A2CR はまだ初期の public-preview project です。実際の AI コーディング作業で試した結果、セットアップで詰まった点、ドキュメントの分かりにくい箇所、安全境界の表現、MCP クライアントごとの互換性メモなどを歓迎します。
-
-Issue には、API キー、Authorization header、private database URL、ローカル client key、復号済みの WorkBaton / WorkStash 本文、全文チャットログなどの機密情報を含めないでください。
-
-### プロジェクトの背景
-
-A2CR は、従来の開発経験がない個人が GPT と Claude を活用して作り始めた AI-assisted project です。
-
-この背景があるからこそ、A2CR は「AI と一緒に実際のソフトウェアを作るとき、作業文脈をどう安全に次へ渡すか」を実用上の問題として扱っています。完璧な完成品としてではなく、同じ課題を持つ人たちと育てていく OSS として公開準備を進めています。
+将来的に A2CR のような短い作業状態の引き継ぎ形式が広く使える形になれば、コーディング支援だけでなく、調査、運用、サポート、複数エージェント協調、工業用 AI、現場運用 AI、さらにフィジカル AI のような領域にも応用できる可能性があります。A2CR は、「AI が次の AI に安全に作業を渡すための最小状態とは何か」を公開の場で探る試みです。WorkThreads が拡張されれば、複数の AI がタスクを分担し、判断、レビュー、未解決点、次の行動を共有する協調レイヤーにもなり得ます。たとえば `task_id`、`handoff_id`、`workspace_id`、`environment_id`、`asset_id`、`inspection_id` のような安定した ID を使えば、特定のチャット画面やベンダーに閉じない引き継ぎがしやすくなります。ただし、安全制御や人間の承認を置き換えるものではありません。まずは安全で小さく検証しやすい MCP wrapper として育てていきます。

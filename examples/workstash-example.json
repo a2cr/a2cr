@@ -1,0 +1,8 @@
+{
+  "entry_key": "login-refresh-notes-v1",
+  "tags": [
+    "auth",
+    "debugging"
+  ],
+  "value": "Token refresh returns 401 only after the cached access token expires. Confirmed path: src/auth/session.ts. Do not store real tokens here."
+}

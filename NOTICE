@@ -1,0 +1,26 @@
+A2CR Notice
+
+A2CR uses a lightweight open-core model.
+
+The WorkBaton Format is public so AI agents, MCP clients, and developer tools
+can interoperate around compact handoff state.
+
+The official A2CR MCP client (`a2cr-mcp`) is source-available. You may inspect
+it, use it for personal or internal work, contribute improvements, and use it
+to connect to the official hosted A2CR service at https://a2cr.app.
+
+You may implement the WorkBaton Format without permission.
+
+You may truthfully state that your software implements the WorkBaton Format or
+is compatible with the WorkBaton Format.
+
+You may not use the A2CR name, logo, or official compatibility claims in a way
+that implies endorsement, certification, or official affiliation.
+
+Offering a competing hosted or managed A2CR-compatible relay service based on
+the official A2CR MCP client (`a2cr-mcp`) requires a commercial license from
+A2CR.
+
+The hosted A2CR service, dashboard, billing, production database schema,
+deployment operations, and administrative tooling are proprietary and are not
+included in this public repository.

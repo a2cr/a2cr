@@ -1,61 +1,70 @@
 # Security Policy
 
-A2CR is an early prototype and is not production-ready yet.
+A2CR handles AI-agent working state. Treat that state carefully even when it is
+client-encrypted.
 
-## Reporting a Vulnerability
+## Supported Scope
 
-Please do not publish vulnerability details in public issues, discussions, or
-social posts.
+This public repository covers:
 
-Preferred reporting path:
+- the `a2cr-mcp` local stdio MCP wrapper
+- WorkBaton and WorkStash client-side encryption behavior
+- public setup examples
+- AI-agent safety guidance
+- documentation and tests for the public wrapper
 
-- GitHub Private Vulnerability Reporting, when enabled on the public repository
+The hosted service implementation, production database, billing, deployment,
+and admin tooling are outside this public repository.
 
-Backup reporting path:
+## Current Security Boundary
 
-- a2cr.mcp@gmail.com
+The local stdio MCP wrapper encrypts WorkBaton and WorkStash bodies before
+upload. A2CR receives ciphertext and cannot decrypt those bodies without the
+user's local client key.
 
-General support and privacy requests should also go to a2cr.mcp@gmail.com.
+The local client key remains user-owned. If it is lost, A2CR cannot recover old
+client-encrypted WorkBaton or WorkStash bodies.
 
-When reporting a vulnerability, include a concise reproduction, affected
-version or commit, affected surface, and sanitized logs if useful. Do not
-include secrets, API keys, Authorization headers, cookies, private database
-URLs, local client key files, decrypted WorkBaton or WorkStash bodies, full
-chat transcripts, or other user data.
+## Not A Secret Manager
 
-A2CR is an early public-preview project, so response times are best effort. The
-target for security reports is an initial human response within 7 days.
+A2CR is not a secret manager.
 
-## Security Scope
+Do not store:
 
-Sensitive areas include:
+- API keys, passwords, access tokens, Authorization headers, cookies, or session IDs
+- local client keys or recovery key material
+- private database URLs, `.env` contents, deployment secrets, or service-role keys
+- personal data, customer data, payment data, or confidential business data
+- full transcripts, long logs, generated caches, git diffs, or large source-code bodies
 
-- API key generation, storage, and verification
-- WorkBaton context bodies
-- planned WorkThreads message bodies
-- dashboard APIs that must not return saved content bodies
-- logs and audit events
-- Supabase RLS and user isolation in the planned Web SaaS
-- deployment secrets such as Fernet keys, DB URLs, Supabase keys, Stripe keys, and OAuth secrets
-- local client-encryption key files used by the stdio MCP wrapper
+Encryption protects against A2CR reading the body. It does not remove the risk
+that a future AI window, local machine, copied resume prompt, log, issue, or PR
+could expose decrypted content.
 
-## Current Guarantees
+## Reporting A Vulnerability
 
-WorkBaton is client-encrypted only. The local stdio MCP wrapper encrypts WorkBaton content before sending it to A2CR and keeps the client key in a local key file. A2CR stores and returns ciphertext and cannot decrypt the WorkBaton body.
+Please do not publish vulnerability details in a public issue.
 
-A2CR APIs reject plaintext WorkBaton bodies. Direct remote HTTP MCP saving is disabled for WorkBaton because encryption must happen before upload.
+Use GitHub private vulnerability reporting or contact the repository owner
+privately. Include:
 
-Saved context bodies are not exposed through normal admin dashboards, support tooling, or direct database inspection because A2CR does not possess the local client key.
+- affected version or commit
+- reproduction steps
+- expected and observed behavior
+- whether any secrets or personal data were exposed
 
-The project does not currently claim:
-
-- production readiness
-- full end-to-end encryption for the whole product
-- zero-knowledge encryption for WorkThreads
-- autonomous server-side AI execution
-
-If the local client key is lost, A2CR cannot recover those WorkBaton bodies. Creating a new key works for future saves, but it cannot decrypt slots saved with the old key.
+Do not include real API keys, tokens, local client key files, or decrypted
+WorkBaton / WorkStash bodies in the report.
 
 ## Public Repository Hygiene
 
-Before making this repository public, confirm that no secrets, local API keys, `.env` files, logs, local databases, private MCP configs, or local A2CR client key files are tracked.
+Before publishing or accepting large changes, confirm that the repository does
+not contain:
+
+- real `.env` files
+- local databases
+- logs
+- production credentials
+- local MCP configs with real keys
+- local A2CR client key files
+- private service implementation code

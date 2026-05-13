@@ -14,6 +14,8 @@ CONTENT = {
     "next_action": "assert",
 }
 
+TEST_API_KEY = "TEST_API_KEY_SHOULD_NOT_LEAK"
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -420,7 +422,7 @@ def test_mcp_stdio_should_save_workbaton_refuses_prohibited_material():
 
 def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
     monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example")
-    monkeypatch.setenv("A2CR_API_KEY", "sk-a2cr-secret")
+    monkeypatch.setenv("A2CR_API_KEY", TEST_API_KEY)
     monkeypatch.setenv("A2CR_API_STYLE", "legacy")
 
     server = load_stdio_server()
@@ -432,7 +434,7 @@ def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
     assert server._load_slot_number_url(2) == "https://a2cr.example/api/v1/context/slot/2"
     assert server._delete_url("slot-a") == "https://a2cr.example/api/v1/context/slot-a"
     assert server._HEADERS == {
-        "Authorization": "Bearer sk-a2cr-secret",
+        "Authorization": f"Bearer {TEST_API_KEY}",
         "X-A2CR-Client-Type": "mcp",
     }
 
@@ -492,7 +494,7 @@ def test_mcp_stdio_resume_prompt_is_slot_first_and_endpoint_safe(monkeypatch):
 
 
 def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
-    monkeypatch.setenv("A2CR_API_KEY", "sk-a2cr-secret")
+    monkeypatch.setenv("A2CR_API_KEY", TEST_API_KEY)
     server = load_stdio_server()
 
     class FakeResponse:
@@ -500,15 +502,15 @@ def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
             request = server.httpx.Request(
                 "GET",
                 "https://a2cr.example/api/v1/account/limits",
-                headers={"Authorization": "Bearer sk-a2cr-secret"},
+                headers={"Authorization": f"Bearer {TEST_API_KEY}"},
             )
             response = server.httpx.Response(
                 401,
                 request=request,
-                text="Authorization: Bearer sk-a2cr-secret request_body_secret",
+                text=f"redaction target {TEST_API_KEY} request_body_secret",
             )
             raise server.httpx.HTTPStatusError(
-                "Authorization: Bearer sk-a2cr-secret request_body_secret",
+                f"redaction target {TEST_API_KEY} request_body_secret",
                 request=request,
                 response=response,
             )
@@ -521,7 +523,7 @@ def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
             return False
 
         def get(self, url, headers, timeout):
-            assert headers["Authorization"] == "Bearer sk-a2cr-secret"
+            assert headers["Authorization"] == f"Bearer {TEST_API_KEY}"
             return FakeResponse()
 
     monkeypatch.setattr(server.httpx, "Client", FakeClient)
@@ -533,7 +535,7 @@ def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
     assert message == "A2CR HTTP request failed with status 401"
     assert "Authorization" not in message
     assert "Bearer" not in message
-    assert "sk-a2cr-secret" not in message
+    assert TEST_API_KEY not in message
     assert "request_body_secret" not in message
 
 
