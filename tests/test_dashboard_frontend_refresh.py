@@ -58,12 +58,29 @@ def test_slot_card_shows_size_against_plan_limit():
 
 
 def test_pricing_copy_uses_planned_eight_dollar_pro_price():
+    pricing = read("web/src/pages/PricingPage.tsx")
     i18n = read("web/src/i18n.ts")
 
+    assert 'price={t("pricing.proPrice")}' in pricing
     assert 'proPrice: "$8 / month"' in i18n
     assert 'proPrice: "$8 / 月"' in i18n
     assert "$5 / month" not in i18n
     assert "$5 / 月" not in i18n
+
+
+def test_pricing_page_explains_workbaton_and_workstash_limits():
+    pricing = read("web/src/pages/PricingPage.tsx")
+    i18n = read("web/src/i18n.ts")
+
+    assert 't("pricing.workBatonSaves")' in pricing
+    assert 't("pricing.workBatonLoads")' in pricing
+    assert 't("pricing.workStashWrites")' in pricing
+    assert 't("pricing.workStashReads")' in pricing
+    assert '"400 / hour"' in pricing
+    assert '"800 / hour"' in pricing
+    assert "How to read these limits" in i18n
+    assert "WorkStash is supporting memory" in i18n
+    assert "Do not store secrets in WorkBaton or WorkStash" in i18n
 
 
 def test_access_log_table_uses_slot_numbers_and_badges():

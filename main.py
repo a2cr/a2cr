@@ -456,16 +456,28 @@ ROUTE_SEO = {
         - 5 Slots
         - Retention options up to 24 hours
         - 24KB WorkBaton body budget
+        - 256KB WorkStash storage
         - 100 saves per hour
         - 200 loads per hour
+        - 200 WorkStash writes per hour
+        - 300 WorkStash reads per hour
 
         Planned Pro plan:
+        - $8 per month planned
         - 50 Slots
         - Longer retention options
         - 64KB WorkBaton body budget
+        - 1024KB WorkStash storage
         - 300 saves per hour
         - 600 loads per hour
+        - 400 WorkStash writes per hour
+        - 800 WorkStash reads per hour
         - Planned WorkThreads support
+
+        Notes:
+        - Free is the public-preview plan for everyday WorkBaton and WorkStash use.
+        - Pro is planned and not available until checkout is enabled.
+        - WorkBaton and WorkStash are for work state, not secrets or credentials.
         """,
     ),
 }
