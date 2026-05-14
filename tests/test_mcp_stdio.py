@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import httpx
 import pytest
 
 
@@ -120,6 +121,68 @@ def test_mcp_stdio_client_encrypted_load_reports_missing_key(tmp_path, monkeypat
     assert loaded["agent_continuity_guidance"]["use_proactively"] is True
 
 
+def test_mcp_stdio_http_errors_include_safe_diagnostics(monkeypatch):
+    server = load_stdio_server()
+    request = httpx.Request("GET", "https://a2cr.app/api/v1/context/test")
+    response = httpx.Response(
+        503,
+        json={
+            "code": "db_lock_timeout",
+            "message": "Database is busy. Retry shortly. sk-a2cr-secret",
+            "request_id": "req-safe-1",
+            "action": "context.save",
+        },
+        headers={"Retry-After": "2"},
+        request=request,
+    )
+
+    with pytest.raises(RuntimeError) as exc:
+        server._raise_for_status(response)
+
+    message = str(exc.value)
+    assert "status 503" in message
+    assert "code=db_lock_timeout" in message
+    assert "action=context.save" in message
+    assert "request_id=req-safe-1" in message
+    assert "retry_after=2" in message
+    assert "sk-a2cr-secret" not in message
+
+
+def test_mcp_stdio_http_errors_use_safe_error_code_header(monkeypatch):
+    server = load_stdio_server()
+    request = httpx.Request("GET", "https://a2cr.app/api/v1/context/test")
+    response = httpx.Response(
+        503,
+        json={"message": "Database is busy."},
+        headers={"X-A2CR-Error-Code": "db_lock_timeout", "X-Request-ID": "req-safe-2"},
+        request=request,
+    )
+
+    with pytest.raises(RuntimeError) as exc:
+        server._raise_for_status(response)
+
+    message = str(exc.value)
+    assert "code=db_lock_timeout" in message
+    assert "request_id=req-safe-2" in message
+
+
+def test_mcp_stdio_http_errors_do_not_echo_non_json_body(monkeypatch):
+    server = load_stdio_server()
+    request = httpx.Request("GET", "https://a2cr.app/api/v1/context/test")
+    response = httpx.Response(
+        500,
+        content=b"Authorization: Bearer sk-a2cr-secret",
+        request=request,
+    )
+
+    with pytest.raises(RuntimeError) as exc:
+        server._raise_for_status(response)
+
+    message = str(exc.value)
+    assert message == "A2CR HTTP request failed with status 500"
+    assert "sk-a2cr-secret" not in message
+
+
 def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypatch):
     monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
     server = load_stdio_server()
@@ -167,6 +230,82 @@ def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypat
     assert "content" not in captured["json"]
     assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
     assert CONTENT["goal"] not in captured["json"]["encrypted_content"]["ciphertext"]
+
+
+def test_mcp_stdio_save_normalizes_display_model_source(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "slot_name": "slot-a",
+                "slot_number": 1,
+                "expires_at": "2026-05-06T00:00:00",
+                "compressed_tokens": 10,
+                "saved_tokens": None,
+            }
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, json, headers, timeout):
+            captured["json"] = json
+            captured["headers"] = headers
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    server.save_context("slot-a", CONTENT, model_source="Codex GPT-5", slot_number=1)
+
+    assert captured["json"]["model_source"] == "codex"
+    assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
+
+
+def test_mcp_stdio_save_maps_unknown_model_source_to_other(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "slot_name": "slot-a",
+                "slot_number": 1,
+                "expires_at": "2026-05-06T00:00:00",
+                "compressed_tokens": 10,
+                "saved_tokens": None,
+            }
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, json, headers, timeout):
+            captured["json"] = json
+            captured["headers"] = headers
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    server.save_context("slot-a", CONTENT, model_source="Future Model 9", slot_number=1)
+
+    assert captured["json"]["model_source"] == "other"
+    assert captured["headers"]["X-A2CR-Client-Type"] == "other"
 
 
 def test_mcp_stdio_save_adds_preferred_response_language(tmp_path, monkeypatch):
