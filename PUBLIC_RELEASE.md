@@ -33,11 +33,13 @@ use, test, and implement the public A2CR client/spec surface.
 - `TRADEMARK.md`
 - `CONTRIBUTING.md`
 - `.env.example`
+- `server.json`
 - `pyproject.toml`
 - `a2cr_mcp/`
 - `mcp/`
 - `docs/concepts.md`
 - `docs/mcp-setup.md`
+- `docs/mcp-registry-publishing.md`
 - `docs/security-model.md`
 - `docs/usage.md`
 - `docs/spec/`
@@ -99,6 +101,7 @@ Before publishing to `a2cr/a2cr`, verify:
 - `LICENSE`, `NOTICE`, `TRADEMARK.md`, and `docs/spec/LICENSE.md` are present
 - `SECURITY.md` and `SECURITY_CHECKLIST.md` are present
 - `docs/spec/` contains implementation-level spec files, schemas, examples, and conformance guidance
+- `server.json` matches the PyPI package version and README `mcp-name` verification string
 - the branch being pushed contains only intended public-release files
 - GitHub Settings are configured for Dependabot alerts, secret scanning, CodeQL/code scanning, branch protection, and pull-request based merges
 

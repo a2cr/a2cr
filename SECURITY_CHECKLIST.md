@@ -73,6 +73,15 @@ These checks apply to the private hosted service, not this public repository:
 - [ ] Decryption failures do not leak body content or key material.
 - [ ] Error responses do not expose stack traces in production.
 
+## MCP Registry Publishing
+
+- [ ] `server.json` names the public server as `io.github.a2cr/a2cr-mcp`.
+- [ ] `server.json` version matches `pyproject.toml` and `a2cr_mcp/_version.py`.
+- [ ] The PyPI README includes `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
+- [ ] `a2cr-mcp` has been published to PyPI before publishing Registry metadata.
+- [ ] `mcp-publisher publish server.json --dry-run` passes before the immutable publish.
+- [ ] Registry publishing is performed from `a2cr/a2cr` or with an authentication method that controls the `io.github.a2cr/*` namespace.
+
 ## Local Free Security Tools
 
 Run what is practical for the current surface:

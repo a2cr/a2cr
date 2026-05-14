@@ -65,11 +65,14 @@ def test_public_repository_contains_expected_reference_material():
         ".github/workflows/ci.yml",
         ".github/workflows/codeql.yml",
         ".github/workflows/dependency-review.yml",
+        ".github/workflows/publish-mcp-registry.yml",
+        "server.json",
         "pyproject.toml",
         "a2cr_mcp/server.py",
         "mcp/server.py",
         "docs/concepts.md",
         "docs/mcp-setup.md",
+        "docs/mcp-registry-publishing.md",
         "docs/security-model.md",
         "docs/spec/LICENSE.md",
         "docs/spec/README.md",
@@ -142,6 +145,31 @@ def test_public_docs_explain_open_core_boundaries():
     assert "CC BY 4.0" in docs
     assert "Apache-2.0" in docs
     assert "OSI-approved open source" in docs
+
+
+def test_mcp_registry_metadata_matches_package_readme():
+    import json
+
+    server = json.loads(read("server.json"))
+    readme = read("README.md")
+
+    assert server["$schema"] == "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
+    assert server["name"] == "io.github.a2cr/a2cr-mcp"
+    assert server["version"] == "0.1.5"
+    assert "<!-- mcp-name: io.github.a2cr/a2cr-mcp -->" in readme
+
+    package = server["packages"][0]
+    assert package["registryType"] == "pypi"
+    assert package["identifier"] == "a2cr-mcp"
+    assert package["version"] == server["version"]
+    assert package["transport"]["type"] == "stdio"
+
+    api_key_env = next(
+        item for item in package["environmentVariables"]
+        if item["name"] == "A2CR_API_KEY"
+    )
+    assert api_key_env["isRequired"] is True
+    assert api_key_env["isSecret"] is True
 
 
 def test_public_docs_define_security_responsibility_boundary():

@@ -4,6 +4,8 @@
 
 # A2CR
 
+<!-- mcp-name: io.github.a2cr/a2cr-mcp -->
+
 Agent-to-Agent Context Relay.
 
 A2CR is a lightweight context relay layer for AI agents. It lets an agent save

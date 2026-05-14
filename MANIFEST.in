@@ -2,6 +2,7 @@ include README.md
 include LICENSE
 include SECURITY.md
 include CONTRIBUTING.md
+include server.json
 include pyproject.toml
 recursive-include a2cr_mcp *.py
 recursive-include mcp *.py

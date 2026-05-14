@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.a2cr/a2cr-mcp",
+  "title": "A2CR",
+  "description": "Save WorkBaton checkpoints and WorkStash notes for AI agent handoffs.",
+  "repository": {
+    "url": "https://github.com/a2cr/a2cr",
+    "source": "github"
+  },
+  "version": "0.1.5",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "a2cr-mcp",
+      "version": "0.1.5",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "A2CR_API_KEY",
+          "description": "A2CR API key from the a2cr.app dashboard.",
+          "format": "string",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "A2CR_BASE_URL",
+          "description": "Optional A2CR service URL override. Leave unset for https://a2cr.app.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "https://a2cr.app"
+        }
+      ]
+    }
+  ]
+}
