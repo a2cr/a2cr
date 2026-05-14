@@ -193,6 +193,11 @@ def test_official_distribution_roadmap_keeps_remote_boundaries_explicit():
     assert "raw PyPI stdio package directly" in docs
     assert "mcp-publisher validate server.json" in docs
     assert "publish server.json --dry-run" not in docs
+    assert "P1 completion is the service-start line" in docs
+    assert "A2CR public preview is live" in docs
+    assert "Promotion starts after P1" in docs
+    assert "development can continue in parallel" in docs
+    assert "not a blocker for P1" in docs
 
 
 def test_public_docs_define_security_responsibility_boundary():

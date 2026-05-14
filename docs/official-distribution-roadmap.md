@@ -22,6 +22,11 @@ The first official listing target is the neutral MCP Registry entry
 `io.github.a2cr/a2cr-mcp`. Claude and OpenAI should not block the initial public
 release.
 
+P1 completion is the service-start line. A2CR should not be marketed as launched
+until the public repository, PyPI package, and official MCP Registry entry are
+all live and a fresh production smoke test passes. After that point, it is
+accurate to announce A2CR as a public preview.
+
 ## Why The Order Matters
 
 The current A2CR wrapper encrypts WorkBaton and WorkStash bodies locally before
@@ -43,11 +48,77 @@ For that reason:
 
 | Phase | Target | Artifact | Status | Exit criteria |
 |---|---|---|---|---|
-| P0 | Public release | `a2cr/a2cr`, `a2cr-mcp==0.1.5`, docs, examples | Prepared | Public repo is pushed, tests pass, package builds, PyPI release is live. |
-| P1 | Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Ready after PyPI | Registry dry run passes, publish succeeds, search result is visible. |
-| P2 | Claude local distribution | Claude Desktop Extension / MCPB wrapping `a2cr-mcp` | Next | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, submission assets are ready. |
+| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.5`, docs, examples | Prepared | Public repo is pushed, tests pass, package builds, PyPI release is live. |
+| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Ready after PyPI | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
+| P2 | Claude local distribution | Claude Desktop Extension / MCPB wrapping `a2cr-mcp` | Post-launch | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
 | P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, test account, privacy docs, and hosted-service scaling are ready. |
+
+## Service Start Definition
+
+A2CR's service start is **P1 complete**, not merely the GitHub repository going
+public. This keeps the launch promise tied to a user-visible distribution path:
+a user can find the project, install the wrapper from PyPI, discover it in the
+MCP Registry, and complete a real save/resume flow against production.
+
+Service start criteria:
+
+- `a2cr/a2cr` is public and contains only the intended public client, specs,
+  docs, examples, and focused tests.
+- `a2cr-mcp==0.1.5` is live on PyPI and can be installed in a fresh environment.
+- The PyPI README contains `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
+- The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible in
+  search.
+- Production health/readiness checks pass.
+- A fresh API key can save and resume a harmless WorkBaton through the PyPI
+  package.
+- Public docs explain local encryption, local client key loss, support contact,
+  security reporting, and the rule that A2CR is not a secret manager.
+
+At that point, the launch language should be:
+
+```text
+A2CR public preview is live.
+```
+
+Avoid stronger claims such as GA, enterprise-ready, SLA-backed, or official
+Claude/OpenAI support until those phases are actually complete.
+
+## Promotion After P1
+
+Promotion starts after P1, not before it. The initial promotion should present
+A2CR as a public preview for AI-agent handoff, centered on the local stdio MCP
+wrapper, WorkBaton, WorkStash, local encryption, and the MCP Registry listing.
+
+Launch promotion checklist:
+
+- publish a short release note for `a2cr-mcp==0.1.5`
+- announce the public repository, PyPI package, and MCP Registry entry together
+- explain the core setup path: get API key, install from PyPI, configure MCP
+  client, save/resume a WorkBaton
+- link to the security model and remind users not to store secrets
+- collect early setup friction and error reports before expanding channels
+- prioritize fixes for installation, docs, onboarding, and wrapper errors during
+  the first feedback loop
+
+## Post-Launch Product Track
+
+P2 and later distribution work should start after service launch. WorkThreads
+development can continue in parallel, but it is not a blocker for P1 or the
+public preview announcement.
+
+WorkThreads post-launch track:
+
+| Stage | Goal | Exit criteria |
+|---|---|---|
+| WT0 | Refresh WorkThreads design for the post-launch product | Security model, retention, rate limits, task/lease model, and dashboard visibility are written down. |
+| WT1 | Build a private MVP | Agents can create a thread, append/read work notes, claim/complete bounded tasks, and avoid consultation loops in tests. |
+| WT2 | Limited user preview | WorkThreads can be disabled independently, has abuse limits, has clear docs that it is not WorkBaton-style local-key encryption, and has support/debug runbooks. |
+
+WorkThreads must keep a separate privacy claim from WorkBaton. WorkBaton and
+WorkStash bodies are locally encrypted before upload. WorkThreads is a shared
+coordination layer and needs its own explicit security boundary before it is
+marketed to users.
 
 ## Channel Design
 
