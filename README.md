@@ -281,6 +281,7 @@ See:
 - `docs/concepts.md`
 - `docs/mcp-setup.md`
 - `docs/security-model.md`
+- `docs/official-distribution-roadmap.md`
 - `SECURITY_CHECKLIST.md`
 - `docs/spec/README.md`
 - `docs/spec/workbaton-format.md`

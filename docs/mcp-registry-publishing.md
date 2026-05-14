@@ -75,6 +75,21 @@ The workflow uses GitHub OIDC for MCP Registry authentication and requires no
 dedicated MCP Registry secret. It does not publish to PyPI; PyPI release remains
 a separate step.
 
+## Relationship To Claude And OpenAI
+
+The MCP Registry entry is the first official distribution target because it
+matches the current public artifact: a local stdio wrapper distributed through
+PyPI.
+
+Claude and OpenAI directory submissions are tracked separately in
+`docs/official-distribution-roadmap.md`. In short:
+
+- Claude should receive a local MCPB/Desktop Extension package first, because
+  that preserves local encryption.
+- OpenAI public distribution should be designed as an Apps SDK remote MCP app
+  only after the remote plaintext/privacy boundary is explicit.
+- Remote Claude or OpenAI submissions should not block the first public release.
+
 ## References
 
 - https://modelcontextprotocol.io/registry/quickstart

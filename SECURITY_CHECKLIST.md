@@ -82,6 +82,16 @@ These checks apply to the private hosted service, not this public repository:
 - [ ] `mcp-publisher publish server.json --dry-run` passes before the immutable publish.
 - [ ] Registry publishing is performed from `a2cr/a2cr` or with an authentication method that controls the `io.github.a2cr/*` namespace.
 
+## Claude And OpenAI Distribution
+
+- [ ] `docs/official-distribution-roadmap.md` matches the current release strategy.
+- [ ] The first official listing remains the MCP Registry entry for the local stdio wrapper.
+- [ ] Claude local distribution uses an MCPB/Desktop Extension or plugin package rather than submitting the raw PyPI stdio package directly.
+- [ ] OpenAI public distribution is treated as an Apps SDK / remote MCP app, not as the current local stdio wrapper.
+- [ ] Any remote Claude or OpenAI submission has a written plaintext/privacy boundary before review.
+- [ ] Remote tool metadata accurately marks read-only, write, delete, and destructive behavior.
+- [ ] Reviewer test accounts contain only disposable data and no production secrets.
+
 ## Local Free Security Tools
 
 Run what is practical for the current surface:

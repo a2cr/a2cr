@@ -73,6 +73,7 @@ def test_public_repository_contains_expected_reference_material():
         "docs/concepts.md",
         "docs/mcp-setup.md",
         "docs/mcp-registry-publishing.md",
+        "docs/official-distribution-roadmap.md",
         "docs/security-model.md",
         "docs/spec/LICENSE.md",
         "docs/spec/README.md",
@@ -170,6 +171,26 @@ def test_mcp_registry_metadata_matches_package_readme():
     )
     assert api_key_env["isRequired"] is True
     assert api_key_env["isSecret"] is True
+
+
+def test_official_distribution_roadmap_keeps_remote_boundaries_explicit():
+    docs = "\n".join(
+        [
+            read("docs/mcp-registry-publishing.md"),
+            read("docs/official-distribution-roadmap.md"),
+            read("SECURITY_CHECKLIST.md"),
+            read("PUBLIC_RELEASE.md"),
+        ]
+    )
+
+    assert "io.github.a2cr/a2cr-mcp" in docs
+    assert "Claude Desktop Extension" in docs
+    assert "MCPB" in docs
+    assert "Apps SDK" in docs
+    assert "remote MCP" in docs
+    assert "plaintext" in docs
+    assert "local encryption" in docs
+    assert "raw PyPI stdio package directly" in docs
 
 
 def test_public_docs_define_security_responsibility_boundary():

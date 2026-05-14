@@ -40,6 +40,7 @@ use, test, and implement the public A2CR client/spec surface.
 - `docs/concepts.md`
 - `docs/mcp-setup.md`
 - `docs/mcp-registry-publishing.md`
+- `docs/official-distribution-roadmap.md`
 - `docs/security-model.md`
 - `docs/usage.md`
 - `docs/spec/`
@@ -102,6 +103,7 @@ Before publishing to `a2cr/a2cr`, verify:
 - `SECURITY.md` and `SECURITY_CHECKLIST.md` are present
 - `docs/spec/` contains implementation-level spec files, schemas, examples, and conformance guidance
 - `server.json` matches the PyPI package version and README `mcp-name` verification string
+- `docs/official-distribution-roadmap.md` still treats Claude and OpenAI remote submissions as later phases unless the remote privacy boundary is documented
 - the branch being pushed contains only intended public-release files
 - GitHub Settings are configured for Dependabot alerts, secret scanning, CodeQL/code scanning, branch protection, and pull-request based merges
 
