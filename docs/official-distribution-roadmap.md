@@ -52,7 +52,7 @@ For that reason:
 | P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Ready after PyPI | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
 | P2 | Claude local distribution | Claude Desktop Extension / MCPB wrapping `a2cr-mcp` | Post-launch | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
-| P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, test account, privacy docs, and hosted-service scaling are ready. |
+| P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, privacy docs, and public security boundary are ready. |
 
 ## Service Start Definition
 
@@ -107,13 +107,11 @@ P2 and later distribution work should start after service launch. WorkThreads
 development can continue in parallel, but it is not a blocker for P1 or the
 public preview announcement.
 
-WorkThreads post-launch track:
-
-| Stage | Goal | Exit criteria |
-|---|---|---|
-| WT0 | Refresh WorkThreads design for the post-launch product | Security model, retention, rate limits, task/lease model, and dashboard visibility are written down. |
-| WT1 | Build a private MVP | Agents can create a thread, append/read work notes, claim/complete bounded tasks, and avoid consultation loops in tests. |
-| WT2 | Limited user preview | WorkThreads can be disabled independently, has abuse limits, has clear docs that it is not WorkBaton-style local-key encryption, and has support/debug runbooks. |
+The public repository may describe WorkThreads as a planned multi-agent
+coordination concept and document that it is separate from WorkBaton handoff.
+Concrete rollout sequencing, account limits, retention, rate limits, dashboard
+behavior, support runbooks, and other service operations belong in private
+planning until they are intentionally published.
 
 WorkThreads must keep a separate privacy claim from WorkBaton. WorkBaton and
 WorkStash bodies are locally encrypted before upload. WorkThreads is a shared
@@ -204,20 +202,20 @@ OpenAI readiness checklist:
 
 ## Remote Security Gate
 
-Before any OpenAI or Claude remote submission, answer these questions in a
-public-safe design note:
+Before any OpenAI or Claude remote submission, publish a public-safe security
+note that answers only the technical boundary questions:
 
-- Does the remote MCP server ever receive plaintext WorkBaton or WorkStash
-  bodies?
-- If yes, is the public privacy policy updated to say so?
-- If no, where does encryption happen before the hosted service receives data?
-- Can users delete remote data and revoke access?
-- Which tools are read-only, which mutate state, and which can delete data?
-- What reviewer test account and seeded data will be used?
-- What rate limits and abuse controls protect the hosted service?
+- whether the remote MCP server ever receives plaintext WorkBaton or WorkStash
+  bodies
+- where encryption and decryption happen before the hosted service receives data
+- which tools read, mutate, or delete user-owned relay state
+- how restored context is treated as untrusted input
 
-Until those answers are written, remote directory submissions should remain
-blocked.
+Operational review accounts, seeded data, abuse controls, rate-limit values,
+and support runbooks belong in private release planning.
+
+Until the public-safe boundary is written, remote directory submissions should
+remain blocked.
 
 ## Public Assets To Prepare
 
@@ -227,9 +225,11 @@ blocked.
 - logo and favicon assets
 - short tagline and longer directory description
 - screenshots or app response images where required
-- reviewer test account with disposable data
 - release notes for the first public version
 - public docs for install, setup, local key behavior, and safe usage
+
+Directory-specific reviewer accounts, seeded data, operational controls, and
+support runbooks should be tracked privately, not in the public repository.
 
 ## Non-Goals For The Initial Public Release
 

@@ -173,6 +173,70 @@ def test_mcp_registry_metadata_matches_package_readme():
     assert api_key_env["isSecret"] is True
 
 
+def test_public_mcp_setup_examples_match_registry_environment():
+    import json
+
+    server = json.loads(read("server.json"))
+    package = server["packages"][0]
+    registry_env_names = {
+        item["name"]
+        for item in package["environmentVariables"]
+    }
+
+    docs = "\n".join(
+        [
+            read("README.md"),
+            read("docs/mcp-setup.md"),
+            read("docs/usage.md"),
+            read("examples/codex-mcp-config.json"),
+            read("examples/claude-code-mcp-config.json"),
+            read("examples/roo-code-mcp-config.json"),
+        ]
+    )
+
+    assert "A2CR_API_KEY" in registry_env_names
+    assert "A2CR_BASE_URL" in registry_env_names
+    assert "A2CR_SERVICE_URL" not in registry_env_names
+    assert "A2CR_SERVICE_URL" not in docs
+
+
+def test_public_docs_keep_plan_limits_out_of_github_docs():
+    import re
+
+    docs = "\n".join(
+        [
+            read("README.md"),
+            read("docs/mcp-setup.md"),
+            read("docs/usage.md"),
+            read("docs/templates/skills/a2cr-agent/SKILL.md"),
+        ]
+    )
+
+    assert "get_account_limits" in docs
+    assert re.search(r"\b\d+\s*KB\b", docs) is None
+    assert re.search(r"\b\d+\s+days\b", docs, flags=re.IGNORECASE) is None
+    assert re.search(r"\b(Free|Pro)\s+has\b", docs) is None
+
+
+def test_readme_is_cleanly_separated_for_public_technical_docs():
+    readme = read("README.md")
+    readme_ja = read("README-ja.md")
+
+    for marker in ["縺", "譌", "繧", "\ufffd"]:
+        assert marker not in readme
+
+    assert "Long AI work usually breaks at the handoff" in readme
+    assert "In this repository, an AI window means one active chat/session" in readme
+    assert '"goal": "Fix the failing login test"' in readme
+    assert "[Japanese overview](README-ja.md)" in readme
+    assert readme.index("## Install") < readme.index("## Security Boundary")
+    assert readme.index("## Security Boundary") < readme.index("## Configure MCP")
+
+    assert "A2CR 日本語概要" in readme_ja
+    assert "この GitHub リポジトリは技術公開の場です" in readme_ja
+    assert "WorkThreads" in readme_ja
+
+
 def test_official_distribution_roadmap_keeps_remote_boundaries_explicit():
     docs = "\n".join(
         [
@@ -198,6 +262,25 @@ def test_official_distribution_roadmap_keeps_remote_boundaries_explicit():
     assert "Promotion starts after P1" in docs
     assert "development can continue in parallel" in docs
     assert "not a blocker for P1" in docs
+
+
+def test_official_distribution_roadmap_keeps_service_operations_private():
+    roadmap = read("docs/official-distribution-roadmap.md")
+
+    assert "The public repository may describe WorkThreads" in roadmap
+    assert "coordination concept" in roadmap
+    assert "service operations belong in private" in roadmap
+    assert "planning until they are intentionally published" in roadmap
+    assert "private release planning" in roadmap
+
+    for phrase in [
+        "dashboard visibility",
+        "support/debug runbooks",
+        "reviewer test account",
+        "rate limits and abuse controls",
+        "hosted-service scaling",
+    ]:
+        assert phrase not in roadmap
 
 
 def test_public_docs_define_security_responsibility_boundary():

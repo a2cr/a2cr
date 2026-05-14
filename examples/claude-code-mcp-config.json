@@ -5,8 +5,7 @@
       "args": [],
       "env": {
         "A2CR_API_KEY": "YOUR_A2CR_API_KEY",
-        "A2CR_BASE_URL": "https://a2cr.app",
-        "A2CR_SERVICE_URL": "https://a2cr.app/mcp"
+        "A2CR_BASE_URL": "https://a2cr.app"
       }
     }
   }

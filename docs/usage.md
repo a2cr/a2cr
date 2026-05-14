@@ -11,6 +11,7 @@ python -m pip install --upgrade a2cr-mcp
 ## Configure
 
 Register one MCP server named `a2cr`.
+`A2CR_BASE_URL` is optional. Omit it to use `https://a2cr.app`.
 
 ```json
 {
@@ -20,8 +21,7 @@ Register one MCP server named `a2cr`.
       "args": [],
       "env": {
         "A2CR_API_KEY": "YOUR_A2CR_API_KEY",
-        "A2CR_BASE_URL": "https://a2cr.app",
-        "A2CR_SERVICE_URL": "https://a2cr.app/mcp"
+        "A2CR_BASE_URL": "https://a2cr.app"
       }
     }
   }
@@ -92,9 +92,8 @@ Bad WorkStash entries:
 - personal data, full transcripts, long logs, generated caches, or git diffs
 - large source-code bodies or file-like payloads
 
-Current public-preview storage guidance is size-based, not entry-count based:
-Free has 256KB total encrypted storage and Pro has 1024KB total encrypted
-storage.
+Hosted A2CR accounts expose current Slot, retention, WorkStash storage, and
+rate limits through `get_account_limits`.
 
 ## Local Client Key
 

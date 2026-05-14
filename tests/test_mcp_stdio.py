@@ -539,9 +539,9 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
 
         def json(self):
             return {
-                "plan": "free",
-                "max_body_bytes": 24576,
-                "workstash_quota_bytes": 262144,
+                "plan": "example",
+                "max_body_bytes": 12345,
+                "workstash_quota_bytes": 67890,
                 "handoff_policy": {"basis": "size_budget"},
             }
 
@@ -564,8 +564,8 @@ def test_mcp_stdio_get_account_limits_uses_api_key_route():
 
     assert captured["url"].endswith("/api/v1/account/limits")
     assert "Authorization" in captured["headers"]
-    assert result["plan"] == "free"
-    assert result["workstash_quota_bytes"] == 262144
+    assert result["plan"] == "example"
+    assert result["workstash_quota_bytes"] == 67890
     assert result["handoff_policy"]["basis"] == "size_budget"
 
 
@@ -991,13 +991,13 @@ def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():
         assert field in skill
 
 
-def test_mcp_stdio_and_agent_guide_document_free_pro_forbidden_material():
+def test_mcp_stdio_and_agent_guide_document_plan_neutral_forbidden_material():
     server = load_stdio_server()
     skill = (Path(__file__).resolve().parents[1] / "docs/templates/skills/a2cr-agent/SKILL.md").read_text(
         encoding="utf-8"
     )
     forbidden_terms = [
-        "Forbidden for both Free and Pro",
+        "Forbidden for all accounts",
         "local client key",
         "API keys",
         "Authorization headers",
@@ -1007,7 +1007,8 @@ def test_mcp_stdio_and_agent_guide_document_free_pro_forbidden_material():
         "full transcripts",
         "long logs",
         "git diffs",
-        "Pro allows more safe handoff context, not more sensitive data",
+        "Higher limits",
+        "not sensitive data",
     ]
 
     for term in forbidden_terms:

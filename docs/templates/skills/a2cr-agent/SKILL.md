@@ -83,11 +83,11 @@ needed to resume:
 - move bulky or occasionally needed supporting notes to WorkStash and record
   the returned `entry_key`
 
-Free has a smaller WorkBaton budget. Pro has a larger WorkBaton budget and
-larger WorkStash quota, so agents can leave a richer safe handoff when it helps
-the next session.
+Hosted accounts may have different WorkBaton budgets and WorkStash limits, so
+agents should ask `get_account_limits` for current account limits before large
+or automatic saves.
 
-Forbidden for both Free and Pro:
+Forbidden for all accounts:
 
 - local client key or recovery key material
 - API keys, access tokens, Authorization headers, cookies, or session IDs
@@ -96,11 +96,12 @@ Forbidden for both Free and Pro:
 - full transcripts, long logs, generated caches, build artifacts, or git diffs
 - large code bodies that can be read from the repository
 
-These restrictions are identical for Free and Pro. Pro allows more safe handoff context, not more sensitive data.
+These restrictions apply regardless of plan or account limits. Higher limits
+allow more safe handoff context, not sensitive data.
 
-When available, call `should_save_workbaton` before autonomous saves if the trigger, Slot, or current MCP surface is unclear. Then call `get_account_limits` before automatic or large saves so the checkpoint respects the user's current retention, WorkBaton size budget, WorkStash quota, and rate limits.
+When available, call `should_save_workbaton` before autonomous saves if the trigger, Slot, or current MCP surface is unclear. Then call `get_account_limits` before automatic or large saves so the checkpoint respects the account's current limits.
 
-Never save prohibited material even when the user asks for a richer Pro handoff.
+Never save prohibited material even when the user asks for a richer handoff.
 
 ## Use WorkStash
 
@@ -117,10 +118,9 @@ large or volatile for a WorkBaton body, such as parsed specs, API response
 summaries, computed artifact notes, or scratchpad findings. WorkStash is
 separate from WorkBaton checkpoints and WorkThreads messages.
 
-Planned first public-preview quotas are based on total encrypted storage size,
-not number of notes: Free has 256KB total and Pro has 1024KB total, exactly
-four times Free. Treat these as temporary-memory limits, not file storage
-capacity.
+Hosted A2CR accounts expose current WorkStash storage, retention, and rate
+limits through `get_account_limits`. Treat WorkStash as temporary work memory,
+not file storage.
 
 Good triggers:
 
@@ -154,10 +154,10 @@ Rules:
 - Do not store secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.
 - Use stable, descriptive `entry_key` values.
 - Choose descriptive namespaced keys, such as `myapp_api_spec_v1` or `session:date:artifact`.
-- Call `get_account_limits` before large or frequent writes to respect plan limits.
+- Call `get_account_limits` before large or frequent writes to respect current account limits.
 - Record retained `entry_key` values in WorkBaton `next_action` or references so the next session can retrieve them.
 - Delete entries that were only needed for smoke tests or completed task phases.
-- Entries expire automatically (7 days Free, 30 days Pro). Do not treat WorkStash as permanent storage.
+- Entries may expire according to the account's current limits. Do not treat WorkStash as permanent storage.
 
 WorkStash uses the same local Fernet key as WorkBaton. Do not use WorkStash
 across different local environments or different API key owners.
