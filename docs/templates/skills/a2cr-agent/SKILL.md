@@ -15,7 +15,7 @@ When newly connected or unsure which A2CR flow to use, call `explain_a2cr_flows`
 
 Some MCP clients expose tools lazily. If `save_context` is not immediately visible, search or request the exact `save_context` tool name before concluding WorkBaton saves are unavailable.
 
-Do not configure the hosted `/mcp` URL directly for WorkBaton, and do not use old `AI_CLIPBOARD_*` or `A2CR_API_STYLE` settings for normal AI-agent setup.
+Do not configure the hosted `/mcp` URL directly for WorkBaton. Legacy local prototype settings are not part of normal AI-agent setup.
 
 Use this decision table:
 
@@ -112,6 +112,11 @@ supporting information that should not bloat a WorkBaton body, such as confirmed
 file paths, API response notes, reproduction details, intermediate findings,
 approach notes, or concise validation summaries.
 
+Use WorkStash for intermediate data that is useful across sub-tasks but too
+large or volatile for a WorkBaton body, such as parsed specs, API response
+summaries, computed artifact notes, or scratchpad findings. WorkStash is
+separate from WorkBaton checkpoints and WorkThreads messages.
+
 Planned first public-preview quotas are based on total encrypted storage size,
 not number of notes: Free has 256KB total and Pro has 1024KB total, exactly
 four times Free. Treat these as temporary-memory limits, not file storage
@@ -148,8 +153,14 @@ Rules:
 - Store only concise notes, confirmed paths, intermediate findings, and safe summaries.
 - Do not store secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.
 - Use stable, descriptive `entry_key` values.
+- Choose descriptive namespaced keys, such as `myapp_api_spec_v1` or `session:date:artifact`.
+- Call `get_account_limits` before large or frequent writes to respect plan limits.
 - Record retained `entry_key` values in WorkBaton `next_action` or references so the next session can retrieve them.
 - Delete entries that were only needed for smoke tests or completed task phases.
+- Entries expire automatically (7 days Free, 30 days Pro). Do not treat WorkStash as permanent storage.
+
+WorkStash uses the same local Fernet key as WorkBaton. Do not use WorkStash
+across different local environments or different API key owners.
 
 ## Keep Context Fresh
 
@@ -177,32 +188,10 @@ WorkBaton, and avoid saving prohibited material.
 Use WorkThreads for active cross-agent coordination, not casual AI chat.
 
 - Append concise work notes, review results, failures, decisions, and final result links.
-- Check updates at task boundaries with `check_workthread_updates`.
-- Use `wait_workthread_updates` only when waiting for another active agent.
+- Use WorkThreads only when the current MCP surface exposes concrete WorkThreads tools.
+- Check or wait for updates with the available WorkThreads tools for that client; if no such tools are exposed, tell the user WorkThreads is unavailable in the current client.
 - Do not assume A2CR can wake a stopped or sleeping AI window.
 - Keep message bodies secret-safe and useful for another agent.
-
-## Use WorkStash
-
-WorkStash is a temporary client-encrypted key-value store for AI agents. It is
-separate from WorkBaton checkpoints and WorkThreads messages.
-
-Use WorkStash to persist intermediate work data that is too large or too
-volatile for a WorkBaton body — parsed specs, API responses, computed artifacts,
-scratchpad notes shared across sub-tasks.
-
-Call `should_use_work_stash` when unsure whether WorkStash is appropriate.
-
-When using WorkStash:
-
-- Choose a descriptive namespaced key: `myapp_api_spec_v1`, `session:date:artifact`.
-- Call `get_account_limits` before large or frequent writes to respect plan limits.
-- Delete entries with `delete_work_stash` when they are no longer needed.
-- Do not store secrets, API keys, session tokens, or WorkBaton resume prompts in WorkStash entries.
-- Entries expire automatically (7 days Free, 30 days Pro). Do not treat WorkStash as permanent storage.
-
-WorkStash uses the same local Fernet key as WorkBaton. Do not use WorkStash
-across different local environments or different API key owners.
 
 ## If A2CR MCP Is Unavailable
 

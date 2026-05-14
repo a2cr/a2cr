@@ -4,6 +4,10 @@
 
 # A2CR
 
+[![PyPI](https://img.shields.io/pypi/v/a2cr-mcp.svg)](https://pypi.org/project/a2cr-mcp/)
+[![CI](https://github.com/a2cr/a2cr/actions/workflows/ci.yml/badge.svg)](https://github.com/a2cr/a2cr/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-source--available%20%2B%20CC%20BY%204.0-blue.svg)](LICENSE)
+
 <!-- mcp-name: io.github.a2cr/a2cr-mcp -->
 
 Agent-to-Agent Context Relay.
@@ -12,6 +16,23 @@ A2CR is a lightweight context relay layer for AI agents. It lets an agent save
 a compact WorkBaton checkpoint, move optional supporting notes into WorkStash,
 and resume the work from a fresh AI window without carrying a long, noisy chat
 history forward.
+
+## Why A2CR Exists
+
+Long AI work often fails at the handoff point. A new window needs the goal,
+current state, decisions, blockers, validation, and next action, but not the
+entire conversation.
+
+A2CR separates those jobs:
+
+| Layer | Purpose | Not for |
+|---|---|---|
+| WorkBaton | Compact resume checkpoint for the next AI window | Full transcripts, secrets, large files |
+| WorkStash | Temporary supporting notes referenced from WorkBaton | Durable knowledge base, credentials |
+| WorkThreads | Planned multi-agent coordination surface | Replacing WorkBaton handoff |
+
+Project memory files such as `AGENTS.md` or `CLAUDE.md` tell an AI how to work
+in a repository. WorkBaton tells the next AI where the current task stands.
 
 <p align="center">
   <img src="docs/assets/github/a2cr-story.gif" alt="A2CR turns long AI conversation history into compact WorkBaton and WorkStash handoff state" width="900">
@@ -29,25 +50,6 @@ reference material:
 
 It does not contain the hosted SaaS service implementation, production database
 schema, billing code, admin tooling, or deployment secrets.
-
-## Project Model
-
-A2CR uses a lightweight open-core model:
-
-| Layer | Public surface | License / posture |
-|---|---|---|
-| WorkBaton Format | Public specification in `docs/spec/` | Spec text: CC BY 4.0. Schemas/examples/tests: Apache-2.0 |
-| `a2cr-mcp` | Official local stdio MCP client | Source-available under BUSL-1.1 style terms |
-| `a2cr.app` | Hosted relay service, dashboard, billing, operations | Proprietary SaaS |
-
-The WorkBaton Format is intended to be implementable by anyone. The official
-client and hosted relay are maintained by A2CR. Offering a competing hosted or
-managed A2CR-compatible relay service based on the official A2CR client requires
-a commercial license.
-
-See `LICENSE`, `NOTICE`, `TRADEMARK.md`, and `docs/spec/LICENSE.md` for the
-current boundaries. See `PUBLIC_RELEASE.md` for the public/private release
-checklist.
 
 ## Visual Overview
 
@@ -76,23 +78,6 @@ AI window.
 <p align="center">
   <img src="docs/assets/github/a2cr-workflow.png" alt="A2CR workflow: save compact state, store optional notes, and resume work in a new AI window" width="900">
 </p>
-
-## Why A2CR Exists
-
-Long AI work often fails at the handoff point. A new window needs the goal,
-current state, decisions, blockers, validation, and next action, but not the
-entire conversation.
-
-A2CR separates those jobs:
-
-| Layer | Purpose | Not for |
-|---|---|---|
-| WorkBaton | Compact resume checkpoint for the next AI window | Full transcripts, secrets, large files |
-| WorkStash | Temporary supporting notes referenced from WorkBaton | Durable knowledge base, credentials |
-| WorkThreads | Planned multi-agent coordination surface | Replacing WorkBaton handoff |
-
-Project memory files such as `AGENTS.md` or `CLAUDE.md` tell an AI how to work
-in a repository. WorkBaton tells the next AI where the current task stands.
 
 ## Future Possibilities
 
@@ -291,6 +276,25 @@ See:
 - `docs/usage.md`
 - `docs/templates/skills/a2cr-agent/SKILL.md`
 - `PUBLIC_RELEASE.md`
+
+## Project Model
+
+A2CR uses a lightweight open-core model:
+
+| Layer | Public surface | License / posture |
+|---|---|---|
+| WorkBaton Format | Public specification in `docs/spec/` | Spec text: CC BY 4.0. Schemas/examples/tests: Apache-2.0 |
+| `a2cr-mcp` | Official local stdio MCP client | Source-available under BUSL-1.1 style terms |
+| `a2cr.app` | Hosted relay service, dashboard, billing, operations | Proprietary SaaS |
+
+The WorkBaton Format is intended to be implementable by anyone. The official
+client and hosted relay are maintained by A2CR. Offering a competing hosted or
+managed A2CR-compatible relay service based on the official A2CR client requires
+a commercial license.
+
+See `LICENSE`, `NOTICE`, `TRADEMARK.md`, and `docs/spec/LICENSE.md` for the
+current boundaries. See `PUBLIC_RELEASE.md` for the public/private release
+checklist.
 
 ## Development
 

@@ -490,6 +490,45 @@ def test_mcp_stdio_save_rejects_long_base64_payload_before_posting(tmp_path, mon
     assert "base64" in str(exc.value)
 
 
+def test_mcp_stdio_save_rejects_sensitive_credentials_before_posting(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+
+    class FakeClient:
+        def __enter__(self):
+            raise AssertionError("HTTP client should not be opened")
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    payload = {
+        **CONTENT,
+        "current_state": "debug output included Authorization: Bearer sk-a2cr-secret",
+    }
+
+    with pytest.raises(ValueError) as exc:
+        server.save_context("slot-a", payload, model_source="codex")
+
+    message = str(exc.value)
+    assert "sensitive credentials" in message
+    assert "Authorization headers" in message
+
+
+def test_mcp_stdio_workbaton_safety_guidance_is_not_treated_as_secret():
+    server = load_stdio_server()
+
+    server._validate_workbaton_content(
+        {
+            **CONTENT,
+            "constraints": [
+                "Do not store secrets, API keys, Authorization headers, cookies, or private database URLs."
+            ],
+        }
+    )
+
+
 def test_mcp_stdio_get_account_limits_uses_api_key_route():
     server = load_stdio_server()
     captured = {}

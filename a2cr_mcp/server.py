@@ -320,10 +320,38 @@ _BASE64_MIN_DECODED_BYTES = 128
 _PAYLOAD_GUARDRAIL_MAX_DEPTH = 100
 _ENTRY_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,256}$")
 _SENSITIVE_REASON_PATTERN = re.compile(
-    r"\b("
-    r"secret|api\s*key|password|access\s*token|refresh\s*token|auth\s*token|"
-    r"bearer\s*token|authorization\s*header|cookie|private\s+database\s+url"
-    r")\b"
+    r"(?<![a-z0-9])("
+    r"secret|api[\s_-]*key|password|access[\s_-]*token|refresh[\s_-]*token|"
+    r"auth[\s_-]*token|bearer[\s_-]*token|authorization[\s_-]*header|"
+    r"cookies?|session[\s_-]*ids?|private\s+database\s+urls?"
+    r")(?![a-z0-9])",
+    re.IGNORECASE,
+)
+_PLACEHOLDER_VALUE = r"(?:YOUR_|your_|<|REDACTED|redacted|PLACEHOLDER|placeholder|EXAMPLE|example|\.\.\.|xxx\b)"
+_SENSITIVE_ASSIGNMENT_PATTERN = re.compile(
+    r"(?<![a-z0-9])"
+    r"(?:secret|api[\s_-]*key|password|access[\s_-]*token|refresh[\s_-]*token|"
+    r"auth[\s_-]*token|bearer[\s_-]*token|cookies?|session[\s_-]*ids?|"
+    r"service[\s_-]*role[\s_-]*key)"
+    r"(?![a-z0-9])\s*[:=]\s*['\"]?"
+    rf"(?!{_PLACEHOLDER_VALUE})[^'\"\s,;]+",
+    re.IGNORECASE,
+)
+_ENV_SECRET_ASSIGNMENT_PATTERN = re.compile(
+    r"(?<![a-z0-9])"
+    r"[A-Z0-9_]*(?:API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|AUTH_TOKEN|PASSWORD|"
+    r"SECRET|COOKIE|SESSION_ID|DATABASE_URL)"
+    r"\s*=\s*['\"]?"
+    rf"(?!{_PLACEHOLDER_VALUE})[^'\"\s,;]+",
+    re.IGNORECASE,
+)
+_AUTHORIZATION_HEADER_VALUE_PATTERN = re.compile(
+    r"(?<![a-z0-9])authorization\s*:\s*bearer\s+[^'\"\s,;]+",
+    re.IGNORECASE,
+)
+_PRIVATE_DATABASE_URL_VALUE_PATTERN = re.compile(
+    r"\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis)://[^'\"\s]+",
+    re.IGNORECASE,
 )
 _FILE_DESCRIPTOR_KEYS = {
     "file",
@@ -581,6 +609,42 @@ def _find_payload_guardrail_violation(value: object, path: str = "$", depth: int
     return None
 
 
+def _contains_sensitive_workbaton_text(value: str) -> bool:
+    if _AUTHORIZATION_HEADER_VALUE_PATTERN.search(value) or _PRIVATE_DATABASE_URL_VALUE_PATTERN.search(value):
+        return True
+    if not _SENSITIVE_REASON_PATTERN.search(value):
+        return False
+    return any(
+        pattern.search(value)
+        for pattern in (
+            _SENSITIVE_ASSIGNMENT_PATTERN,
+            _ENV_SECRET_ASSIGNMENT_PATTERN,
+        )
+    )
+
+
+def _find_sensitive_guardrail_violation(value: object, path: str = "$", depth: int = 0) -> str | None:
+    if depth > _PAYLOAD_GUARDRAIL_MAX_DEPTH:
+        return f"{path} (nested too deeply)"
+    if isinstance(value, dict):
+        for key, item in value.items():
+            violation = _find_sensitive_guardrail_violation(
+                item,
+                f"{path}.{_normalized_content_key(key)}",
+                depth + 1,
+            )
+            if violation:
+                return violation
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            violation = _find_sensitive_guardrail_violation(item, f"{path}[{index}]", depth + 1)
+            if violation:
+                return violation
+    elif isinstance(value, str) and _contains_sensitive_workbaton_text(value):
+        return path
+    return None
+
+
 def _validate_workbaton_content(content: dict) -> None:
     if not isinstance(content, dict):
         raise ValueError("A2CR WorkBaton content must be a JSON object.")
@@ -602,6 +666,19 @@ def _validate_workbaton_content(content: dict) -> None:
             "A2CR WorkBaton saves are for work-state handoff, not file storage. "
             "Remove file-like, base64, data URL, archive, or binary payloads "
             f"before saving ({violation})."
+        )
+    sensitive_violation = _find_sensitive_guardrail_violation(content)
+    if sensitive_violation:
+        if "nested too deeply" in sensitive_violation:
+            raise ValueError(
+                "A2CR WorkBaton content is nested too deeply for safe validation "
+                f"({sensitive_violation})."
+            )
+        raise ValueError(
+            "A2CR WorkBaton saves must not contain sensitive credentials or secret material. "
+            "Remove API keys, tokens, passwords, Authorization headers, cookies, "
+            "private database URLs, or .env values before saving "
+            f"({sensitive_violation})."
         )
 
 
