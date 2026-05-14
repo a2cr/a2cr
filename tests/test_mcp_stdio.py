@@ -145,7 +145,67 @@ def test_mcp_stdio_http_errors_include_safe_diagnostics(monkeypatch):
     assert "action=context.save" in message
     assert "request_id=req-safe-1" in message
     assert "retry_after=2" in message
+    assert "hint=wait_retry_after_then_retry" in message
     assert "sk-a2cr-secret" not in message
+
+
+def test_mcp_stdio_http_errors_explain_auth_next_steps(monkeypatch):
+    server = load_stdio_server()
+    request = httpx.Request("GET", "https://a2cr.app/api/v1/contexts")
+    unauthorized = httpx.Response(
+        401,
+        json={
+            "code": "invalid_auth",
+            "request_id": "auth-req",
+            "action": "context.list",
+        },
+        request=request,
+    )
+    forbidden = httpx.Response(
+        403,
+        json={
+            "code": "forbidden",
+            "request_id": "forbid-req",
+            "action": "context.list",
+        },
+        request=request,
+    )
+
+    with pytest.raises(RuntimeError) as unauthorized_exc:
+        server._raise_for_status(unauthorized)
+    with pytest.raises(RuntimeError) as forbidden_exc:
+        server._raise_for_status(forbidden)
+
+    assert "status 401" in str(unauthorized_exc.value)
+    assert "code=invalid_auth" in str(unauthorized_exc.value)
+    assert "hint=check_a2cr_api_key" in str(unauthorized_exc.value)
+    assert "request_id=auth-req" in str(unauthorized_exc.value)
+    assert "status 403" in str(forbidden_exc.value)
+    assert "hint=check_account_permissions" in str(forbidden_exc.value)
+    assert "request_id=forbid-req" in str(forbidden_exc.value)
+
+
+def test_mcp_stdio_http_errors_explain_validation_next_steps(monkeypatch):
+    server = load_stdio_server()
+    request = httpx.Request("POST", "https://a2cr.app/api/v1/context")
+    response = httpx.Response(
+        422,
+        json={
+            "code": "invalid_request",
+            "request_id": "validation-req",
+            "action": "context.save",
+        },
+        request=request,
+    )
+
+    with pytest.raises(RuntimeError) as exc:
+        server._raise_for_status(response)
+
+    message = str(exc.value)
+    assert "status 422" in message
+    assert "code=invalid_request" in message
+    assert "hint=fix_request_payload" in message
+    assert "request_id=validation-req" in message
 
 
 def test_mcp_stdio_http_errors_use_safe_error_code_header(monkeypatch):
@@ -164,6 +224,7 @@ def test_mcp_stdio_http_errors_use_safe_error_code_header(monkeypatch):
     message = str(exc.value)
     assert "code=db_lock_timeout" in message
     assert "request_id=req-safe-2" in message
+    assert "hint=wait_retry_after_then_retry" in message
 
 
 def test_mcp_stdio_http_errors_do_not_echo_non_json_body(monkeypatch):
@@ -686,7 +747,7 @@ def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
         server.get_account_limits()
 
     message = str(exc.value)
-    assert message == "A2CR HTTP request failed with status 401"
+    assert message == "A2CR HTTP request failed with status 401 (hint=check_a2cr_api_key)"
     assert "Authorization" not in message
     assert "Bearer" not in message
     assert TEST_API_KEY not in message

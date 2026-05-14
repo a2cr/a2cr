@@ -434,12 +434,14 @@ def _safe_http_error_details(response: httpx.Response) -> list[str]:
         parsed = None
     if isinstance(parsed, dict):
         data = parsed
+    error_code = data.get("code") or response.headers.get("x-a2cr-error-code")
 
     detail_fields = [
-        ("code", data.get("code") or response.headers.get("x-a2cr-error-code")),
+        ("code", error_code),
         ("action", data.get("action")),
         ("request_id", data.get("request_id") or response.headers.get("x-request-id")),
         ("retry_after", data.get("retry_after") or response.headers.get("retry-after")),
+        ("hint", _http_error_hint(response.status_code, error_code)),
     ]
     details = []
     for name, value in detail_fields:
@@ -447,6 +449,27 @@ def _safe_http_error_details(response: httpx.Response) -> list[str]:
         if safe_value is not None:
             details.append(f"{name}={safe_value}")
     return details
+
+
+def _http_error_hint(status_code: int, code: object) -> str | None:
+    normalized_code = str(code or "").strip().lower()
+    if status_code == 401 or normalized_code in {"invalid_auth", "unauthorized"}:
+        return "check_a2cr_api_key"
+    if status_code == 403 or normalized_code == "forbidden":
+        return "check_account_permissions"
+    if status_code == 404 or normalized_code == "slot_not_found":
+        return "run_list_contexts_and_check_slot"
+    if status_code == 413 or normalized_code == "body_too_large":
+        return "compact_workbaton_or_use_workstash"
+    if status_code == 422:
+        if normalized_code in {"slot_number_not_allowed", "retention_not_allowed"}:
+            return "check_plan_limits"
+        return "fix_request_payload"
+    if status_code == 429 or "rate_limit" in normalized_code or normalized_code.endswith("_limit_exceeded"):
+        return "wait_retry_after_then_retry"
+    if status_code == 503 or normalized_code.startswith("db_"):
+        return "wait_retry_after_then_retry"
+    return None
 
 
 def _normalize_model_source(model_source: str | None) -> str | None:
