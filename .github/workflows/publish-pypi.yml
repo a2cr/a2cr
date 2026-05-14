@@ -10,6 +10,7 @@ jobs:
   publish-pypi:
     if: github.repository == 'a2cr/a2cr' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       contents: read
       id-token: write
