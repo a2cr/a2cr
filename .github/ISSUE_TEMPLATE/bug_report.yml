@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible issue in the public A2CR client, docs, examples, or specification.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve A2CR.
+
+        Do not include secrets, API keys, access tokens, cookies, local client keys, `.env` contents, decrypted WorkBaton or WorkStash bodies, full chat transcripts, or long logs.
+
+        If this is a security issue, do not open a public issue. Use the Security Policy link instead.
+  - type: input
+    id: version
+    attributes:
+      label: A2CR version or commit
+      description: Package version, commit SHA, or documentation page.
+      placeholder: "0.1.5 or commit SHA"
+    validations:
+      required: false
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide minimal safe steps without secrets or private data.
+      placeholder: |
+        1. Configure the public wrapper with placeholder values.
+        2. Call ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Paste only safe, minimal output. Redact local paths and identifiers when needed.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I did not include secrets, credentials, local client keys, decrypted bodies, full transcripts, or long logs.
+          required: true

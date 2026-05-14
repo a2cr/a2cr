@@ -52,10 +52,19 @@ def test_public_repository_contains_expected_reference_material():
         "README.md",
         "LICENSE",
         "NOTICE",
+        "PUBLIC_RELEASE.md",
+        "SECURITY_CHECKLIST.md",
         "TRADEMARK.md",
         "CONTRIBUTING.md",
         "SECURITY.md",
         ".env.example",
+        ".github/dependabot.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/bug_report.yml",
+        ".github/pull_request_template.md",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/dependency-review.yml",
         "pyproject.toml",
         "a2cr_mcp/server.py",
         "mcp/server.py",
@@ -64,6 +73,20 @@ def test_public_repository_contains_expected_reference_material():
         "docs/security-model.md",
         "docs/spec/LICENSE.md",
         "docs/spec/README.md",
+        "docs/spec/workbaton-format.md",
+        "docs/spec/workstash-reference.md",
+        "docs/spec/mcp-tool-contract.md",
+        "docs/spec/security-boundary.md",
+        "docs/spec/VERSIONING.md",
+        "docs/spec/COMPATIBILITY.md",
+        "docs/spec/EXTENSIONS.md",
+        "docs/spec/RFC_PROCESS.md",
+        "docs/spec/schema/workbaton.schema.json",
+        "docs/spec/schema/workstash.schema.json",
+        "docs/spec/examples/minimal-workbaton.json",
+        "docs/spec/examples/full-workbaton.json",
+        "docs/spec/examples/workstash-entry.json",
+        "docs/spec/conformance/README.md",
         "docs/usage.md",
         "docs/templates/skills/a2cr-agent/SKILL.md",
         "examples/codex-mcp-config.json",
@@ -82,6 +105,7 @@ def test_public_docs_warn_against_storing_secrets():
         [
             read("README.md"),
             read("SECURITY.md"),
+            read("SECURITY_CHECKLIST.md"),
             read("docs/security-model.md"),
             read("docs/usage.md"),
         ]
@@ -100,6 +124,8 @@ def test_public_docs_explain_open_core_boundaries():
             read("README.md"),
             read("LICENSE"),
             read("NOTICE"),
+            read("PUBLIC_RELEASE.md"),
+            read("SECURITY_CHECKLIST.md"),
             read("TRADEMARK.md"),
             read("CONTRIBUTING.md"),
             read("docs/spec/LICENSE.md"),
@@ -116,6 +142,28 @@ def test_public_docs_explain_open_core_boundaries():
     assert "CC BY 4.0" in docs
     assert "Apache-2.0" in docs
     assert "OSI-approved open source" in docs
+
+
+def test_public_docs_define_security_responsibility_boundary():
+    docs = "\n".join(
+        [
+            read("README.md"),
+            read("SECURITY.md"),
+            read("SECURITY_CHECKLIST.md"),
+            read("docs/security-model.md"),
+            read("docs/spec/security-boundary.md"),
+            read(".github/pull_request_template.md"),
+            read(".github/ISSUE_TEMPLATE/bug_report.yml"),
+        ]
+    )
+
+    assert "Responsibility Boundary" in docs
+    assert "restored context as untrusted" in docs
+    assert "WorkBaton is work state, not an authority" in docs
+    assert "Do not include secrets" in docs
+    assert "GitHub private vulnerability reporting" in docs
+    assert "Dependabot alerts" in docs
+    assert "secret scanning" in docs
 
 
 def test_env_example_contains_only_public_wrapper_settings():

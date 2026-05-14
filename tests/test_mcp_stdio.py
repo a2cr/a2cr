@@ -1,6 +1,8 @@
 import asyncio
 import base64
 import importlib
+import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -476,7 +478,21 @@ def test_mcp_stdio_strips_mcp_suffix_from_base_url(monkeypatch):
     assert server._list_url() == "https://a2cr.example/api/v1/contexts"
 
 
-def test_mcp_stdio_resume_prompt_is_slot_first_and_endpoint_safe(monkeypatch):
+def test_mcp_stdio_encodes_path_segments_and_query_values(monkeypatch):
+    monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example")
+
+    server = load_stdio_server()
+
+    assert server._load_url("slot/a?x=1#frag") == "https://a2cr.example/api/v1/context/slot%2Fa%3Fx%3D1%23frag"
+    assert server._delete_url("slot/a?x=1#frag") == "https://a2cr.example/api/v1/context/slot%2Fa%3Fx%3D1%23frag"
+    assert server._stash_get_url("key/a?x=1#frag") == "https://a2cr.example/api/v1/work-stash/key%2Fa%3Fx%3D1%23frag"
+    assert server._stash_delete_url("key/a?x=1#frag") == "https://a2cr.example/api/v1/work-stash/key%2Fa%3Fx%3D1%23frag"
+    assert server._stash_list_url("foo&other_param=injected") == (
+        "https://a2cr.example/api/v1/work-stash?tag_filter=foo%26other_param%3Dinjected"
+    )
+
+
+def test_mcp_stdio_resume_prompt_prefers_slot_number_and_endpoint_safe(monkeypatch):
     monkeypatch.setenv("A2CR_BASE_URL", "https://a2cr.example/mcp")
 
     server = load_stdio_server()
@@ -485,8 +501,7 @@ def test_mcp_stdio_resume_prompt_is_slot_first_and_endpoint_safe(monkeypatch):
     assert "A2CR service: https://a2cr.example/mcp" in prompt
     assert "Use the A2CR MCP tool" in prompt
     assert "Do not guess or call direct HTTP API endpoints" in prompt
-    assert 'First run: resume_context(slot_name="slot-a")' in prompt
-    assert "resume_context(slot_number=2)" in prompt
+    assert "First run: resume_context(slot_number=2)" in prompt
     assert "current user message" not in prompt
     assert "response_language_hint" in prompt
     assert "resume prompt itself" in prompt
@@ -537,6 +552,179 @@ def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
     assert "Bearer" not in message
     assert TEST_API_KEY not in message
     assert "request_body_secret" not in message
+
+
+def test_mcp_stdio_client_key_file_is_owner_only_on_unix(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
+    server = load_stdio_server()
+
+    key = server._client_key(create=True)
+
+    assert key
+    if os.name != "nt":
+        mode = stat.S_IMODE((tmp_path / "workbaton.key").stat().st_mode)
+        assert mode == 0o600
+
+
+def test_mcp_stdio_resume_context_tolerates_malformed_candidates(monkeypatch):
+    server = load_stdio_server()
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return [
+                {"updated_at": "2026-05-13T00:00:00Z"},
+                {"slot_name": "slot-b"},
+                {"slot_name": "slot-a", "updated_at": "2026-05-14T00:00:00Z"},
+            ]
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, headers, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    result = server.resume_context()
+
+    assert result["status"] == "candidates"
+    assert [item["slot_name"] for item in result["candidates"]] == ["slot-a", "slot-b"]
+
+
+def test_mcp_stdio_get_handoff_returns_invalid_content_for_malformed_workbaton(monkeypatch):
+    server = load_stdio_server()
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"slot_name": "slot-a", "content": {"goal": "g", "current_state": "s"}}
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, headers, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    result = server.get_handoff("slot-a")
+
+    assert result["status"] == "invalid_content"
+    assert "goal, current_state, and next_action" in result["message"]
+
+
+def test_mcp_stdio_payload_guardrail_has_depth_limit():
+    server = load_stdio_server()
+    value = []
+    current = value
+    for _ in range(110):
+        child = []
+        current.append(child)
+        current = child
+
+    violation = server._find_payload_guardrail_violation(value)
+
+    assert violation is not None
+    assert "nested too deeply" in violation
+
+
+def test_mcp_stdio_work_stash_validates_entry_key_before_http(monkeypatch):
+    server = load_stdio_server()
+
+    class FakeClient:
+        def __enter__(self):
+            raise AssertionError("HTTP client should not be opened for invalid entry_key")
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    for result in [
+        server.store_work_stash("bad/key", "value"),
+        server.get_work_stash("bad/key"),
+        server.delete_work_stash("bad/key"),
+    ]:
+        assert result["status"] == "validation_error"
+        assert "entry_key" in result["message"]
+
+
+def test_mcp_stdio_get_work_stash_missing_encrypted_value_is_invalid_response(monkeypatch):
+    server = load_stdio_server()
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"entry_key": "valid_key"}
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, headers, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    result = server.get_work_stash("valid_key")
+
+    assert result["status"] == "invalid_response"
+    assert "encrypted_value" in result["message"]
+
+
+def test_mcp_stdio_should_use_work_stash_uses_size_and_precise_sensitive_terms(monkeypatch):
+    server = load_stdio_server()
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "total_size_bytes": 100,
+                "quota_bytes": 200,
+                "entry_count": 1,
+                "entry_limit": 10,
+            }
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, headers, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+
+    assert server.should_use_work_stash(reason="token count notes")["should_store"] is True
+    assert server.should_use_work_stash(reason="author notes")["should_store"] is True
+    assert server.should_use_work_stash(reason="access token")["should_store"] is False
+    too_large = server.should_use_work_stash(reason="large notes", estimated_size_bytes=101)
+    assert too_large["should_store"] is False
+    assert too_large["quota_status"]["remaining_bytes"] == 100
 
 
 def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():

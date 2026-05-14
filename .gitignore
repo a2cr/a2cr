@@ -40,6 +40,7 @@ coverage/
 .codex/
 .codex_tmp/
 .superpowers/
+supabase/.temp/
 .vscode/
 .idea/
 
@@ -54,11 +55,16 @@ service_selection.md
 AI_Clipboard_Service_Selection.md
 ai_clipboard_service_selection*.md
 docs/handoff.md
+docs/code-review-issues.md
 docs/superpowers/
 docs/superpowers/plans/2026-05-03-ai-clipboard-local-mvp.md
 docs/superpowers/specs/2026-05-03-ai-clipboard-local-mvp-design.md
 docs/old/
 unreferenced_old_files/
+
+# Local production diagnostics
+smoke_diag.py
+smoke_load.py
 
 # OS files
 .DS_Store

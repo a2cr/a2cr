@@ -1,0 +1,37 @@
+{
+  "goal": "Fix login error",
+  "current_state": "Confirmed the API returns 401 after token refresh.",
+  "next_action": "Check token refresh logic in src/auth/session.ts.",
+  "decisions": [
+    "Do not change the database schema yet.",
+    "Keep the patch limited to the auth client and tests."
+  ],
+  "blockers": [
+    "Need to confirm whether refresh tokens expire after 24 hours."
+  ],
+  "validation": [
+    "Reproduction confirmed with the existing auth fixture.",
+    "Unit tests have not been run after the next patch."
+  ],
+  "references": [
+    "WorkStash: login-refresh-notes-v1",
+    "src/auth/session.ts"
+  ],
+  "completed_since_previous": [
+    "Inspected the login request and confirmed the 401 response path."
+  ],
+  "remaining_tasks_ordered": [
+    "Patch refresh-token retry handling.",
+    "Run the auth test file.",
+    "Update the handoff after validation."
+  ],
+  "previous_slot": 3,
+  "supersedes_slots": [2],
+  "do_not_use_slots": ["old-login-debug"],
+  "language_context": {
+    "preferred_response_language": "ja"
+  },
+  "extensions": {
+    "example.com/debug_scope": "auth"
+  }
+}

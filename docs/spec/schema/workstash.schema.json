@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://a2cr.app/spec/schema/workstash.schema.json",
+  "title": "WorkStash Entry v0.1",
+  "type": "object",
+  "required": ["entry_key", "value"],
+  "properties": {
+    "entry_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9_.:-]{1,256}$",
+      "description": "Stable key used by WorkBaton references."
+    },
+    "value": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concise supporting note."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

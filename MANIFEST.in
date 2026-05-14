@@ -7,5 +7,10 @@ recursive-include a2cr_mcp *.py
 recursive-include mcp *.py
 recursive-include docs *.md *.png *.gif
 recursive-include examples *.json
+exclude docs/code-review-issues.md
+exclude smoke_diag.py
+exclude smoke_load.py
 prune docs/old
+prune docs/runbooks
+prune supabase
 prune tests

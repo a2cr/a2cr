@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://a2cr.app/spec/schema/workbaton.schema.json",
+  "title": "WorkBaton Format v0.1",
+  "type": "object",
+  "required": ["goal", "current_state", "next_action"],
+  "properties": {
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The current task goal."
+    },
+    "current_state": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The latest meaningful working state."
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The next concrete action another agent should take."
+    },
+    "decisions": {
+      "$ref": "#/$defs/stringList"
+    },
+    "blockers": {
+      "$ref": "#/$defs/stringList"
+    },
+    "validation": {
+      "$ref": "#/$defs/stringList"
+    },
+    "references": {
+      "$ref": "#/$defs/stringList"
+    },
+    "completed_since_previous": {
+      "$ref": "#/$defs/stringList"
+    },
+    "remaining_tasks_ordered": {
+      "$ref": "#/$defs/stringList"
+    },
+    "previous_slot": {
+      "$ref": "#/$defs/slotRef"
+    },
+    "supersedes_slots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slotRef"
+      }
+    },
+    "do_not_use_slots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slotRef"
+      }
+    },
+    "language_context": {
+      "type": "object",
+      "properties": {
+        "preferred_response_language": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "patternProperties": {
+    "^x[-_]": true
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "slotRef": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    }
+  }
+}

@@ -18,8 +18,9 @@ import binascii
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlencode, urlparse
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastmcp import FastMCP
@@ -295,6 +296,14 @@ _LANGUAGE_ID_MAX_CHARS = 64
 _DATA_URL_PREFIX = "data:"
 _BASE64_MIN_CHARS = 256
 _BASE64_MIN_DECODED_BYTES = 128
+_PAYLOAD_GUARDRAIL_MAX_DEPTH = 100
+_ENTRY_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,256}$")
+_SENSITIVE_REASON_PATTERN = re.compile(
+    r"\b("
+    r"secret|api\s*key|password|access\s*token|refresh\s*token|auth\s*token|"
+    r"bearer\s*token|authorization\s*header|cookie|private\s+database\s+url"
+    r")\b"
+)
 _FILE_DESCRIPTOR_KEYS = {
     "file",
     "files",
@@ -346,6 +355,10 @@ def _url(path: str) -> str:
     return f"{BASE_URL}{path}"
 
 
+def _path_segment(value: str) -> str:
+    return quote(value, safe="")
+
+
 def _save_url() -> str:
     return _url("/api/v1/context")
 
@@ -355,7 +368,7 @@ def _list_url() -> str:
 
 
 def _load_url(slot_name: str) -> str:
-    return _url(f"/api/v1/context/{slot_name}")
+    return _url(f"/api/v1/context/{_path_segment(slot_name)}")
 
 
 def _load_slot_number_url(slot_number: int) -> str:
@@ -363,7 +376,7 @@ def _load_slot_number_url(slot_number: int) -> str:
 
 
 def _delete_url(slot_name: str) -> str:
-    return _url(f"/api/v1/context/{slot_name}")
+    return _url(f"/api/v1/context/{_path_segment(slot_name)}")
 
 
 def _limits_url() -> str:
@@ -399,7 +412,14 @@ def _client_key(create: bool) -> bytes | None:
         return None
     path.parent.mkdir(parents=True, exist_ok=True)
     key = Fernet.generate_key()
-    path.write_bytes(key)
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return path.read_bytes().strip()
+    with os.fdopen(fd, "wb") as fh:
+        fh.write(key)
+    if os.name != "nt":
+        os.chmod(path, 0o600)
     return key
 
 
@@ -429,7 +449,9 @@ def _is_probable_base64_payload(value: str) -> bool:
     return len(decoded) >= _BASE64_MIN_DECODED_BYTES
 
 
-def _find_payload_guardrail_violation(value: object, path: str = "$") -> str | None:
+def _find_payload_guardrail_violation(value: object, path: str = "$", depth: int = 0) -> str | None:
+    if depth > _PAYLOAD_GUARDRAIL_MAX_DEPTH:
+        return f"{path} (nested too deeply)"
     if isinstance(value, dict):
         keys = {_normalized_content_key(key) for key in value}
         if keys & _FILE_PAYLOAD_KEYS:
@@ -440,12 +462,13 @@ def _find_payload_guardrail_violation(value: object, path: str = "$") -> str | N
             violation = _find_payload_guardrail_violation(
                 item,
                 f"{path}.{_normalized_content_key(key)}",
+                depth + 1,
             )
             if violation:
                 return violation
     elif isinstance(value, list):
         for index, item in enumerate(value):
-            violation = _find_payload_guardrail_violation(item, f"{path}[{index}]")
+            violation = _find_payload_guardrail_violation(item, f"{path}[{index}]", depth + 1)
             if violation:
                 return violation
     elif isinstance(value, str):
@@ -469,6 +492,11 @@ def _validate_workbaton_content(content: dict) -> None:
             )
     violation = _find_payload_guardrail_violation(content)
     if violation:
+        if "nested too deeply" in violation:
+            raise ValueError(
+                "A2CR WorkBaton content is nested too deeply for safe validation "
+                f"({violation})."
+            )
         raise ValueError(
             "A2CR WorkBaton saves are for work-state handoff, not file storage. "
             "Remove file-like, base64, data URL, archive, or binary payloads "
@@ -612,7 +640,9 @@ def _decrypt_loaded_context(data: dict) -> dict:
 
 
 def _resume_context_call(slot_name: str, slot_number: int | None = None) -> str:
-    return f'resume_context(slot_name="{slot_name}")'
+    if slot_number is not None:
+        return f"resume_context(slot_number={slot_number})"
+    return f'resume_context(slot_name={json.dumps(slot_name, ensure_ascii=False)})'
 
 
 def _resume_prompt(slot_name: str, slot_number: int | None = None) -> str:
@@ -728,6 +758,7 @@ def _workbaton_save_advice(
 
 
 def _build_handoff_text(content: dict) -> str:
+    _validate_workbaton_content(content)
     sections = [
         f"# GOAL\n{content['goal']}",
         f"# CURRENT_STATE\n{content['current_state']}",
@@ -772,6 +803,16 @@ def _load_slot_number(client: httpx.Client, slot_number: int) -> dict:
     data = r.json()
     data["status"] = "loaded"
     return _decrypt_loaded_context(data)
+
+
+def _candidate_slot_name(item: object) -> str | None:
+    if not isinstance(item, dict):
+        return None
+    slot_name = item.get("slot_name")
+    if isinstance(slot_name, str) and slot_name:
+        return slot_name
+    return None
+
 
 SAVE_DESCRIPTION = """Save conversation context to A2CR.
 
@@ -1003,20 +1044,34 @@ def resume_context(
         r = client.get(_list_url(), headers=_HEADERS, timeout=10)
         _raise_for_status(r)
         candidates = r.json()
+        if not isinstance(candidates, list):
+            return {"status": "invalid_response", "message": "A2CR contexts response was not a list."}
 
         if project:
             prefix = f"{project}-"
             candidates = [
                 item for item in candidates
-                if item["slot_name"] == project or item["slot_name"].startswith(prefix)
+                if (
+                    (candidate_slot_name := _candidate_slot_name(item)) is not None
+                    and (candidate_slot_name == project or candidate_slot_name.startswith(prefix))
+                )
             ]
+        else:
+            candidates = [item for item in candidates if _candidate_slot_name(item) is not None]
 
         if not candidates:
             return {"status": "not_found" if project else "no_active_context"}
 
-        candidates = sorted(candidates, key=lambda item: item["updated_at"], reverse=True)
+        candidates = sorted(
+            candidates,
+            key=lambda item: item.get("updated_at", "") if isinstance(item, dict) else "",
+            reverse=True,
+        )
         if len(candidates) == 1 or prefer_latest:
-            return _load_slot(client, candidates[0]["slot_name"])
+            candidate_slot_name = _candidate_slot_name(candidates[0])
+            if candidate_slot_name is None:
+                return {"status": "invalid_response", "message": "A2CR context candidate was missing slot_name."}
+            return _load_slot(client, candidate_slot_name)
 
         return _attach_continuity_guidance({"status": "candidates", "candidates": candidates})
 
@@ -1097,7 +1152,11 @@ def get_handoff(slot_name: str) -> dict:
         loaded = _load_slot(client, slot_name)
     if loaded.get("status") != "loaded" or not loaded.get("content"):
         return loaded
-    return {"slot_name": slot_name, "handoff_text": _build_handoff_text(loaded["content"])}
+    try:
+        handoff_text = _build_handoff_text(loaded["content"])
+    except ValueError as exc:
+        return {"status": "invalid_content", "slot_name": slot_name, "message": str(exc)}
+    return {"slot_name": slot_name, "handoff_text": handoff_text}
 
 
 def _stash_store_url() -> str:
@@ -1105,16 +1164,26 @@ def _stash_store_url() -> str:
 
 
 def _stash_get_url(entry_key: str) -> str:
-    return _url(f"/api/v1/work-stash/{entry_key}")
+    return _url(f"/api/v1/work-stash/{_path_segment(entry_key)}")
 
 
 def _stash_list_url(tag_filter: str | None = None) -> str:
     base = _url("/api/v1/work-stash")
-    return f"{base}?tag_filter={tag_filter}" if tag_filter else base
+    return f"{base}?{urlencode({'tag_filter': tag_filter})}" if tag_filter else base
 
 
 def _stash_delete_url(entry_key: str) -> str:
-    return _url(f"/api/v1/work-stash/{entry_key}")
+    return _url(f"/api/v1/work-stash/{_path_segment(entry_key)}")
+
+
+def _validate_entry_key(entry_key: str) -> dict | None:
+    if isinstance(entry_key, str) and _ENTRY_KEY_PATTERN.fullmatch(entry_key):
+        return None
+    return {
+        "status": "validation_error",
+        "entry_key": entry_key,
+        "message": "entry_key must be 1-256 characters and contain only letters, digits, underscore, dot, colon, or hyphen.",
+    }
 
 
 def _encrypt_stash_value(value: str) -> dict:
@@ -1159,6 +1228,9 @@ def store_work_stash(
     value: str,
     tags: list[str] | None = None,
 ) -> dict:
+    validation_error = _validate_entry_key(entry_key)
+    if validation_error:
+        return validation_error
     encrypted = _encrypt_stash_value(value)
     encrypted_json = json.dumps(encrypted, ensure_ascii=False, separators=(",", ":"))
     size_bytes = len(encrypted_json.encode("utf-8"))
@@ -1183,14 +1255,21 @@ def store_work_stash(
     )
 )
 def get_work_stash(entry_key: str) -> dict:
+    validation_error = _validate_entry_key(entry_key)
+    if validation_error:
+        return validation_error
     with httpx.Client() as client:
         r = client.get(_stash_get_url(entry_key), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
         return {"status": "not_found", "entry_key": entry_key}
     _raise_for_status(r)
     data = r.json()
+    encrypted_value = data.get("encrypted_value")
+    if not isinstance(encrypted_value, str) or not encrypted_value:
+        return {**data, "value": None, "encrypted_value": None, "status": "invalid_response",
+                "message": "WorkStash response did not include encrypted_value."}
     try:
-        encrypted = json.loads(data["encrypted_value"])
+        encrypted = json.loads(encrypted_value)
         value = _decrypt_stash_value(encrypted)
         return {**data, "value": value, "encrypted_value": None, "status": "loaded"}
     except FileNotFoundError:
@@ -1227,6 +1306,9 @@ def list_work_stash(tag_filter: str | None = None) -> dict:
     )
 )
 def delete_work_stash(entry_key: str) -> dict:
+    validation_error = _validate_entry_key(entry_key)
+    if validation_error:
+        return validation_error
     with httpx.Client() as client:
         r = client.delete(_stash_delete_url(entry_key), headers=_HEADERS, timeout=10)
     if r.status_code == 404:
@@ -1265,13 +1347,35 @@ def should_use_work_stash(
         }
 
     safe_reason = (reason or "").strip().lower()
-    not_suitable = any(kw in safe_reason for kw in ("secret", "api key", "password", "token", "auth"))
-    should_store = not not_suitable
+    not_suitable = bool(_SENSITIVE_REASON_PATTERN.search(safe_reason))
+    quota_exceeded = False
+    entry_limit_reached = False
+    if estimated_size_bytes is not None and estimated_size_bytes < 0:
+        return {"should_store": False, "status": "validation_error", "message": "estimated_size_bytes must be non-negative."}
+    if "error" not in quota_status:
+        used_bytes = quota_status["used_bytes"] or 0
+        quota_bytes = quota_status["quota_bytes"] or 0
+        entry_count = quota_status["entry_count"] or 0
+        entry_limit = quota_status["entry_limit"] or 0
+        if estimated_size_bytes is not None:
+            remaining_bytes = max(quota_bytes - used_bytes, 0) if quota_bytes else None
+            quota_status["estimated_size_bytes"] = estimated_size_bytes
+            quota_status["remaining_bytes"] = remaining_bytes
+            quota_exceeded = remaining_bytes is not None and estimated_size_bytes > remaining_bytes
+        entry_limit_reached = bool(entry_limit and entry_count >= entry_limit)
+    should_store = not not_suitable and not quota_exceeded and not entry_limit_reached
+    if not_suitable:
+        reason_text = "Not suitable: contains sensitive material"
+    elif quota_exceeded:
+        reason_text = "Not suitable: estimated size exceeds remaining WorkStash quota"
+    elif entry_limit_reached:
+        reason_text = "Not suitable: WorkStash entry limit is already reached"
+    else:
+        reason_text = "Suitable: offload from context and reference via WorkBaton"
 
     return {
         "should_store": should_store,
-        "reason": "Not suitable: contains sensitive material" if not_suitable
-                  else "Suitable: offload from context and reference via WorkBaton",
+        "reason": reason_text,
         "recommended_key_pattern": "project_description_version (e.g. myapp_api_spec_v1)",
         "workbaton_hint": "Record the entry_key in WorkBaton next_action or references so the next session can retrieve it.",
         "retrieve_hint": "After resume_context or load_context, call get_work_stash only for referenced entries needed to continue.",

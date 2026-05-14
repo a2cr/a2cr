@@ -1,0 +1,5 @@
+{
+  "goal": "Fix login error",
+  "current_state": "Confirmed the API returns 401 after token refresh.",
+  "next_action": "Check token refresh logic in src/auth/session.ts."
+}
