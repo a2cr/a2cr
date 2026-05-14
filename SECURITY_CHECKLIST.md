@@ -79,7 +79,7 @@ These checks apply to the private hosted service, not this public repository:
 - [ ] `server.json` version matches `pyproject.toml` and `a2cr_mcp/_version.py`.
 - [ ] The PyPI README includes `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
 - [ ] `a2cr-mcp` has been published to PyPI before publishing Registry metadata.
-- [ ] `mcp-publisher publish server.json --dry-run` passes before the immutable publish.
+- [ ] `mcp-publisher validate server.json` passes before the immutable publish.
 - [ ] Registry publishing is performed from `a2cr/a2cr` or with an authentication method that controls the `io.github.a2cr/*` namespace.
 
 ## Claude And OpenAI Distribution

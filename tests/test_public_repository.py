@@ -191,6 +191,8 @@ def test_official_distribution_roadmap_keeps_remote_boundaries_explicit():
     assert "plaintext" in docs
     assert "local encryption" in docs
     assert "raw PyPI stdio package directly" in docs
+    assert "mcp-publisher validate server.json" in docs
+    assert "publish server.json --dry-run" not in docs
 
 
 def test_public_docs_define_security_responsibility_boundary():

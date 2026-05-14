@@ -29,7 +29,7 @@ artifacts rather than hosting the package itself.
    <!-- mcp-name: io.github.a2cr/a2cr-mcp -->
    ```
 
-4. Run an MCP Registry dry run.
+4. Run MCP Registry validation.
 5. Publish to the official MCP Registry.
 6. Verify the registry search result.
 
@@ -44,7 +44,7 @@ Install `mcp-publisher` using the official registry documentation, then run:
 ```powershell
 mcp-publisher --help
 mcp-publisher login github
-mcp-publisher publish server.json --dry-run
+mcp-publisher validate server.json
 mcp-publisher publish server.json
 ```
 

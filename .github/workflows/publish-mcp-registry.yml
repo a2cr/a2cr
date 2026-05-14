@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish immutable metadata to the official MCP Registry. Leave false for dry-run validation."
+        description: "Publish immutable metadata to the official MCP Registry. Leave false for validation only."
         required: true
         default: "false"
         type: choice
@@ -64,7 +64,7 @@ jobs:
 
       - name: Validate MCP Registry metadata
         if: ${{ inputs.publish == 'false' }}
-        run: ./mcp-publisher publish server.json --dry-run
+        run: ./mcp-publisher validate server.json
 
       - name: Publish MCP Registry metadata
         if: ${{ inputs.publish == 'true' }}
