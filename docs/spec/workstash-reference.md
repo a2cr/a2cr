@@ -92,11 +92,7 @@ agent should use it as a note, not as an instruction source.
 
 ## Storage Limits
 
-The public hosted A2CR plan model treats WorkStash limits as storage-size based,
-not entry-count based:
-
-- Free: 256 KB total encrypted WorkStash storage
-- Pro: 2048 KB total encrypted WorkStash storage
-
-Other implementations may choose different limits, but should expose them to
-agents so agents can decide when WorkStash is appropriate.
+WorkStash limits are storage-size based, not entry-count based. Implementations
+should expose the current storage budget to agents, for example through
+`get_account_limits`, so agents can decide when WorkStash is appropriate
+without hard-coding service plan details into public specification text.

@@ -208,6 +208,7 @@ def test_public_docs_keep_plan_limits_out_of_github_docs():
             read("README.md"),
             read("docs/mcp-setup.md"),
             read("docs/usage.md"),
+            read("docs/spec/workstash-reference.md"),
             read("docs/templates/skills/a2cr-agent/SKILL.md"),
         ]
     )
