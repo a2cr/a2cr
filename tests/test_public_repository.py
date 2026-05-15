@@ -50,6 +50,7 @@ def test_public_repository_contains_expected_reference_material():
     tracked = tracked_files()
     expected = [
         "README.md",
+        "README-ja.md",
         "LICENSE",
         "NOTICE",
         "PUBLIC_RELEASE.md",
@@ -223,19 +224,43 @@ def test_readme_is_cleanly_separated_for_public_technical_docs():
     readme = read("README.md")
     readme_ja = read("README-ja.md")
 
-    for marker in ["縺", "譌", "繧", "\ufffd"]:
+    for marker in ["邵ｺ", "隴", "郢", "縺", "繝", "譌", "繧", "\ufffd"]:
         assert marker not in readme
+        assert marker not in readme_ja
 
+    assert "A2CR is an MCP server for AI agent handoffs" in readme
     assert "Long AI work usually breaks at the handoff" in readme
     assert "In this repository, an AI window means one active chat/session" in readme
     assert '"goal": "Fix the failing login test"' in readme
     assert "[Japanese overview](README-ja.md)" in readme
-    assert readme.index("## Install") < readme.index("## Security Boundary")
-    assert readme.index("## Security Boundary") < readme.index("## Configure MCP")
+    assert readme.index("## Quickstart") < readme.index("## Why A2CR Exists")
+    assert readme.index("## Quickstart") < readme.index("## Security Boundary")
 
     assert "A2CR 日本語概要" in readme_ja
-    assert "この GitHub リポジトリは技術公開の場です" in readme_ja
+    assert "このGitHubリポジトリは公開技術資料" in readme_ja
     assert "WorkThreads" in readme_ja
+
+
+def test_package_metadata_supports_discovery_without_shipping_large_assets():
+    pyproject = read("pyproject.toml")
+    manifest = read("MANIFEST.in")
+
+    for term in [
+        "mcp-server",
+        "model-context-protocol",
+        "context-handoff",
+        "agent-memory",
+        "codex",
+        "claude-code",
+        "MCP Registry",
+        "Source",
+        "Issues",
+    ]:
+        assert term in pyproject
+
+    assert "recursive-include docs *.md *.json" in manifest
+    assert "*.png" not in manifest
+    assert "*.gif" not in manifest
 
 
 def test_official_distribution_roadmap_keeps_remote_boundaries_explicit():
