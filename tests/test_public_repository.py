@@ -67,6 +67,7 @@ def test_public_repository_contains_expected_reference_material():
         ".github/workflows/codeql.yml",
         ".github/workflows/dependency-review.yml",
         ".github/workflows/publish-mcp-registry.yml",
+        "glama.json",
         "server.json",
         "pyproject.toml",
         "a2cr_mcp/server.py",

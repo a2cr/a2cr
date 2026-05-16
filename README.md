@@ -31,6 +31,17 @@ Use A2CR when you want to:
 [Usage guide](docs/usage.md) | [WorkBaton spec](docs/spec/README.md) |
 [A2CR app](https://a2cr.app)
 
+## Hosted Service Boundary
+
+A2CR is not a fully local or offline-only store. The current public preview is a
+local stdio MCP wrapper backed by the hosted A2CR service at
+`https://a2cr.app`.
+
+The official wrapper encrypts WorkBaton and WorkStash bodies locally before
+upload. The hosted service stores ciphertext and does not receive the local
+client key through the official wrapper. Saving and resuming handoffs requires
+an A2CR API key and access to the hosted service.
+
 ## Quickstart
 
 Install the local stdio MCP wrapper:
