@@ -99,7 +99,7 @@ in a repository. A2CR focuses on the task handoff itself:
 |---|---|---|
 | WorkBaton | Compact resume checkpoint for the next AI window | Full transcripts, secrets, large files |
 | WorkStash | Temporary supporting notes referenced from WorkBaton | Durable knowledge base, credentials |
-| WorkThreads | Planned multi-agent coordination surface | Replacing WorkBaton handoff |
+| WorkThreads | In development — multi-agent coordination surface | Replacing WorkBaton handoff |
 
 In this repository, an AI window means one active chat/session in an AI client
 such as Codex, Claude Code, Roo Code, or another MCP-capable agent.
