@@ -14,6 +14,17 @@ MCP対応クライアントにおける、1つのアクティブなチャット�
 
 [English README](README.md)
 
+## hosted service との境界
+
+A2CR は完全にローカルまたはオフラインだけで完結する保存先ではありません。
+現在の公開プレビューは、ローカルの stdio MCP wrapper と `https://a2cr.app`
+の hosted service を組み合わせて使います。
+
+公式 wrapper は WorkBaton / WorkStash の本文をローカルで暗号化してから
+アップロードします。hosted service は ciphertext を保存し、公式 wrapper 経由では
+本文を復号するためのローカル client key を受け取りません。保存や再開には、
+A2CR の API key と hosted service への接続が必要です。
+
 ## 何を解決するか
 
 - 長いAIコーディング作業を、新しいコンテキストから再開しやすくする
