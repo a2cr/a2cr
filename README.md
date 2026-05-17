@@ -100,6 +100,14 @@ in a repository. A2CR focuses on the task handoff itself:
 | WorkBaton | Compact resume checkpoint for the next AI window | Full transcripts, secrets, large files |
 | WorkStash | Temporary supporting notes referenced from WorkBaton | Durable knowledge base, credentials |
 | WorkThreads | In development — multi-agent coordination surface | Replacing WorkBaton handoff |
+| WorkLedger | Future direction — auditability and accountability layer A2CR aims to add | Current public-preview feature or substitute for review |
+
+WorkLedger is a future concept for keeping a compact, reviewable record around
+agent handoffs: when work was saved or resumed, which references mattered, what
+decisions were made, and what validation results were reported. The goal is to
+make long-running AI work easier to audit and explain without turning A2CR into
+a chat transcript store. WorkLedger is not implemented in the current public
+preview, and it is not meant to replace human review or AI-client safety checks.
 
 In this repository, an AI window means one active chat/session in an AI client
 such as Codex, Claude Code, Roo Code, or another MCP-capable agent.
