@@ -27,6 +27,9 @@ resume entrypoint for serial handoff.
 
 ## Project Memory Files
 
-`AGENTS.md`, `CLAUDE.md`, and similar files are durable project guidance.
-WorkBaton is current task state. They complement each other but do not replace
-each other.
+`A2CR.md`, `AGENTS.md`, `CLAUDE.md`, and similar files are durable project
+guidance. A useful setup keeps detailed A2CR operating rules in `A2CR.md` and
+adds a short pointer from the AI client's normal project memory file.
+
+WorkBaton is current task state. Project memory files and WorkBaton complement
+each other but do not replace each other.

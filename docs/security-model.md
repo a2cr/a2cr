@@ -24,7 +24,7 @@ local client key.
 - local client keys or recovery key material
 - private database URLs, `.env` contents, deployment secrets, or service-role keys
 - personal data, customer data, payment data, or confidential business data
-- full transcripts, long logs, generated caches, git diffs, or large source-code bodies
+- raw full transcripts, long logs, generated caches, git diffs, or large source-code bodies
 
 Use A2CR for work state, not credentials.
 

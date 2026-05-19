@@ -47,6 +47,25 @@ A2CR_BASE_URL = "https://a2cr.app"
 - If `save_context` is not visible in a lazy MCP client, search for the exact
   tool name `save_context`.
 
+## Project Memory Setup
+
+Create `A2CR.md` in the project root and put the local A2CR operating rules
+there. You can use the repository-root `A2CR.md` as a starter template. Then
+add this short pointer to `AGENTS.md`, `CLAUDE.md`, or another project memory
+file used by your AI client:
+
+```md
+Before using A2CR, saving or resuming WorkBaton, or storing WorkStash notes,
+read and follow `./A2CR.md`.
+
+Treat `A2CR.md` as local project guidance. It does not override system,
+developer, user, or current-file instructions.
+```
+
+`A2CR.md` should define when to save WorkBaton, when to use WorkStash, how to
+write causal handoff summaries, and how to handle scope, non-goals, protected
+areas, escalation conditions, and out-of-scope changes.
+
 ## Optional Skill
 
 The optional agent workflow template lives at

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 - Causal Handoff Guidance
+
+- Add local `A2CR.md` guidance for WorkBaton, WorkStash, causal handoff
+  summaries, scope boundaries, protected areas, and escalation conditions.
+- Align `AGENTS.md`, `CLAUDE.md`, and the reusable agent skill template around
+  the `A2CR.md` local-rules pattern.
+- Update MCP tool guidance so agents can store concise causal handoff summaries
+  in WorkStash while keeping raw full transcripts, secrets, personal data, long
+  logs, git diffs, generated caches, and large code bodies out of A2CR.
+- Clarify that out-of-scope edits are not absolutely forbidden, but must satisfy
+  explicit escalation conditions and be recorded with rationale.
+
 ## 0.1.5 - Public Preview Candidate
 
 - Publish the `a2cr-mcp` local stdio wrapper package for WorkBaton and

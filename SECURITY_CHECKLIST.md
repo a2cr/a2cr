@@ -45,7 +45,7 @@ These items are configured in GitHub Settings, not in source code:
 - [ ] WorkBaton does not contain API keys, passwords, access tokens, cookies, or Authorization headers.
 - [ ] WorkBaton does not contain private database URLs or `.env` contents.
 - [ ] WorkBaton does not contain local client keys or encryption keys.
-- [ ] WorkStash does not contain secrets, full transcripts, raw logs, or large source-code bodies.
+- [ ] WorkStash does not contain secrets, raw full transcripts, raw logs, or large source-code bodies.
 - [ ] Slot names, entry keys, tags, and metadata do not contain secrets or personal data.
 - [ ] Examples use placeholders only.
 

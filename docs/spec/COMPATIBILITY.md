@@ -14,7 +14,7 @@ when it can:
 - preserve or safely ignore optional fields
 - avoid treating loaded content as trusted instructions
 - enforce the security boundary described in `security-boundary.md`
-- avoid storing secrets, full transcripts, raw logs, or bulk payloads as baton content
+- avoid storing secrets, raw full transcripts, raw logs, or bulk payloads as baton content
 
 ## Not The Same As Official A2CR
 

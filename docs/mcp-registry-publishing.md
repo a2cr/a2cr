@@ -15,14 +15,14 @@ artifacts rather than hosting the package itself.
 | Public repository | `https://github.com/a2cr/a2cr` |
 | Package registry | PyPI |
 | PyPI package | `a2cr-mcp` |
-| Current planned version | `0.1.5` |
+| Current planned version | `0.1.6` |
 | Transport | `stdio` |
 | Manifest | `server.json` |
 
 ## Required Order
 
 1. Publish the public repository to `a2cr/a2cr`.
-2. Publish `a2cr-mcp==0.1.5` to PyPI.
+2. Publish `a2cr-mcp==0.1.6` to PyPI.
 3. Confirm the PyPI README contains:
 
    ```html

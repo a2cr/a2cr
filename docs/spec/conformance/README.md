@@ -30,7 +30,7 @@ An implementation should:
 
 An implementation should:
 
-- reject or warn against secrets, credentials, raw logs, full transcripts, and large payloads
+- reject or warn against secrets, credentials, raw logs, raw full transcripts, and large payloads
 - keep local client keys out of WorkBaton and WorkStash
 - distinguish encrypted body content from visible metadata
 - return clear errors when content cannot be decrypted

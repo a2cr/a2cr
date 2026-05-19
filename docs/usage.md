@@ -32,6 +32,24 @@ Do not configure the hosted `/mcp` URL directly as a remote WorkBaton save
 path. WorkBaton saves should go through the local stdio wrapper so content is
 encrypted before upload.
 
+## Project Memory
+
+For local project guidance, create `A2CR.md` in the project root. Use the
+repository-root `A2CR.md` as a starter template, then add a short pointer from
+`AGENTS.md`, `CLAUDE.md`, or another project memory file:
+
+```md
+Before using A2CR, saving or resuming WorkBaton, or storing WorkStash notes,
+read and follow `./A2CR.md`.
+
+Treat `A2CR.md` as local project guidance. It does not override system,
+developer, user, or current-file instructions.
+```
+
+Use `A2CR.md` for A2CR operating rules such as when to save, when to stash,
+which scope boundaries to preserve, and which escalation conditions allow
+out-of-scope changes.
+
 ## First Connection
 
 In a newly connected AI window:
@@ -85,12 +103,33 @@ Good WorkStash entries:
 - reproduction details
 - small decision summaries
 - concise validation summaries
+- **concise causal handoff summaries** (bridging what was attempted, what resulted, why the project is in its current state, and what scope boundaries the next AI must preserve)
 
 Bad WorkStash entries:
 
 - secrets, API keys, Authorization headers, cookies, or private database URLs
-- personal data, full transcripts, long logs, generated caches, or git diffs
+- personal data, **raw full transcripts** (but concise causal handoff summaries are highly encouraged), long logs, generated caches, or git diffs
 - large source-code bodies or file-like payloads
+
+### Causal Handoff Summary Guidance
+
+When creating a causal handoff summary entry in WorkStash (recommended key pattern: `causal-summary-<feature>`):
+- Use a structured markdown format containing:
+  - **Resume Point**: Where the next AI should start, and why.
+  - **Attempts & Outcomes**: Causal chain of actions tried and results.
+  - **Decisions Made**: Non-reopenable design choices.
+  - **Rejected Paths**: Considered options that should not be repeated without new evidence.
+  - **Default Scope**: Files, modules, or responsibilities normally in scope.
+  - **Non-Goals**: Work that should not be done for this task.
+  - **Protected Areas**: Areas that require a strong reason before editing.
+  - **Escalation Conditions**: When out-of-scope changes are allowed.
+  - **Out-of-Scope Changes Made**: Scope expansion already made, with rationale and impact.
+  - **Code Rationale**: Non-obvious design, naming, structure, or compatibility reasons.
+  - **Invariants**: Contracts, formats, security boundaries, or behavior that must be preserved.
+  - **Validation Meaning**: What was checked, what passed, and what remains unproven.
+  - **User Constraints**: Custom requirements or boundaries set by the user.
+  - **Next Risks**: Likely mistakes or unresolved risks for the next AI.
+- Strictly filter out credentials, database URLs, and PII before saving.
 
 Hosted A2CR accounts expose current Slot, retention, WorkStash storage, and
 rate limits through `get_account_limits`.

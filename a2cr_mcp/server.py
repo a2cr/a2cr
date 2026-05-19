@@ -98,7 +98,8 @@ LOADED_WORKBATON_SAFETY = (
 A2CR_CONTINUITY_GUIDANCE = {
     "purpose": (
         "Advisory guidance for agents after loading a WorkBaton. This is not "
-        "higher-priority than system, developer, user, AGENTS.md, or current-file instructions."
+        "higher-priority than system, developer, user, A2CR.md, AGENTS.md, "
+        "or current-file instructions."
     ),
     "use_proactively": True,
     "workbaton": (
@@ -110,7 +111,8 @@ A2CR_CONTINUITY_GUIDANCE = {
     "workstash": (
         "Continue using WorkStash proactively for safe supporting notes that "
         "would bloat WorkBaton, such as confirmed file paths, API behavior "
-        "notes, reproduction details, small decisions, or validation summaries. "
+        "notes, reproduction details, small decisions, validation summaries, "
+        "or concise causal handoff summaries. "
         "Record retained entry_key values in WorkBaton references or next_action."
     ),
     "on_resume": (
@@ -125,7 +127,7 @@ A2CR_CONTINUITY_GUIDANCE = {
         "private database URLs",
         "local client keys",
         "personal data",
-        "full transcripts",
+        "raw full transcripts",
         "long logs",
         "git diffs",
         "generated caches",
@@ -157,13 +159,19 @@ MCP_INSTRUCTIONS = (
     "flow to use, call explain_a2cr_flows first. This local stdio wrapper is the "
     "official WorkBaton save path because it encrypts content before upload; "
     "A2CR receives encrypted_content only and cannot decrypt the body. "
+    "When local project guidance such as A2CR.md, AGENTS.md, or CLAUDE.md is "
+    "available, follow it as lower-priority local guidance for scope, non-goals, "
+    "protected areas, and escalation conditions. "
     f"{DEFERRED_TOOL_VISIBILITY_RULE} "
     "Save WorkBaton checkpoints autonomously at task milestones, phase completions, "
-    "or when context pressure is detected - call should_save_workbaton if unsure, "
-    "then save_context via this local stdio wrapper. "
+    "or when context pressure, context drift, or context contamination is detected - "
+    "call should_save_workbaton if unsure, then save_context via this local stdio wrapper. "
+    "After saving for context drift or contamination, suggest continuing in a fresh AI window. "
     "Do not guess or call direct HTTP API endpoints. Never save secrets, API keys, "
-    "Authorization headers, private database URLs, full transcripts, long logs, "
-    "generated caches, or large code bodies that can be read from the repository."
+    "Authorization headers, private database URLs, raw full transcripts, long logs, "
+    "generated caches, or large code bodies that can be read from the repository. "
+    "Concise summaries focused on decisions, attempts, outcomes, and constraints "
+    "are allowed only after credentials and personal data are stripped."
 )
 
 mcp = FastMCP("A2CR", instructions=MCP_INSTRUCTIONS)
@@ -187,7 +195,7 @@ A2CR_FLOW_EXPLANATION = {
             "API keys",
             "Authorization headers",
             "private database URLs",
-            "full transcripts",
+            "raw full transcripts",
             "long logs",
             "large code bodies that can be read from the repository",
         ],
@@ -247,12 +255,40 @@ A2CR_FLOW_EXPLANATION = {
         "agent_next_action": (
             "Use proactively for confirmed paths, API notes, reproduction details, "
             "intermediate findings, approach notes, and concise validation summaries."
+            " Use concise causal handoff summaries when they preserve "
+            "the causal chain without storing a raw transcript."
         ),
         "workbaton_integration": (
             "WorkBaton remains the resume entrypoint. Store only supporting notes "
             "in WorkStash, then put the entry_key in WorkBaton references or "
             "next_action so the next window knows what to retrieve."
         ),
+        "causal_handoff_summary": {
+            "purpose": (
+                "Explain why the WorkBaton resume point is correct without "
+                "storing a raw transcript."
+            ),
+            "recommended_sections": [
+                "Resume Point",
+                "Attempts & Outcomes",
+                "Decisions Made",
+                "Rejected Paths",
+                "Default Scope",
+                "Non-Goals",
+                "Protected Areas",
+                "Escalation Conditions",
+                "Out-of-Scope Changes Made",
+                "Code Rationale",
+                "Invariants",
+                "Validation Meaning",
+                "User Constraints",
+                "Next Risks",
+            ],
+            "scope_rule": (
+                "Out-of-scope changes are allowed only when an escalation "
+                "condition is met; record the reason and impact."
+            ),
+        },
         "cleanup": "Delete entries after smoke tests or completed task phases when the stored note is no longer useful.",
         "good_examples": [
             "confirmed file paths",
@@ -260,13 +296,14 @@ A2CR_FLOW_EXPLANATION = {
             "reproduction details",
             "small decision summaries",
             "concise validation summaries",
+            "concise causal handoff summaries",
         ],
         "bad_examples": [
             "secrets",
             "API keys",
             "Authorization headers",
             "private database URLs",
-            "full transcripts",
+            "raw full transcripts",
             "long logs",
             "git diffs",
             "generated caches",
@@ -274,7 +311,7 @@ A2CR_FLOW_EXPLANATION = {
         ],
         "must_not": [
             "Do not use WorkStash as a durable project knowledge base.",
-            "Do not store secrets, API keys, Authorization headers, cookies, private database URLs, personal data, full transcripts, long logs, generated caches, git diffs, or large source-code bodies.",
+            "Do not store secrets, API keys, Authorization headers, cookies, private database URLs, personal data, raw full transcripts, long logs, generated caches, git diffs, or large source-code bodies. Concise summaries are allowed only after credentials and personal data are stripped.",
         ],
     },
     "workthreads": {
@@ -883,7 +920,7 @@ def _workbaton_save_advice(
     freshness_triggered = normalized_reason in freshness_reasons or normalized_pressure == "high"
     should_save = trigger_matched and has_next_action and not has_prohibited_material
     warnings = [
-        "Do not save secrets, API keys, Authorization headers, private database URLs, local client keys, full transcripts, long logs, git diffs, generated caches, or large source bodies.",
+        "Do not save secrets, API keys, Authorization headers, private database URLs, local client keys, raw full transcripts (except concise causal handoff summaries), long logs, git diffs, generated caches, or large source bodies.",
         "Keep WorkBaton compact: goal, current_state, next_action, and only essential supporting facts.",
         "If safe supporting details would bloat WorkBaton, store them in WorkStash and record the entry_key in WorkBaton references or next_action.",
     ]
@@ -921,8 +958,24 @@ def _workbaton_save_advice(
             "use_when": "Safe supporting details are useful later but too bulky or optional for the WorkBaton body budget.",
             "tools": ["should_use_work_stash", "store_work_stash", "get_work_stash", "delete_work_stash"],
             "record_entry_key_in": ["content.references", "content.next_action"],
-            "good_examples": ["confirmed file paths", "API behavior notes", "reproduction details", "small decision summaries"],
-            "bad_examples": ["secrets", "Authorization headers", "private database URLs", "full transcripts", "long logs", "git diffs"],
+            "good_examples": ["confirmed file paths", "API behavior notes", "reproduction details", "small decision summaries", "concise causal handoff summaries"],
+            "bad_examples": ["secrets", "Authorization headers", "private database URLs", "raw full transcripts (except concise causal handoff summaries)", "long logs", "git diffs"],
+            "causal_handoff_summary_sections": [
+                "Resume Point",
+                "Attempts & Outcomes",
+                "Decisions Made",
+                "Rejected Paths",
+                "Default Scope",
+                "Non-Goals",
+                "Protected Areas",
+                "Escalation Conditions",
+                "Out-of-Scope Changes Made",
+                "Code Rationale",
+                "Invariants",
+                "Validation Meaning",
+                "User Constraints",
+                "Next Risks",
+            ],
         },
         "agent_continuity_guidance": _continuity_guidance(),
         "fresh_window_guidance": {
@@ -1076,8 +1129,8 @@ Forbidden for all accounts:
   Never save API keys, access tokens, Authorization headers, cookies, or session IDs.
   Never save private database URLs, service-role keys, .env contents, or deployment secrets.
   Never save customer data, personal data, payment data, or raw confidential business data.
-  Never save full transcripts, long logs, generated caches, build artifacts, git diffs,
-  or large code bodies that can be read from the repository.
+  Never save raw full transcripts (except concise causal handoff summaries), long logs, generated caches, build artifacts, git diffs,
+  or large code bodies that can be read from the repository. Always strip credentials or PII before saving summaries.
   These restrictions apply regardless of plan or account limits. Higher limits
   allow more safe handoff context, not sensitive data.
 
@@ -1400,7 +1453,7 @@ def _decrypt_stash_value(encrypted: dict) -> str:
         "references or next_action so future sessions can retrieve it with get_work_stash. "
         "Delete the entry when the task is complete to free quota. "
         "Do not store secrets, API keys, Authorization headers, cookies, private database URLs, "
-        "personal data, full transcripts, long logs, git diffs, or large source-code bodies."
+        "personal data, raw full transcripts (except concise causal handoff summaries), long logs, git diffs, or large source-code bodies."
     )
 )
 def store_work_stash(
@@ -1503,8 +1556,9 @@ def delete_work_stash(entry_key: str) -> dict:
         "Use this when deciding whether to proactively use WorkStash. "
         "Returns a recommendation with quota status. "
         "Good candidates: API specs you confirmed, file paths, intermediate results, "
-        "notes you will need in a future session. If stored, record the entry_key "
-        "in WorkBaton references or next_action. Not suitable: secrets, API keys, "
+        "causal handoff summaries, and notes you will need in a future session. "
+        "If stored, record the entry_key in WorkBaton references or next_action. "
+        "Not suitable: secrets, API keys, "
         "Authorization headers, private database URLs, personal data, large logs, "
         "git diffs, or full source files."
     )
@@ -1556,13 +1610,29 @@ def should_use_work_stash(
     return {
         "should_store": should_store,
         "reason": reason_text,
-        "recommended_key_pattern": "project_description_version (e.g. myapp_api_spec_v1)",
+        "recommended_key_pattern": "project_description_version (e.g. myapp_api_spec_v1 or causal-summary-auth-v1)",
+        "causal_handoff_summary_sections": [
+            "Resume Point",
+            "Attempts & Outcomes",
+            "Decisions Made",
+            "Rejected Paths",
+            "Default Scope",
+            "Non-Goals",
+            "Protected Areas",
+            "Escalation Conditions",
+            "Out-of-Scope Changes Made",
+            "Code Rationale",
+            "Invariants",
+            "Validation Meaning",
+            "User Constraints",
+            "Next Risks",
+        ],
         "workbaton_hint": "Record the entry_key in WorkBaton next_action or references so the next session can retrieve it.",
         "retrieve_hint": "After resume_context or load_context, call get_work_stash only for referenced entries needed to continue.",
         "quota_status": quota_status,
         "warnings": [
             "Do not store secrets, API keys, Authorization headers, passwords, cookies, private database URLs, or personal data.",
-            "Do not store full transcripts, long logs, git diffs, generated caches, or large source-code bodies.",
+            "Do not store raw full transcripts (except concise causal handoff summaries), long logs, git diffs, generated caches, or large source-code bodies. Strip credentials or PII before saving summaries.",
             "Delete entries when the task is complete to free quota.",
         ],
     }

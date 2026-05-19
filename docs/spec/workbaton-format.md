@@ -14,7 +14,7 @@ is one implementation, not a requirement of the format.
 
 - Preserve only the essential working state.
 - Keep the handoff inspectable by humans and agents.
-- Avoid secrets, raw logs, and full transcripts.
+- Avoid secrets, raw logs, and raw full transcripts.
 - Make the next action explicit.
 - Allow supporting notes to live outside the baton through references.
 

@@ -158,7 +158,7 @@ def test_mcp_registry_metadata_matches_package_readme():
 
     assert server["$schema"] == "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
     assert server["name"] == "io.github.a2cr/a2cr-mcp"
-    assert server["version"] == "0.1.5"
+    assert server["version"] == "0.1.6"
     assert "<!-- mcp-name: io.github.a2cr/a2cr-mcp -->" in readme
 
     package = server["packages"][0]

@@ -48,7 +48,7 @@ For that reason:
 
 | Phase | Target | Artifact | Status | Exit criteria |
 |---|---|---|---|---|
-| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.5`, docs, examples | Prepared | Public repo is pushed, tests pass, package builds, PyPI release is live. |
+| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.6`, docs, examples | Prepared | Public repo is pushed, tests pass, package builds, PyPI release is live. |
 | P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Ready after PyPI | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
 | P2 | Claude local distribution | Claude Desktop Extension / MCPB wrapping `a2cr-mcp` | Post-launch | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
@@ -65,7 +65,7 @@ Service start criteria:
 
 - `a2cr/a2cr` is public and contains only the intended public client, specs,
   docs, examples, and focused tests.
-- `a2cr-mcp==0.1.5` is live on PyPI and can be installed in a fresh environment.
+- `a2cr-mcp==0.1.6` is live on PyPI and can be installed in a fresh environment.
 - The PyPI README contains `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
 - The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible in
   search.
@@ -92,7 +92,7 @@ wrapper, WorkBaton, WorkStash, local encryption, and the MCP Registry listing.
 
 Launch promotion checklist:
 
-- publish a short release note for `a2cr-mcp==0.1.5`
+- publish a short release note for `a2cr-mcp==0.1.6`
 - announce the public repository, PyPI package, and MCP Registry entry together
 - explain the core setup path: get API key, install from PyPI, configure MCP
   client, save/resume a WorkBaton

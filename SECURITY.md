@@ -58,7 +58,7 @@ Do not store:
 - local client keys or recovery key material
 - private database URLs, `.env` contents, deployment secrets, or service-role keys
 - personal data, customer data, payment data, or confidential business data
-- full transcripts, long logs, generated caches, git diffs, or large source-code bodies
+- raw full transcripts, long logs, generated caches, git diffs, or large source-code bodies
 
 Encryption protects against A2CR reading the body. It does not remove the risk
 that a future AI window, local machine, copied resume prompt, log, issue, or PR

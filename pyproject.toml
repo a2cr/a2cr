@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "a2cr-mcp"
-version = "0.1.5"
+version = "0.1.6"
 description = "MCP server for client-encrypted AI agent handoff checkpoints with WorkBaton and WorkStash."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"

@@ -1004,7 +1004,7 @@ def test_mcp_stdio_and_agent_guide_document_plan_neutral_forbidden_material():
         "private database URLs",
         "customer data",
         "personal data",
-        "full transcripts",
+        "raw full transcripts",
         "long logs",
         "git diffs",
         "Higher limits",

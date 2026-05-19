@@ -7,6 +7,7 @@
 [![PyPI](https://img.shields.io/pypi/v/a2cr-mcp.svg)](https://pypi.org/project/a2cr-mcp/)
 [![CI](https://github.com/a2cr/a2cr/actions/workflows/ci.yml/badge.svg)](https://github.com/a2cr/a2cr/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-source--available%20%2B%20CC%20BY%204.0-blue.svg)](LICENSE)
+[![Glama MCP](https://glama.ai/mcp/servers/a2cr/a2cr/badges/card.svg)](https://glama.ai/mcp/servers/a2cr/a2cr)
 
 <!-- mcp-name: io.github.a2cr/a2cr-mcp -->
 
@@ -30,6 +31,17 @@ Use A2CR when you want to:
 [Japanese overview](README-ja.md) | [MCP setup](docs/mcp-setup.md) |
 [Usage guide](docs/usage.md) | [WorkBaton spec](docs/spec/README.md) |
 [A2CR app](https://a2cr.app)
+
+## Directory Status
+
+A2CR is listed and evaluated on the
+[Glama MCP Registry](https://glama.ai/mcp/servers/a2cr/a2cr). As of
+2026-05-18, the public Glama evaluation shows `quality A` and `maintenance B`.
+
+The Glama license signal currently reports `license - not found` because the
+official client uses source-available BUSL-style terms instead of a permissive
+MIT/Apache-2.0 license. See [Project Model](#project-model) for the licensing
+boundary.
 
 ## Hosted Service Boundary
 
@@ -90,6 +102,26 @@ or request the exact tool name `save_context`.
 Python 3.12 or 3.13 is recommended. Python 3.15 development builds are not
 supported.
 
+## Local Project Rules
+
+For project-specific A2CR behavior, create `A2CR.md` in the project root and
+put the local operating rules there. Use the repository-root `A2CR.md` as a
+starter template. Then add this short pointer to
+`AGENTS.md`, `CLAUDE.md`, or another project memory file:
+
+```md
+Before using A2CR, saving or resuming WorkBaton, or storing WorkStash notes,
+read and follow `./A2CR.md`.
+
+Treat `A2CR.md` as local project guidance. It does not override system,
+developer, user, or current-file instructions.
+```
+
+Use `A2CR.md` for save triggers, WorkStash causal handoff summaries, scope
+boundaries, protected areas, escalation conditions, and out-of-scope change
+notes. Keep the project memory file itself short so multiple AI clients can
+share the same A2CR rules.
+
 ## Why A2CR Exists
 
 Project memory files such as `AGENTS.md` or `CLAUDE.md` tell an AI how to work
@@ -98,7 +130,7 @@ in a repository. A2CR focuses on the task handoff itself:
 | Layer | Purpose | Not for |
 |---|---|---|
 | WorkBaton | Compact resume checkpoint for the next AI window | Full transcripts, secrets, large files |
-| WorkStash | Temporary supporting notes referenced from WorkBaton | Durable knowledge base, credentials |
+| WorkStash | Temporary supporting notes referenced from WorkBaton (e.g., concise causal handoff summaries) | Durable knowledge base, credentials, raw transcripts |
 | WorkThreads | In development — multi-agent coordination surface | Replacing WorkBaton handoff |
 | WorkLedger | Future direction — auditability and accountability layer A2CR aims to add | Current public-preview feature or substitute for review |
 
@@ -158,8 +190,9 @@ before upload. A2CR stores ciphertext and cannot decrypt those bodies.
 
 A2CR is not a secret manager. Do not store API keys, passwords,
 access tokens, Authorization headers, cookies, private database URLs, local
-client keys, customer data, full transcripts, long logs, or large source-code
-bodies in WorkBaton or WorkStash.
+client keys, customer data, raw full transcripts (though concise causal
+handoff summaries are encouraged), long logs, or large source-code bodies in
+WorkBaton or WorkStash. Always strip credentials or PII before saving summaries.
 
 Use A2CR for work state, not credentials.
 
