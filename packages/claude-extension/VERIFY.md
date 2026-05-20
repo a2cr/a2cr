@@ -231,9 +231,9 @@ Follow-up required:
 
 ```text
 Date: 2026-05-20
-Tester: Claude Code (automated via a2cr MCP)
+Tester: Claude (automated via A2CR MCPB extension in Claude Desktop)
 OS: Windows 11 Home 10.0.26200
-Claude Desktop version: installed (user-confirmed)
+Claude Desktop version: installed (A2CR extension active)
 A2CR test account plan: free
 Artifact: a2cr-0.1.6.mcpb
 Artifact SHA256: 95BD5681F561FEE2399319C9439340024A02FDA56161AD0BB8B73C345045FA75
@@ -269,12 +269,11 @@ Metadata smoke result:
 
 Dashboard client/version observation:
   Not directly verified in this session (no dashboard access).
-  Functional API round-trip confirmed via a2cr MCP.
+  All tool calls executed via Node MCPB (a2cr-0.1.6.mcpb) in Claude Desktop.
 
 Issues found: none
 Follow-up required:
   - Verify A2CR dashboard shows client=Claude, version=0.1.6 in access logs
-  - Confirm smoke tests pass when invoked directly from Claude Desktop chat
 ```
 
 ## References
