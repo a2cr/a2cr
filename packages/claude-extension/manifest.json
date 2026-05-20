@@ -1,0 +1,91 @@
+{
+  "manifest_version": "0.3",
+  "name": "a2cr",
+  "display_name": "A2CR",
+  "version": "0.1.6",
+  "description": "AI-agent handoff checkpoints and temporary work memory with local encryption before upload.",
+  "long_description": "A2CR lets Claude Desktop save and load compact WorkBaton checkpoints through a local MCP server. WorkBaton content is validated and encrypted on the user's machine before it is sent to the A2CR hosted service.",
+  "author": {
+    "name": "A2CR",
+    "url": "https://a2cr.app/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a2cr/a2cr.git"
+  },
+  "homepage": "https://a2cr.app/",
+  "documentation": "https://a2cr.app/en/manual",
+  "support": "https://github.com/a2cr/a2cr/issues",
+  "icon": "assets/icon.png",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "size": "512x512"
+    }
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "A2CR_API_KEY": "${user_config.a2cr_api_key}",
+        "A2CR_BASE_URL": "${user_config.a2cr_base_url}",
+        "A2CR_CLIENT_TYPE": "claude"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "get_account_limits",
+      "description": "Return current A2CR account limits and quota metadata."
+    },
+    {
+      "name": "list_contexts",
+      "description": "List WorkBaton Slot metadata without returning stored content."
+    },
+    {
+      "name": "save_context",
+      "description": "Validate and locally encrypt compact WorkBaton handoff content before saving it to A2CR."
+    },
+    {
+      "name": "load_context",
+      "description": "Load a WorkBaton Slot by name or number and decrypt its content locally."
+    }
+  ],
+  "tools_generated": false,
+  "keywords": [
+    "ai-agents",
+    "agent-memory",
+    "claude",
+    "context-handoff",
+    "mcp",
+    "workbaton",
+    "workstash"
+  ],
+  "license": "LicenseRef-A2CR-Source-Available",
+  "privacy_policies": ["https://a2cr.app/en/privacy"],
+  "compatibility": {
+    "platforms": ["darwin", "win32"],
+    "runtimes": {
+      "node": ">=22.0.0"
+    }
+  },
+  "user_config": {
+    "a2cr_api_key": {
+      "type": "string",
+      "title": "A2CR API Key",
+      "description": "API key for the A2CR hosted service.",
+      "sensitive": true,
+      "required": true
+    },
+    "a2cr_base_url": {
+      "type": "string",
+      "title": "A2CR Base URL",
+      "description": "A2CR service URL. Keep the default unless you are testing a compatible deployment.",
+      "default": "https://a2cr.app",
+      "required": false
+    }
+  }
+}

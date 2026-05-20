@@ -1,0 +1,27 @@
+{
+  "name": "@a2cr/claude-extension",
+  "version": "0.1.6",
+  "private": true,
+  "description": "Claude Desktop Extension / MCPB local wrapper for A2CR.",
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "mcpb:validate": "npx -y @anthropic-ai/mcpb@2.1.2 validate manifest.json",
+    "mcpb:pack": "node scripts/pack-mcpb.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
