@@ -39,6 +39,7 @@ use, test, and implement the public A2CR client/spec surface.
 - `mcp/`
 - `docs/concepts.md`
 - `docs/mcp-setup.md`
+- `docs/claude-desktop-mcpb.md`
 - `docs/mcp-registry-publishing.md`
 - `docs/official-distribution-roadmap.md`
 - `docs/security-model.md`
@@ -46,6 +47,8 @@ use, test, and implement the public A2CR client/spec surface.
 - `docs/spec/`
 - `docs/templates/skills/a2cr-agent/`
 - `examples/`
+- `packages/claude-extension/` for the Claude Desktop MCPB package, excluding
+  generated build artifacts and local credentials
 - focused tests for the public MCP wrapper and public repository boundary
 
 ### Do Not Include
@@ -103,6 +106,11 @@ Before publishing to `a2cr/a2cr`, verify:
 - `SECURITY.md` and `SECURITY_CHECKLIST.md` are present
 - `docs/spec/` contains implementation-level spec files, schemas, examples, and conformance guidance
 - `server.json` matches the PyPI package version and README `mcp-name` verification string
+- the Claude Desktop MCPB package version and compatibility header match the
+  Python wrapper version when released together
+- the MCPB artifact is built with `npm run mcpb:pack`, verified with a SHA-256
+  checksum, and attached to GitHub Release only after explicit publication
+  approval
 - `docs/official-distribution-roadmap.md` still treats Claude and OpenAI remote submissions as later phases unless the remote privacy boundary is documented
 - the branch being pushed contains only intended public-release files
 - GitHub Settings are configured for Dependabot alerts, secret scanning, CodeQL/code scanning, branch protection, and pull-request based merges

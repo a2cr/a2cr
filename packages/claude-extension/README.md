@@ -7,9 +7,10 @@ The extension is intentionally local-first. It must preserve the same security
 boundary as the Python `a2cr-mcp` wrapper: WorkBaton and WorkStash bodies are
 validated and encrypted on the user's machine before upload to A2CR.
 
-Status: WorkBaton MVP runtime and MCPB manifest metadata are implemented for
-local testing. MCPB packaging, WorkStash tools, reviewer instructions, and
-official submission assets are still pending.
+Status: WorkBaton MVP runtime, MCPB manifest metadata, and local MCPB packaging
+are implemented for testing and pre-submission GitHub Release distribution.
+WorkStash tools, full tool parity, reviewer instructions, and official
+submission assets are still pending.
 
 Implemented so far:
 
@@ -42,10 +43,19 @@ Packaging commands:
   `@anthropic-ai/mcpb@2.1.2`.
 - `npm run mcpb:pack` builds `dist/`, creates a clean staging directory with
   production dependencies only, validates the staged manifest, and writes
-  `build/mcpb/artifacts/a2cr-0.1.6.mcpb`.
+  `build/mcpb/artifacts/a2cr-0.1.6.mcpb` plus
+  `build/mcpb/artifacts/SHA256SUMS.txt`.
 
 The pack script intentionally excludes TypeScript sources, tests, and dev
 dependencies from the generated MCPB artifact.
+
+Distribution decision:
+
+- Publish the generated `.mcpb` as a GitHub Release asset, not an npm package.
+- Attach a SHA-256 checksum alongside the `.mcpb` asset.
+- Keep the package version, manifest version, and `A2CR_MCP_COMPAT_VERSION`
+  aligned with the public Python `a2cr-mcp` release.
+- Do not claim Anthropic Directory approval until the listing is approved.
 
 Manual Claude Desktop verification:
 

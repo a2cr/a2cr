@@ -56,7 +56,18 @@ an A2CR API key and access to the hosted service.
 
 ## Quickstart
 
-Install the local stdio MCP wrapper:
+Choose the local MCP distribution path that matches your AI client:
+
+| Path | Best for | Distribution | Notes |
+|---|---|---|---|
+| Python stdio wrapper | Codex, Claude Code, Roo Code, Cursor, generic MCP clients | PyPI package `a2cr-mcp` | Full public wrapper path for WorkBaton and WorkStash. |
+| Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Pre-submission Claude path. No npm install is required for end users. |
+
+Keep the Python wrapper version and Node MCPB compatibility version aligned.
+If `a2cr-mcp` is released as `0.1.6`, the Node MCPB should also report A2CR
+MCP compatibility version `0.1.6` so the dashboard can recognize the wrapper.
+
+Python wrapper install:
 
 ```bash
 python -m pip install --upgrade a2cr-mcp
@@ -101,6 +112,12 @@ or request the exact tool name `save_context`.
 
 Python 3.12 or 3.13 is recommended. Python 3.15 development builds are not
 supported.
+
+For Claude Desktop extension-style installation, use the Node MCPB package.
+The intended public distribution point is the GitHub Release asset
+`a2cr-0.1.6.mcpb`; until that asset is published, build it from this repository
+with `npm run mcpb:pack` in `packages/claude-extension`. See
+`docs/claude-desktop-mcpb.md`.
 
 ## Local Project Rules
 
@@ -264,6 +281,7 @@ See:
 
 - `docs/concepts.md`
 - `docs/mcp-setup.md`
+- `docs/claude-desktop-mcpb.md`
 - `docs/security-model.md`
 - `docs/official-distribution-roadmap.md`
 - `SECURITY_CHECKLIST.md`

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - Distribution Documentation
+
+- Document the two local MCP distribution paths: Python `a2cr-mcp` from PyPI
+  and Node Claude Desktop MCPB from GitHub Release assets.
+- Add Claude Desktop MCPB build, checksum, install, and wording guidance.
+- Clarify that the Node package is not an npm end-user distribution channel and
+  must keep its compatibility version aligned with the Python wrapper.
+
 ## 0.1.6 - Causal Handoff Guidance
 
 - Add local `A2CR.md` guidance for WorkBaton, WorkStash, causal handoff

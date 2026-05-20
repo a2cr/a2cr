@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -10,6 +11,7 @@ const stagingDir = join(buildRoot, "staging");
 const artifactsDir = join(buildRoot, "artifacts");
 const manifest = JSON.parse(await readFile(join(packageRoot, "manifest.json"), "utf8"));
 const outputFile = join(artifactsDir, `${manifest.name}-${manifest.version}.mcpb`);
+const checksumFile = join(artifactsDir, "SHA256SUMS.txt");
 
 await rm(buildRoot, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
@@ -28,7 +30,10 @@ run("npx", ["-y", "@anthropic-ai/mcpb@2.1.2", "pack", ".", outputFile], {
   cwd: stagingDir,
 });
 
+await writeChecksum();
+
 console.log(`MCPB artifact: ${outputFile}`);
+console.log(`MCPB checksum: ${checksumFile}`);
 
 async function copyRequiredFiles() {
   await Promise.all([
@@ -58,6 +63,11 @@ async function keepRuntimePackageMetadataOnly() {
 
   await writeFile(join(stagingDir, "package.json"), `${JSON.stringify(runtimePackageJson, null, 2)}\n`);
   await rm(join(stagingDir, "package-lock.json"), { force: true });
+}
+
+async function writeChecksum() {
+  const digest = createHash("sha256").update(await readFile(outputFile)).digest("hex");
+  await writeFile(checksumFile, `${digest}  ${basename(outputFile)}\n`);
 }
 
 function run(command, args, options) {

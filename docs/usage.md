@@ -1,6 +1,12 @@
 # A2CR Usage
 
-This guide is for the public `a2cr-mcp` stdio wrapper.
+This guide is for the public Python `a2cr-mcp` stdio wrapper.
+
+A2CR also has a Node-based Claude Desktop Extension / MCPB package under
+`packages/claude-extension`. Use the Python wrapper for Codex, Claude Code,
+Roo Code, Cursor, and generic MCP configs. Use the Node MCPB for Claude Desktop
+extension-style install once the `.mcpb` asset is published on GitHub Releases.
+The two wrappers should report the same A2CR MCP compatibility version.
 
 ## Install
 

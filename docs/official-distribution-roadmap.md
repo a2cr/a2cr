@@ -50,7 +50,7 @@ For that reason:
 |---|---|---|---|---|
 | P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.6`, docs, examples | Prepared | Public repo is pushed, tests pass, package builds, PyPI release is live. |
 | P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Ready after PyPI | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
-| P2 | Claude local distribution | Claude Desktop Extension / MCPB wrapping `a2cr-mcp` | Post-launch | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, submission assets are ready. |
+| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | MCPB MVP packaged locally | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
 | P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, privacy docs, and public security boundary are ready. |
 
@@ -158,6 +158,21 @@ Claude MCPB readiness checklist:
 - prepare logo, favicon, public documentation, and support contact
 - prepare a reviewer setup path that uses a test account with no production
   secrets
+
+The detailed Claude design and implementation roadmap lives in
+`docs/claude-official-listing-plan.md`.
+
+Pre-approval MCPB distribution:
+
+- build the Node MCPB from `packages/claude-extension`
+- attach `a2cr-<version>.mcpb` to the public GitHub Release
+- attach or publish a SHA-256 checksum for the `.mcpb` artifact
+- document that GitHub Release is the manual install path until Anthropic
+  Directory approval
+- do not publish the Node package to npm unless a separate developer-facing use
+  case is intentionally created
+- keep the Node MCPB compatibility version aligned with the Python
+  `a2cr-mcp` version so dashboard version checks remain reliable
 
 Remote Claude connector readiness checklist:
 

@@ -1,6 +1,18 @@
 # MCP Setup
 
-Install the wrapper:
+Choose one local MCP path:
+
+| Path | Use when | Install/distribution |
+|---|---|---|
+| Python stdio wrapper | You use Codex, Claude Code, Roo Code, Cursor, or generic MCP JSON/TOML config. | `python -m pip install --upgrade a2cr-mcp` |
+| Node MCPB / Claude Desktop Extension | You use Claude Desktop and want extension-style install. | Download `a2cr-<version>.mcpb` from GitHub Release after it is published, or build it from `packages/claude-extension`. |
+
+The Python and Node wrappers should report the same A2CR MCP compatibility
+version. Keep them aligned during releases.
+
+## Python Stdio Wrapper
+
+Install the Python wrapper:
 
 ```bash
 python -m pip install --upgrade a2cr-mcp
@@ -79,3 +91,26 @@ directory under an `a2cr-agent` folder. For Claude Code, use:
 ```
 
 Restart the client after installing the Skill.
+
+## Claude Desktop MCPB
+
+The Node-based Claude Desktop Extension is packaged as `.mcpb`. It is not
+published to npm for end-user installation.
+
+Distribution path:
+
+1. Public GitHub Release asset: `a2cr-<version>.mcpb`.
+2. Anthropic Directory after approval.
+
+Until the release asset is published, build locally:
+
+```bash
+cd packages/claude-extension
+npm ci
+npm run mcpb:pack
+```
+
+Then install `build/mcpb/artifacts/a2cr-<version>.mcpb` through Claude Desktop
+Settings -> Extensions -> Advanced settings -> Install Extension.
+
+See `docs/claude-desktop-mcpb.md`.
