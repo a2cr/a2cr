@@ -431,6 +431,7 @@ def _headers(client_type: str | None = None) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {API_KEY}",
         "X-A2CR-Client-Type": (client_type or CLIENT_TYPE).strip() or CLIENT_TYPE,
+        "X-A2CR-MCP-Version": __version__,
     }
 
 

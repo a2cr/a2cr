@@ -286,6 +286,7 @@ def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypat
     assert captured["url"].endswith("/api/v1/context")
     assert "Authorization" in captured["headers"]
     assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
+    assert captured["headers"]["X-A2CR-MCP-Version"] == server.__version__
     assert captured["json"]["slot_number"] == 5
     assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(CONTENT)
     assert "content" not in captured["json"]
@@ -677,6 +678,7 @@ def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
     assert server._HEADERS == {
         "Authorization": f"Bearer {TEST_API_KEY}",
         "X-A2CR-Client-Type": "mcp",
+        "X-A2CR-MCP-Version": server.__version__,
     }
 
 
