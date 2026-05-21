@@ -120,6 +120,18 @@ describe("MCP stdio smoke", () => {
         "load_context",
         "save_context",
       ]);
+      const toolsByName = Object.fromEntries(tools.tools.map((tool) => [tool.name, tool]));
+      expect(toolsByName.get_account_limits?.title).toBe("Get Account Limits");
+      expect(toolsByName.get_account_limits?.annotations).toMatchObject({ readOnlyHint: true });
+      expect(toolsByName.list_contexts?.title).toBe("List WorkBaton Slots");
+      expect(toolsByName.list_contexts?.annotations).toMatchObject({ readOnlyHint: true });
+      expect(toolsByName.load_context?.title).toBe("Load WorkBaton");
+      expect(toolsByName.load_context?.annotations).toMatchObject({ readOnlyHint: true });
+      expect(toolsByName.save_context?.title).toBe("Save WorkBaton");
+      expect(toolsByName.save_context?.annotations).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: true,
+      });
 
       const limits = await client.callTool({
         name: "get_account_limits",
