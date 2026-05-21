@@ -116,6 +116,49 @@ For `0.1.6`, both paths should report:
 X-A2CR-MCP-Version: 0.1.6
 ```
 
+## Release Alignment Checklist
+
+Use this checklist for every public release that changes either the Python
+wrapper or the Node MCPB. The default policy is a paired release: if
+`a2cr-mcp` becomes `0.x.y`, the Node MCPB package and A2CR MCP compatibility
+version should also become `0.x.y`.
+
+Before opening the release PR:
+
+- Update the Python package version in `pyproject.toml`.
+- Update the MCP Registry metadata version in `server.json`.
+- Update the Node MCPB package version in
+  `packages/claude-extension/package.json`.
+- Update the MCPB manifest version in
+  `packages/claude-extension/manifest.json`.
+- Update the Node wrapper compatibility header constant in
+  `packages/claude-extension/src/version.ts`.
+- Update README/docs references for the new version and release URL.
+- Update tests that assert version strings, release asset names, or MCPB
+  metadata.
+
+Before publishing artifacts:
+
+- Run the Python public repository tests.
+- Run `npm test`, `npm run typecheck`, `npm run mcpb:validate`, and
+  `npm run mcpb:pack` from `packages/claude-extension`.
+- Confirm the generated artifact is named `a2cr-<version>.mcpb`.
+- Confirm `SHA256SUMS.txt` contains the checksum for the same artifact.
+- Inspect the packaged `manifest.json`, `README.md`, and `dist/tools.js` from
+  the `.mcpb` archive when tool annotations or privacy text changed.
+
+When publishing:
+
+- Publish the Python package to PyPI first.
+- Publish the matching MCP Registry version after the PyPI package exists.
+- Attach `a2cr-<version>.mcpb` and `SHA256SUMS.txt` to the same GitHub Release.
+- Make the release notes name both local paths and state whether their
+  compatibility versions match.
+
+Only use an unpaired release when there is an explicit compatibility exception.
+In that case, document the mismatch in the release notes and avoid changing
+dashboard "latest wrapper" expectations until both paths are aligned again.
+
 ## Public Wording
 
 Before Anthropic approval, use:
