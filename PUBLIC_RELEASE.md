@@ -108,9 +108,9 @@ Before publishing to `a2cr/a2cr`, verify:
 - `server.json` matches the PyPI package version and README `mcp-name` verification string
 - the Claude Desktop MCPB package version and compatibility header match the
   Python wrapper version when released together
-- the MCPB artifact is built with `npm run mcpb:pack`, verified with a SHA-256
-  checksum, and attached to GitHub Release only after explicit publication
-  approval
+- released MCPB artifacts are built with `npm run mcpb:pack`, verified with a
+  SHA-256 checksum, and attached to GitHub Release only after explicit
+  publication approval
 - `docs/official-distribution-roadmap.md` still treats Claude and OpenAI remote submissions as later phases unless the remote privacy boundary is documented
 - the branch being pushed contains only intended public-release files
 - GitHub Settings are configured for Dependabot alerts, secret scanning, CodeQL/code scanning, branch protection, and pull-request based merges

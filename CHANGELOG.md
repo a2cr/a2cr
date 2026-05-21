@@ -2,6 +2,8 @@
 
 ## Unreleased - Distribution Documentation
 
+- Record that `io.github.a2cr/a2cr-mcp` is published in the official MCP
+  Registry with `0.1.6` as the latest active version.
 - Document the two local MCP distribution paths: Python `a2cr-mcp` from PyPI
   and Node Claude Desktop MCPB from GitHub Release assets.
 - Add Claude Desktop MCPB build, checksum, install, and wording guidance.

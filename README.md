@@ -34,7 +34,12 @@ Use A2CR when you want to:
 
 ## Directory Status
 
-A2CR is listed and evaluated on the
+A2CR is published in the
+[official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.a2cr%2Fa2cr-mcp/versions/latest)
+as `io.github.a2cr/a2cr-mcp`. As of 2026-05-20, the official Registry latest
+version is `0.1.6`.
+
+A2CR is also listed and evaluated on the
 [Glama MCP Registry](https://glama.ai/mcp/servers/a2cr/a2cr). As of
 2026-05-18, the public Glama evaluation shows `quality A` and `maintenance B`.
 
@@ -61,7 +66,7 @@ Choose the local MCP distribution path that matches your AI client:
 | Path | Best for | Distribution | Notes |
 |---|---|---|---|
 | Python stdio wrapper | Codex, Claude Code, Roo Code, Cursor, generic MCP clients | PyPI package `a2cr-mcp` | Full public wrapper path for WorkBaton and WorkStash. |
-| Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Pre-submission Claude path. No npm install is required for end users. |
+| Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Manual Claude Desktop path pending Anthropic Directory approval. No npm install is required for end users. |
 
 Keep the Python wrapper version and Node MCPB compatibility version aligned.
 If `a2cr-mcp` is released as `0.1.6`, the Node MCPB should also report A2CR
@@ -114,10 +119,10 @@ Python 3.12 or 3.13 is recommended. Python 3.15 development builds are not
 supported.
 
 For Claude Desktop extension-style installation, use the Node MCPB package.
-The intended public distribution point is the GitHub Release asset
-`a2cr-0.1.6.mcpb`; until that asset is published, build it from this repository
-with `npm run mcpb:pack` in `packages/claude-extension`. See
-`docs/claude-desktop-mcpb.md`.
+Download `a2cr-0.1.6.mcpb` from the
+[v0.1.6 GitHub Release](https://github.com/a2cr/a2cr/releases/tag/v0.1.6).
+Developers can also rebuild it from this repository with `npm run mcpb:pack`
+in `packages/claude-extension`. See `docs/claude-desktop-mcpb.md`.
 
 ## Local Project Rules
 

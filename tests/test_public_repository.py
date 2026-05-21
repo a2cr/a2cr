@@ -160,6 +160,7 @@ def test_mcp_registry_metadata_matches_package_readme():
     assert server["name"] == "io.github.a2cr/a2cr-mcp"
     assert server["version"] == "0.1.6"
     assert "<!-- mcp-name: io.github.a2cr/a2cr-mcp -->" in readme
+    assert "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.a2cr%2Fa2cr-mcp/versions/latest" in readme
 
     package = server["packages"][0]
     assert package["registryType"] == "pypi"
