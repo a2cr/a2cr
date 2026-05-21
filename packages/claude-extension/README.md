@@ -8,7 +8,7 @@ boundary as the Python `a2cr-mcp` wrapper: WorkBaton and WorkStash bodies are
 validated and encrypted on the user's machine before upload to A2CR.
 
 Status: WorkBaton MVP runtime, MCPB manifest metadata, and local MCPB packaging
-are implemented for testing and pre-submission GitHub Release distribution.
+are implemented for testing and manual GitHub Release distribution.
 WorkStash tools, full tool parity, reviewer instructions, and official
 submission assets are still pending.
 
@@ -56,6 +56,9 @@ Distribution decision:
 - Keep the package version, manifest version, and `A2CR_MCP_COMPAT_VERSION`
   aligned with the public Python `a2cr-mcp` release.
 - Do not claim Anthropic Directory approval until the listing is approved.
+
+For `0.1.6`, `a2cr-0.1.6.mcpb` and `SHA256SUMS.txt` are attached to the public
+GitHub Release.
 
 Manual Claude Desktop verification:
 

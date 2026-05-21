@@ -102,7 +102,13 @@ Distribution path:
 1. Public GitHub Release asset: `a2cr-<version>.mcpb`.
 2. Anthropic Directory after approval.
 
-Until the release asset is published, build locally:
+For `0.1.6`, download `a2cr-0.1.6.mcpb` from:
+
+```text
+https://github.com/a2cr/a2cr/releases/tag/v0.1.6
+```
+
+Developers can rebuild locally from source:
 
 ```bash
 cd packages/claude-extension

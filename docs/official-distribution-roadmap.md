@@ -48,9 +48,9 @@ For that reason:
 
 | Phase | Target | Artifact | Status | Exit criteria |
 |---|---|---|---|---|
-| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.6`, docs, examples | Prepared | Public repo is pushed, tests pass, package builds, PyPI release is live. |
-| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Ready after PyPI | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
-| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | MCPB MVP packaged locally | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
+| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.6`, docs, examples | Complete for 0.1.6 | Public repo is pushed, tests pass, package builds, PyPI release is live. |
+| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Published for 0.1.6 | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
+| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | MCPB MVP released on GitHub | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
 | P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, privacy docs, and public security boundary are ready. |
 
@@ -67,8 +67,8 @@ Service start criteria:
   docs, examples, and focused tests.
 - `a2cr-mcp==0.1.6` is live on PyPI and can be installed in a fresh environment.
 - The PyPI README contains `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
-- The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible in
-  search.
+- The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible as
+  the latest `0.1.6` Registry version.
 - Production health/readiness checks pass.
 - A fresh API key can save and resume a harmless WorkBaton through the PyPI
   package.
@@ -128,6 +128,7 @@ Use the current local stdio package.
 - Package: PyPI `a2cr-mcp`
 - Transport: `stdio`
 - Manifest: `server.json`
+- Current status: `0.1.6` is published and active in the official MCP Registry.
 - Submission note: publish to PyPI before publishing registry metadata, because
   PyPI ownership verification uses the README `mcp-name` marker.
 
@@ -173,6 +174,9 @@ Pre-approval MCPB distribution:
   case is intentionally created
 - keep the Node MCPB compatibility version aligned with the Python
   `a2cr-mcp` version so dashboard version checks remain reliable
+
+For `0.1.6`, the MCPB artifact and `SHA256SUMS.txt` are attached to the public
+GitHub Release.
 
 Remote Claude connector readiness checklist:
 
