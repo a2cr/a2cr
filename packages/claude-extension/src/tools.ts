@@ -96,6 +96,7 @@ export function registerA2crTools(server: McpServer, handlers: A2crToolHandlers 
       title: "Save WorkBaton",
       description:
         "Save compact WorkBaton handoff content to A2CR after local validation and local Fernet encryption. A2CR receives ciphertext only.",
+      annotations: { readOnlyHint: false, destructiveHint: true },
       inputSchema: {
         slot_name: z.string().min(1).describe("Named WorkBaton slot to create or overwrite."),
         content: z.record(z.string(), z.unknown()).describe("Compact WorkBaton JSON object."),

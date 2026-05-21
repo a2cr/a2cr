@@ -44,6 +44,8 @@ interface Manifest {
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(readFileSync(join(packageRoot, "manifest.json"), "utf8")) as Manifest;
 const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as { version: string };
+const readme = readFileSync(join(packageRoot, "README.md"), "utf8");
+const submissionNotes = readFileSync(join(packageRoot, "SUBMISSION.md"), "utf8");
 
 describe("MCPB manifest", () => {
   it("declares public-safe A2CR extension metadata", () => {
@@ -97,6 +99,33 @@ describe("MCPB manifest", () => {
     ]);
     expect(manifest.tools.every((tool) => tool.description.length > 20)).toBe(true);
     expect(manifest.tools_generated).toBe(false);
+  });
+
+  it("keeps the packaged README ready for local connector privacy review", () => {
+    expect(readme).toContain("## Privacy Policy");
+    expect(readme).toContain("https://a2cr.app/en/privacy");
+    expect(readme).toContain("Data collection");
+    expect(readme).toContain("Usage and storage");
+    expect(readme).toContain("Third-party sharing");
+    expect(readme).toContain("Data retention");
+    expect(readme).toContain("Contact");
+    expect(readme).toContain("## Reviewer Setup");
+    expect(readme).toContain("Do not put reviewer credentials, API keys, or recovery material in this");
+    expect(readme).toContain("repository.");
+  });
+
+  it("keeps public-safe Claude directory submission notes", () => {
+    expect(submissionNotes).toContain("Connector type: Desktop extension / MCPB.");
+    expect(submissionNotes).toContain("Tool annotations");
+    expect(submissionNotes).toContain("readOnlyHint: false");
+    expect(submissionNotes).toContain("destructiveHint: true");
+    expect(submissionNotes).toContain("Test credentials");
+    expect(submissionNotes).toContain("Out-of-band");
+    expect(submissionNotes).toContain("Allowed link URIs");
+    expect(submissionNotes).toContain("Not used");
+    expect(submissionNotes).toContain("Working examples");
+    expect(submissionNotes).toContain("MCP Inspector");
+    expect(submissionNotes).toContain("contains no reviewer credentials");
   });
 
   it("references a square PNG icon inside the package", () => {

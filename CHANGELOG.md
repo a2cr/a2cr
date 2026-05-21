@@ -7,6 +7,8 @@
 - Document the two local MCP distribution paths: Python `a2cr-mcp` from PyPI
   and Node Claude Desktop MCPB from GitHub Release assets.
 - Add Claude Desktop MCPB build, checksum, install, and wording guidance.
+- Add Claude Directory submission notes, MCPB README privacy/reviewer guidance,
+  and runtime tool annotation checks for the Claude Desktop MCPB.
 - Clarify that the Node package is not an npm end-user distribution channel and
   must keep its compatibility version aligned with the Python wrapper.
 
