@@ -11,8 +11,8 @@
 
 <!-- mcp-name: io.github.a2cr/a2cr-mcp -->
 
-A2CR is an MCP server for AI agent handoffs. It lets Codex, Claude Code, Roo
-Code, and other MCP-capable agents save client-encrypted WorkBaton checkpoints,
+A2CR is an MCP server for AI agent handoffs. It lets Codex, Claude Code, Cursor,
+and other MCP-capable agents save client-encrypted WorkBaton checkpoints,
 store temporary WorkStash notes, and resume long coding work from a fresh AI
 window.
 
@@ -24,7 +24,7 @@ share between sessions.
 Use A2CR when you want to:
 
 - restart a long AI coding task from a clean context window
-- pass work state between Codex, Claude Code, Roo Code, or another MCP client
+- pass work state between Codex, Claude Code, Cursor, or another MCP client
 - keep milestone checkpoints without storing full chat transcripts
 - separate compact resume state from optional supporting notes
 
@@ -65,7 +65,7 @@ Choose the local MCP distribution path that matches your AI client:
 
 | Path | Best for | Distribution | Notes |
 |---|---|---|---|
-| Python stdio wrapper | Codex, Claude Code, Roo Code, Cursor, generic MCP clients | PyPI package `a2cr-mcp` | Full public wrapper path for WorkBaton and WorkStash. |
+| Python stdio wrapper | Codex, Claude Code, Cursor, generic MCP clients | PyPI package `a2cr-mcp` | Full public wrapper path for WorkBaton and WorkStash. |
 | Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Manual Claude Desktop path pending Anthropic Directory approval. No npm install is required for end users. |
 
 Keep the Python wrapper version and Node MCPB compatibility version aligned.
@@ -164,7 +164,7 @@ a chat transcript store. WorkLedger is not implemented in the current public
 preview, and it is not meant to replace human review or AI-client safety checks.
 
 In this repository, an AI window means one active chat/session in an AI client
-such as Codex, Claude Code, Roo Code, or another MCP-capable agent.
+such as Codex, Claude Code, Cursor, or another MCP-capable agent.
 
 A minimal WorkBaton can be as small as:
 
@@ -198,7 +198,7 @@ reference material:
 - the local stdio MCP wrapper package: `a2cr-mcp`
 - the early WorkBaton Format specification, schemas, examples, and conformance notes
 - AI-agent usage guidance and safety rules
-- MCP configuration examples for Codex, Claude Code, and Roo Code
+- MCP configuration examples for Codex and Claude Code
 - WorkBaton and WorkStash sample payloads
 - tests for the public wrapper behavior
 
@@ -278,7 +278,6 @@ See:
 
 - `examples/codex-mcp-config.json`
 - `examples/claude-code-mcp-config.json`
-- `examples/roo-code-mcp-config.json`
 - `examples/workbaton-example.json`
 - `examples/workstash-example.json`
 
