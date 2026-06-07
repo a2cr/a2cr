@@ -97,7 +97,6 @@ def test_public_repository_contains_expected_reference_material():
         "docs/templates/skills/a2cr-agent/SKILL.md",
         "examples/codex-mcp-config.json",
         "examples/claude-code-mcp-config.json",
-        "examples/roo-code-mcp-config.json",
         "examples/workbaton-example.json",
         "examples/workstash-example.json",
     ]
@@ -193,7 +192,6 @@ def test_public_mcp_setup_examples_match_registry_environment():
             read("docs/usage.md"),
             read("examples/codex-mcp-config.json"),
             read("examples/claude-code-mcp-config.json"),
-            read("examples/roo-code-mcp-config.json"),
         ]
     )
 

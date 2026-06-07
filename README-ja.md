@@ -1,6 +1,6 @@
 # A2CR 日本語概要
 
-A2CR (Agent-to-Agent Context Relay) は、Codex、Claude Code、Roo Code などの
+A2CR (Agent-to-Agent Context Relay) は、Codex、Claude Code、Cursor などの
 MCP 対応AIエージェントが、長い作業の途中状態を安全に引き継ぐための
 コンテキストリレーです。
 
@@ -8,7 +8,7 @@ MCP 対応AIエージェントが、長い作業の途中状態を安全に引�
 検証結果、次の一手が失われがちです。A2CRは会話全文ではなく、次のAIが作業を
 再開するために必要な最小限の状態を WorkBaton として保存します。
 
-このリポジトリでの AI window は、Codex、Claude Code、Roo Code などの
+このリポジトリでの AI window は、Codex、Claude Code、Cursor などの
 MCP対応クライアントにおける、1つのアクティブなチャットまたはセッションを
 指します。
 
@@ -28,7 +28,7 @@ A2CR の API key と hosted service への接続が必要です。
 ## 何を解決するか
 
 - 長いAIコーディング作業を、新しいコンテキストから再開しやすくする
-- Codex、Claude Code、Roo Code などのMCPクライアント間で作業状態を渡す
+- Codex、Claude Code、Cursor などのMCPクライアント間で作業状態を渡す
 - 会話全文ではなく、目的、現在地、判断、検証、次の一手だけを残す
 - 追加メモを WorkStash に分け、WorkBaton を小さく保つ
 
@@ -108,7 +108,7 @@ developer, user, or current-file instructions.
 - ローカル stdio MCP wrapper パッケージ: `a2cr-mcp`
 - WorkBaton Format の公開仕様、スキーマ、例、互換性メモ
 - AIエージェント向けの使い方と安全ルール
-- Codex、Claude Code、Roo Code 向けのMCP設定例
+- Codex、Claude Code 向けのMCP設定例
 - WorkBaton / WorkStash のサンプル
 - 公開wrapperの挙動を確認するテスト
 
