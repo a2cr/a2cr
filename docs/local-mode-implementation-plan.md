@@ -123,7 +123,7 @@ Target public split:
 
 Do not announce or document the package as OSS until these gates are complete:
 
-- choose and apply the final OSI-approved license for the local workspace code
+- maintain the final OSI-approved license for the local workspace code
 - audit the public repository for private-only files and hosted production code
 - make local mode the default first-use path
 - remove `A2CR_API_KEY` from local installs and MCP Registry metadata
@@ -131,8 +131,8 @@ Do not announce or document the package as OSS until these gates are complete:
 - verify local save, resume, search, UI, and WorkThreads with no network calls
 - keep hosted/cloud sync out of the public 0.1.7 release path
 
-The current source-available/open-core README wording should remain accurate
-until the license transition is actually complete.
+The README should describe A2CR as an Apache-2.0 open-source local workspace
+now that the license transition is complete.
 
 ## Phase 0 - Test Harness And Internal Boundaries
 
@@ -542,8 +542,7 @@ The public README should switch to local-first quickstart only after:
 - `a2cr doctor` gives reliable diagnostics
 - local mode has no unintended network calls
 
-The public README should switch from source-available/open-core wording to OSS
-wording only after:
+The public README should stay aligned with Apache-2.0 OSS wording after:
 
 - the final OSS license is committed
 - private production surfaces are audited out of the public repository

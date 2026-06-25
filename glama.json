@@ -1,6 +1,34 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "name": "a2cr",
+  "description": "Open-source local stdio MCP workspace for AI-agent WorkBaton checkpoints, WorkStash notes, and WorkThreads. No A2CR account, API key, hosted relay, or cloud sync is required.",
+  "type": "mcp_server",
+  "status": "alpha",
+  "framework": "FastMCP",
+  "transport": [
+    "stdio"
+  ],
+  "license": "Apache-2.0",
   "maintainers": [
     "akagi819"
-  ]
+  ],
+  "keywords": [
+    "agent-memory",
+    "ai-agents",
+    "local-first",
+    "mcp",
+    "model-context-protocol",
+    "workbaton",
+    "workstash",
+    "workthreads"
+  ],
+  "features": {
+    "local_workspace": {
+      "enabled": true,
+      "storage": "SQLite on the user's machine",
+      "requires_account": false,
+      "requires_api_key": false,
+      "requires_hosted_service": false
+    }
+  }
 }

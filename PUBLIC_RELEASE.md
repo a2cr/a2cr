@@ -69,8 +69,8 @@ use, test, and implement the public A2CR client/spec surface.
 | Layer | Public? | License / Posture |
 |---|---:|---|
 | WorkBaton Format specification | yes | Text: CC BY 4.0. Schemas/examples/conformance: Apache-2.0. |
-| `a2cr-mcp` official local client | yes | Source-available under BUSL-style terms. |
-| Hosted relay service at `a2cr.app` | no | Proprietary SaaS. |
+| `a2cr-mcp` official local client | yes | Apache-2.0. |
+| Hosted relay service at `a2cr.app` | no | Legacy/private service, not included in this repository. |
 | Dashboard, billing, database, operations | no | Proprietary/private. |
 
 The key principle:
@@ -101,7 +101,7 @@ Before publishing to `a2cr/a2cr`, verify:
 - `tests/test_public_repository.py` passes
 - no private service folders are tracked
 - no `.env`, real keys, logs, local databases, or generated caches are tracked
-- `README.md` says source-available/open-core, not broad OSI-approved OSS
+- `README.md` says Apache-2.0 open source and clearly separates legacy/private hosted service surfaces
 - `LICENSE`, `NOTICE`, `TRADEMARK.md`, and `docs/spec/LICENSE.md` are present
 - `SECURITY.md` and `SECURITY_CHECKLIST.md` are present
 - `docs/spec/` contains implementation-level spec files, schemas, examples, and conformance guidance

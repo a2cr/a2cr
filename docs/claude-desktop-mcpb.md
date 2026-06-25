@@ -13,7 +13,7 @@ A2CR has two local MCP distribution paths:
 
 | Path | Primary client | Distribution point | Runtime expectation |
 |---|---|---|---|
-| Python `a2cr-mcp` | Codex, Claude Code, Roo Code, Cursor, generic MCP clients | PyPI | User or client environment has Python 3.12+ available. |
+| Python `a2cr-mcp` | Codex, Claude Code, Cursor, generic MCP clients | PyPI | User or client environment has Python 3.12+ available. |
 | Node MCPB | Claude Desktop | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Claude Desktop supplies the Node runtime for the extension. |
 
 The Node package under `packages/claude-extension` is private on npm on purpose.

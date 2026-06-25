@@ -97,7 +97,7 @@ def test_public_repository_contains_expected_reference_material():
         "docs/templates/skills/a2cr-agent/SKILL.md",
         "examples/codex-mcp-config.json",
         "examples/claude-code-mcp-config.json",
-        "examples/roo-code-mcp-config.json",
+        "examples/generic-mcp-config.json",
         "examples/workbaton-example.json",
         "examples/workstash-example.json",
     ]
@@ -124,7 +124,7 @@ def test_public_docs_warn_against_storing_secrets():
     assert "private database URLs" in docs
 
 
-def test_public_docs_explain_open_core_boundaries():
+def test_public_docs_explain_open_source_boundaries():
     docs = "\n".join(
         [
             read("README.md"),
@@ -139,15 +139,13 @@ def test_public_docs_explain_open_core_boundaries():
         ]
     )
 
-    assert "source-available" in docs
-    assert "open-core" in docs
     assert "WorkBaton Format" in docs
     assert "You may implement the WorkBaton Format without permission" in docs
-    assert "competing hosted or managed A2CR-compatible relay service" in docs
     assert "Official A2CR Compatible" in docs
     assert "CC BY 4.0" in docs
     assert "Apache-2.0" in docs
-    assert "OSI-approved open source" in docs
+    assert "Apache License, Version 2.0" in docs
+    assert "open-source project" in docs
 
 
 def test_mcp_registry_metadata_matches_package_readme():
@@ -193,7 +191,7 @@ def test_public_mcp_setup_examples_match_registry_environment():
             read("docs/usage.md"),
             read("examples/codex-mcp-config.json"),
             read("examples/claude-code-mcp-config.json"),
-            read("examples/roo-code-mcp-config.json"),
+            read("examples/generic-mcp-config.json"),
         ]
     )
 
@@ -231,7 +229,7 @@ def test_readme_is_cleanly_separated_for_public_technical_docs():
         assert marker not in readme
         assert marker not in readme_ja
 
-    assert "A2CR is a local MCP workspace for AI agent handoffs" in readme
+    assert "A2CR is an open-source local MCP workspace for AI agent handoffs" in readme
     assert "Long AI work usually breaks at the handoff" in readme
     assert "In this repository, an AI window means one active chat/session" in readme
     assert '"goal": "Fix the failing login test"' in readme

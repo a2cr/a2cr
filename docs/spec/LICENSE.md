@@ -1,7 +1,7 @@
 # A2CR Specification License
 
 The specification materials in `docs/spec/` are licensed separately from the
-source-available `a2cr-mcp` client code.
+Apache-2.0 `a2cr-mcp` client code.
 
 ## Specification Text
 

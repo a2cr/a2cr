@@ -19,7 +19,7 @@ If this pattern becomes a shared convention, it could apply beyond coding
 agents. Any AI system that needs to hand off work across tools, models, devices,
 or time can benefit from a compact state relay:
 
-- cross-client handoff between Codex, Claude Code, Roo Code, and other MCP clients
+- cross-client handoff between Codex, Claude Code, Cursor, and other MCP clients
 - long-running research, support, operations, and documentation agents
 - multi-agent workspaces where agents coordinate without treating chat history
   as the source of truth

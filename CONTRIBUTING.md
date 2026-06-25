@@ -2,9 +2,9 @@
 
 Thanks for helping A2CR become easier and safer for AI agents to use.
 
-A2CR is a source-available/open-core project. The WorkBaton Format is public so
-others can implement it, while the official `a2cr-mcp` client is published under
-BUSL-1.1 style terms and the hosted A2CR service remains proprietary.
+A2CR is an Apache-2.0 open-source project. The WorkBaton Format is public so
+others can implement it, and the official `a2cr-mcp` local client is published
+as open-source software.
 
 Good first contribution areas:
 
@@ -35,12 +35,12 @@ licenses used by the files you modify.
 - Specification text in `docs/spec/` is intended for CC BY 4.0.
 - Schemas, examples, and future conformance tests in `docs/spec/` are intended
   for Apache-2.0.
-- The `a2cr-mcp` client code is source-available under BUSL-1.1 style terms
-  until its Change Date, then Apache-2.0.
+- The `a2cr-mcp` client code, examples, and tests are distributed under
+  Apache-2.0.
 
-If A2CR later adds a Contributor License Agreement or DCO workflow, new
-contributions may require that process before merging. This is to keep future
-commercial licensing and public specification maintenance clear.
+If A2CR later adds a Developer Certificate of Origin or similar contribution
+workflow, new contributions may require that process before merging. This is to
+keep public specification and open-source maintenance clear.
 
 Good public contributions:
 
@@ -56,7 +56,8 @@ Out of scope for this public repository:
 - hosted backend design changes
 - production database schema changes
 - billing, dashboard, or admin tooling
-- requests to remove the source-available license boundary
+- requests to use the A2CR name, logo, or official compatibility claims in a
+  misleading way
 
 ## Security
 
