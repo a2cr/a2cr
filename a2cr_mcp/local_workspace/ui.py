@@ -737,6 +737,14 @@ details > summary {
   color: var(--muted);
   margin-top: 4px;
 }
+.pref-select {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 12px;
+  background: #fff;
+  min-width: 220px;
+}
 .radio-group {
   display: flex;
   gap: 16px;
@@ -797,6 +805,7 @@ const token = new URLSearchParams(location.search).get("token") || "";
 let state = null;
 let currentView = "dashboard";
 let lang = "ja";
+let displayTimezone = "local";
 
 const TITLES = {
   ja: {dashboard:"ダッシュボード", search:"検索", workbatons:"WorkBaton",
@@ -816,6 +825,12 @@ function setLang(l) {
   render();
 }
 
+function setTimezone(tz) {
+  displayTimezone = tz || "local";
+  localStorage.setItem("a2cr_timezone", displayTimezone);
+  render();
+}
+
 const api = async (path, options = {}) => {
   const sep = path.includes("?") ? "&" : "?";
   const res = await fetch(path + sep + "token=" + encodeURIComponent(token), {
@@ -829,7 +844,46 @@ const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
 }[ch]));
 
-const fmt = (value) => value ? String(value).replace("T", " ").replace("Z", "") : "";
+const browserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
+  } catch {
+    return "local";
+  }
+};
+
+const timestampDate = (value) => {
+  if (!value) return null;
+  let text = String(value);
+  text = text.replace(/\.(\d{3})\d+(Z|[+-]\d{2}:?\d{2})$/, ".$1$2");
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(text)) text += "Z";
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const fmt = (value) => {
+  const date = timestampDate(value);
+  if (!date) return value ? String(value) : "";
+  const timeZone = displayTimezone === "local" ? undefined : displayTimezone;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+      timeZoneName: "short",
+    }).formatToParts(date);
+    const part = (type) => parts.find(p => p.type === type)?.value || "";
+    const zone = part("timeZoneName");
+    return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")}:${part("second")}${zone ? " " + zone : ""}`;
+  } catch {
+    return value ? String(value) : "";
+  }
+};
 const fmtSize = (bytes) => {
   if (!bytes && bytes !== 0) return "";
   if (bytes < 1024) return bytes + " B";
@@ -1173,6 +1227,7 @@ function renderSettings() {
   const ja = lang === "ja";
   const d = state.dashboard;
   const savedView = localStorage.getItem("a2cr_default_view") || "dashboard";
+  const savedTimezone = displayTimezone || "local";
   const viewOptions = [
     {v:"dashboard",  ja:"Dashboard（デフォルト）", en:"Dashboard (default)"},
     {v:"workbatons", ja:"WorkBaton",               en:"WorkBaton"},
@@ -1181,6 +1236,15 @@ function renderSettings() {
     {v:"search",     ja:"Search",                  en:"Search"},
     {v:"agents",     ja:"Agents",                  en:"Agents"},
     {v:"timeline",   ja:"Timeline",                en:"Timeline"},
+  ];
+  const timezoneOptions = [
+    {v:"local",               ja:"Browser local（ブラウザのタイムゾーン）", en:"Browser local"},
+    {v:"UTC",                 ja:"UTC",                              en:"UTC"},
+    {v:"Asia/Tokyo",          ja:"Asia/Tokyo（日本時間）",             en:"Asia/Tokyo (Japan)"},
+    {v:"America/Los_Angeles", ja:"America/Los_Angeles",              en:"America/Los_Angeles"},
+    {v:"America/New_York",    ja:"America/New_York",                 en:"America/New_York"},
+    {v:"Europe/London",       ja:"Europe/London",                    en:"Europe/London"},
+    {v:"Europe/Berlin",       ja:"Europe/Berlin",                    en:"Europe/Berlin"},
   ];
   return `
     <div class="settings-panel panel">
@@ -1196,11 +1260,19 @@ function renderSettings() {
         </div>
         <div class="pref-item">
           <div class="pref-label">${ja?"起動時のページ":"Default page on startup"}</div>
-          <select style="padding:6px 10px;border:1px solid var(--line);border-radius:5px;font-size:12px;background:#fff"
-            onchange="localStorage.setItem('a2cr_default_view',this.value)">
+          <select class="pref-select" onchange="localStorage.setItem('a2cr_default_view',this.value)">
             ${viewOptions.map(o => `<option value="${o.v}" ${savedView===o.v?"selected":""}>${ja?o.ja:o.en}</option>`).join("")}
           </select>
           <div class="pref-hint">${ja?"次回起動時から反映されます":"Applied on next load"}</div>
+        </div>
+        <div class="pref-item">
+          <div class="pref-label">${ja?"表示タイムゾーン":"Display time zone"}</div>
+          <select class="pref-select" onchange="setTimezone(this.value)">
+            ${timezoneOptions.map(o => `<option value="${o.v}" ${savedTimezone===o.v?"selected":""}>${ja?o.ja:o.en}</option>`).join("")}
+          </select>
+          <div class="pref-hint">${ja
+            ? `保存データはUTCのまま、画面表示だけを切り替えます。現在のブラウザ: ${esc(browserTimezone())}`
+            : `Stored timestamps remain UTC; only display changes. Current browser: ${esc(browserTimezone())}`}</div>
         </div>
       </div>
     </div>
@@ -1398,6 +1470,7 @@ document.getElementById("export").addEventListener("click", async () => {
 // Initialize from localStorage
 lang = localStorage.getItem("a2cr_lang") || "ja";
 currentView = localStorage.getItem("a2cr_default_view") || "dashboard";
+displayTimezone = localStorage.getItem("a2cr_timezone") || "local";
 document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === currentView));
 document.getElementById("lang-ja").classList.toggle("active", lang === "ja");
 document.getElementById("lang-en").classList.toggle("active", lang === "en");
