@@ -993,6 +993,7 @@ function renderWorkstash() {
 }
 
 function renderWorkthreads() {
+  const ja = lang === "ja";
   const rows = state.workthreads.threads.map(item => [
     linkFor("WorkThread", item.thread_key),
     esc(item.project_key || ""),
@@ -1001,7 +1002,14 @@ function renderWorkthreads() {
     esc(item.participant_count),
     fmt(item.updated_at)
   ]);
-  return `<div class="grid"><div class="panel"><h2>Threads</h2>${table(["Thread", "Project", "State", "Messages", "Agents", "Updated"], rows)}</div><div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select a thread</div></div></div>`;
+  return `<div class="grid">
+    <div class="panel"><h2>${ja?"Thread 一覧":"Threads"}</h2>${table(
+      ["Thread", ja?"プロジェクト":"Project", ja?"状態":"State",
+       ja?"件数":"Messages", ja?"参加者":"Agents", ja?"更新日時":"Updated"],
+      rows
+    )}</div>
+    <div class="panel detail" id="detail"><h2>${ja?"詳細":"Detail"}</h2><div class="empty">${ja?"Threadを選択してください":"Select a thread"}</div></div>
+  </div>`;
 }
 
 function renderAgents() {
@@ -1204,11 +1212,31 @@ function detailHtml(type, detail) {
       <h3>${ja?"参照元":"Referenced By"}</h3>${referenceList(detail.referenced_by, true)}`;
   }
   if (type === "WorkThread") {
-    return `<div class="actions"><button class="warn" onclick="runAction('WorkThread','${esc(detail.thread_key)}','close')">Close</button><button class="danger" onclick="runAction('WorkThread','${esc(detail.thread_key)}','archive')">Archive</button></div>
+    const ja = lang === "ja";
+    const colorMap = agentColorMap(detail.participants);
+    const msgCards = (detail.messages || []).map(m => {
+      const agentKey = m.agent_label || m.client_name || "agent";
+      const c = colorMap[agentKey] || AGENT_COLORS[3];
+      return `<div class="msg-card">
+        <div class="msg-header">
+          <span class="badge" style="background:${c.bg};color:${c.color};border-color:${c.color}40">${esc(agentKey)}</span>
+          <span class="msg-time">${fmt(m.created_at)}</span>
+        </div>
+        <pre class="msg-body">${esc(m.body || "")}</pre>
+      </div>`;
+    }).join("");
+    return `<div class="actions">
+        <button class="warn" onclick="runAction('WorkThread','${esc(detail.thread_key)}','close')">${ja?"クローズ":"Close"}</button>
+        <button class="danger" onclick="runAction('WorkThread','${esc(detail.thread_key)}','archive')">${ja?"アーカイブ":"Archive"}</button>
+      </div>
       <p>${badge(detail.project_key || "")}${badge(detail.state, detail.state)}</p>
-      <h3>Participants</h3>${table(["Role", "Client", "Agent", "Model"], detail.participants.map(p => [esc(p.role), esc(p.client_name || ""), esc(p.agent_label || ""), esc(p.model_source || "")]))}
-      <h3>Messages</h3>${detail.messages.map(m => `<p>${badge(m.agent_label || m.client_name || "agent")} ${esc(fmt(m.created_at))}</p><pre>${esc(m.body || "")}</pre>`).join("")}
-      <h3>References</h3>${referenceList(detail.references)}`;
+      <h3>${ja?"参加者":"Participants"}</h3>${table(
+        [ja?"役割":"Role", ja?"クライアント":"Client", ja?"エージェント":"Agent", ja?"モデル":"Model"],
+        (detail.participants || []).map(p => [esc(p.role), esc(p.client_name || ""), esc(p.agent_label || ""), esc(p.model_source || "")])
+      )}
+      <h3>${ja?"メッセージ":"Messages"} <span class="badge">${(detail.messages||[]).length}${ja?"件":""}</span></h3>
+      <div class="msg-list">${msgCards || `<div class="empty">${ja?"メッセージなし":"No messages"}</div>`}</div>
+      <h3>${ja?"参照":"References"}</h3>${referenceList(detail.references)}`;
   }
   return jsonBlock(detail);
 }
