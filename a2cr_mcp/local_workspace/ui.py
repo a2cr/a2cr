@@ -718,6 +718,45 @@ details > summary {
   background: #fff;
   font-size: 11px;
 }
+.settings-panel {
+  max-width: 480px;
+  margin-bottom: 14px;
+}
+.pref-item {
+  margin-bottom: 14px;
+}
+.pref-item:last-child { margin-bottom: 0; }
+.pref-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.pref-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.code-block {
+  font-family: monospace;
+  font-size: 11px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px 10px;
+  overflow-wrap: anywhere;
+}
 </style>
 </head>
 <body>
@@ -1131,12 +1170,59 @@ function renderHelp() {
 }
 
 function renderSettings() {
+  const ja = lang === "ja";
   const d = state.dashboard;
-  return `<div class="panel"><h2>Settings</h2><div class="detail-body">
-    <p><strong>Database</strong><br>${esc(d.database_path)}</p>
-    <p><strong>Size</strong><br>${esc(d.database_size_bytes)} bytes</p>
-    <p><strong>Mode</strong><br>local</p>
-  </div></div>`;
+  const savedView = localStorage.getItem("a2cr_default_view") || "dashboard";
+  const viewOptions = [
+    {v:"dashboard",  ja:"Dashboard（デフォルト）", en:"Dashboard (default)"},
+    {v:"workbatons", ja:"WorkBaton",               en:"WorkBaton"},
+    {v:"workstash",  ja:"WorkStash",               en:"WorkStash"},
+    {v:"workthreads",ja:"WorkThreads",             en:"WorkThreads"},
+    {v:"search",     ja:"Search",                  en:"Search"},
+    {v:"agents",     ja:"Agents",                  en:"Agents"},
+    {v:"timeline",   ja:"Timeline",                en:"Timeline"},
+  ];
+  return `
+    <div class="settings-panel panel">
+      <h2>${ja?"表示設定":"Display Preferences"}</h2>
+      <div class="detail-body">
+        <div class="pref-item">
+          <div class="pref-label">${ja?"言語 / Language":"Language"}</div>
+          <div class="radio-group">
+            <label><input type="radio" name="pref-lang" value="ja" ${lang==="ja"?"checked":""} onchange="setLang(this.value)"> 日本語</label>
+            <label><input type="radio" name="pref-lang" value="en" ${lang==="en"?"checked":""} onchange="setLang(this.value)"> English</label>
+          </div>
+          <div class="pref-hint">${ja?"ブラウザを閉じても保持されます":"Saved across sessions"}</div>
+        </div>
+        <div class="pref-item">
+          <div class="pref-label">${ja?"起動時のページ":"Default page on startup"}</div>
+          <select style="padding:6px 10px;border:1px solid var(--line);border-radius:5px;font-size:12px;background:#fff"
+            onchange="localStorage.setItem('a2cr_default_view',this.value)">
+            ${viewOptions.map(o => `<option value="${o.v}" ${savedView===o.v?"selected":""}>${ja?o.ja:o.en}</option>`).join("")}
+          </select>
+          <div class="pref-hint">${ja?"次回起動時から反映されます":"Applied on next load"}</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-panel panel">
+      <h2>${ja?"データベース情報":"Database Info"}</h2>
+      <div class="detail-body">
+        <div class="pref-item">
+          <div class="pref-label">${ja?"データベースパス":"Database Path"}</div>
+          <div class="code-block">${esc(d.database_path)}</div>
+        </div>
+        <div style="display:flex;gap:24px">
+          <div class="pref-item">
+            <div class="pref-label">${ja?"データベースサイズ":"Database Size"}</div>
+            <div style="font-size:13px;font-weight:600">${fmtSize(d.database_size_bytes)}</div>
+          </div>
+          <div class="pref-item">
+            <div class="pref-label">${ja?"動作モード":"Mode"}</div>
+            <span class="badge open">local</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function eventList(events) {
