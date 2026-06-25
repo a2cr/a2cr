@@ -1013,10 +1013,32 @@ function renderWorkthreads() {
 }
 
 function renderAgents() {
-  return `<div class="panel"><h2>Agents</h2>${table(["Client", "Agent", "Model", "Session", "Baton", "Stash", "Thread Msg", "Updated"], state.actors.actors.map(a => [
-    esc(a.client_name || ""), esc(a.agent_label || ""), esc(a.model_source || ""), esc(a.session_id || ""),
-    esc(a.workbaton_count), esc(a.workstash_count), esc(a.workthread_message_count), fmt(a.updated_at)
-  ]))}</div>`;
+  const ja = lang === "ja";
+  const CLIENT_COLORS = {"claude-code":{bg:"#e8f5f0",color:"#1e6f54"}, "cursor":{bg:"#e8f2f7",color:"#2f5d8c"}};
+  return `<div class="panel"><h2>${ja?"エージェント一覧":"Agents"}</h2>
+    <div style="overflow-x:auto">${table(
+      [ja?"クライアント":"Client", ja?"エージェント":"Agent",
+       ja?"モデル":"Model", ja?"セッション":"Session",
+       "WorkBaton","WorkStash","Thread Msg", ja?"更新日時":"Updated"],
+      state.actors.actors.map(a => {
+        const c = CLIENT_COLORS[a.client_name] || {bg:"#f4f7f5",color:"#63706a"};
+        const clientBadge = a.client_name
+          ? `<span class="badge" style="background:${c.bg};color:${c.color};border-color:${c.color}40">${esc(a.client_name)}</span>`
+          : "";
+        const sid = a.session_id ? esc(a.session_id.slice(0,8)) + "..." : "";
+        const sidFull = esc(a.session_id || "");
+        return [
+          clientBadge,
+          esc(a.agent_label || ""),
+          `<span style="color:var(--muted);font-size:11px">${esc(a.model_source || "")}</span>`,
+          `<span title="${sidFull}" style="font-family:monospace;font-size:10px;color:var(--muted)">${sid}</span>`,
+          `<strong>${esc(a.workbaton_count)}</strong>`,
+          `<strong>${esc(a.workstash_count)}</strong>`,
+          `<strong>${esc(a.workthread_message_count)}</strong>`,
+          fmt(a.updated_at)
+        ];
+      })
+    )}</div></div>`;
 }
 
 function renderTimeline() {
