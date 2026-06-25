@@ -975,14 +975,21 @@ function renderWorkbatons() {
 }
 
 function renderWorkstash() {
+  const ja = lang === "ja";
   const rows = state.workstash.entries.map(item => [
     linkFor("WorkStash", item.entry_key),
     esc(item.project_key || ""),
     item.tags.map(t => badge(t)).join(""),
-    esc(item.size_bytes),
+    esc(fmtSize(item.size_bytes)),
     fmt(item.updated_at)
   ]);
-  return `<div class="grid"><div class="panel"><h2>Entries</h2>${table(["Key", "Project", "Tags", "Size", "Updated"], rows)}</div><div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select an entry</div></div></div>`;
+  return `<div class="grid">
+    <div class="panel"><h2>${ja?"エントリー一覧":"Entries"}</h2>${table(
+      [ja?"キー":"Key", ja?"プロジェクト":"Project", ja?"タグ":"Tags", ja?"サイズ":"Size", ja?"更新日時":"Updated"],
+      rows
+    )}</div>
+    <div class="panel detail" id="detail"><h2>${ja?"詳細":"Detail"}</h2><div class="empty">${ja?"エントリーを選択してください":"Select an entry"}</div></div>
+  </div>`;
 }
 
 function renderWorkthreads() {
@@ -1183,10 +1190,18 @@ function detailHtml(type, detail) {
       <h3>${ja?"参照元":"Referenced By"}</h3>${referenceList(detail.referenced_by, true)}`;
   }
   if (type === "WorkStash") {
-    return `<div class="actions"><button class="danger" onclick="runAction('WorkStash','${esc(detail.entry_key)}','delete')">Delete</button></div>
+    const ja = lang === "ja";
+    return `<div class="actions">
+        <button class="danger" onclick="runAction('WorkStash','${esc(detail.entry_key)}','delete')">${ja?"削除":"Delete"}</button>
+      </div>
       <p>${badge(detail.project_key || "")}${(detail.tags || []).map(t => badge(t)).join("")}</p>
+      <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px;color:var(--muted)">
+        <span>${ja?"サイズ":"Size"}: <strong style="color:var(--ink)">${esc(fmtSize(detail.size_bytes))}</strong></span>
+        <span>${ja?"更新":"Updated"}: <strong style="color:var(--ink)">${fmt(detail.updated_at)}</strong></span>
+      </div>
+      <div class="field-label" style="margin-bottom:4px">${ja?"内容":"Content"}</div>
       <pre>${esc(detail.value || "")}</pre>
-      <h3>Referenced By</h3>${referenceList(detail.referenced_by, true)}`;
+      <h3>${ja?"参照元":"Referenced By"}</h3>${referenceList(detail.referenced_by, true)}`;
   }
   if (type === "WorkThread") {
     return `<div class="actions"><button class="warn" onclick="runAction('WorkThread','${esc(detail.thread_key)}','close')">Close</button><button class="danger" onclick="runAction('WorkThread','${esc(detail.thread_key)}','archive')">Archive</button></div>
