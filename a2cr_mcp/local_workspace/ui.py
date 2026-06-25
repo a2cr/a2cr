@@ -653,6 +653,71 @@ pre {
 .badge.WorkThread { background: #e8f2f7; color: var(--blue);   border-color: #9cb9d5; }
 .badge.pinned-b  { background: #e0f0ff; color: #2f5d8c; border-color: #9cb9d5; }
 .badge.archived-b { background: #f4f7f5; color: #63706a; border-color: var(--line); }
+.field-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.field-card.highlight {
+  border-left: 3px solid var(--green);
+}
+.field-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.field-label.highlight { color: var(--green); }
+.field-value {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.field-value ul {
+  margin: 0;
+  padding-left: 16px;
+}
+details > summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 4px 10px;
+  display: inline-block;
+  user-select: none;
+  margin-top: 10px;
+}
+.msg-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  background: #f9fbfa;
+  border-bottom: 1px solid var(--line);
+}
+.msg-time {
+  font-size: 10px;
+  color: var(--muted);
+}
+.msg-body {
+  margin: 0;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 11px;
+}
 </style>
 </head>
 <body>
@@ -1049,6 +1114,50 @@ function eventList(events) {
   );
 }
 
+function batonFields(content) {
+  if (!content || typeof content !== "object") return "";
+  const ja = lang === "ja";
+  const FIELDS = [
+    {key:"goal",         jaLabel:"目標",           enLabel:"Goal",          highlight:false},
+    {key:"current_state",jaLabel:"現在の状態",      enLabel:"Current State", highlight:false},
+    {key:"next_action",  jaLabel:"次のアクション",  enLabel:"Next Action",   highlight:true},
+    {key:"blockers",     jaLabel:"ブロッカー",      enLabel:"Blockers",      highlight:false},
+    {key:"decisions",    jaLabel:"決定事項",        enLabel:"Decisions",     highlight:false},
+    {key:"problems",     jaLabel:"課題",            enLabel:"Problems",      highlight:false},
+  ];
+  return FIELDS.filter(f => {
+    const v = content[f.key];
+    return v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0);
+  }).map(f => {
+    const v = content[f.key];
+    const label = ja ? f.jaLabel : f.enLabel;
+    const display = ja ? `${label} (${f.key})` : label;
+    const valueHtml = Array.isArray(v)
+      ? `<ul>${v.map(i => `<li>${esc(String(i))}</li>`).join("")}</ul>`
+      : `<div>${esc(String(v))}</div>`;
+    return `<div class="field-card${f.highlight ? " highlight" : ""}">
+      <div class="field-label${f.highlight ? " highlight" : ""}">${esc(display)}</div>
+      <div class="field-value">${valueHtml}</div>
+    </div>`;
+  }).join("");
+}
+
+const AGENT_COLORS = [
+  {bg:"#e8f5f0", color:"#1e6f54"},
+  {bg:"#e8f2f7", color:"#2f5d8c"},
+  {bg:"#fff8e6", color:"#9a6418"},
+  {bg:"#f4f7f5", color:"#63706a"},
+];
+function agentColorMap(participants) {
+  const map = {};
+  (participants || []).forEach((p, i) => {
+    const c = AGENT_COLORS[i % AGENT_COLORS.length];
+    const key = p.agent_label || p.client_name || "agent";
+    map[key] = c;
+  });
+  return map;
+}
+
 function linkFor(type, key) {
   return `<button class="ghost" onclick="openDetail('${esc(type)}','${encodeURIComponent(key)}')">${esc(key)}</button>`;
 }
@@ -1065,11 +1174,13 @@ async function openDetail(type, encodedKey) {
 function detailHtml(type, detail) {
   if (detail.status === "not_found") return `<div class="empty">Not found</div>`;
   if (type === "WorkBaton") {
+    const ja = lang === "ja";
     return `${batonActions(detail.slot_name, detail)}
-      <p>${badge(detail.project_key || "")}${detail.pinned ? badge("pinned", "pinned") : ""}${detail.stale ? badge("stale", "stale") : ""}${detail.archived ? badge("archived", "archived") : ""}</p>
-      ${jsonBlock(detail.content)}
-      <h3>References</h3>${referenceList(detail.references)}
-      <h3>Referenced By</h3>${referenceList(detail.referenced_by, true)}`;
+      <p>${badge(detail.project_key || "")}${detail.pinned ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : ""}${detail.stale ? badge("stale","stale") : ""}${detail.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""}</p>
+      ${batonFields(detail.content)}
+      <details><summary>${ja?"▶ 生 JSON を表示":"▶ Show raw JSON"}</summary>${jsonBlock(detail.content)}</details>
+      <h3 style="margin-top:14px">${ja?"参照":"References"}</h3>${referenceList(detail.references)}
+      <h3>${ja?"参照元":"Referenced By"}</h3>${referenceList(detail.referenced_by, true)}`;
   }
   if (type === "WorkStash") {
     return `<div class="actions"><button class="danger" onclick="runAction('WorkStash','${esc(detail.entry_key)}','delete')">Delete</button></div>
