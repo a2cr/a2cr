@@ -614,6 +614,19 @@ pre {
   font-size: 13px;
   color: var(--muted);
 }
+.act-badge {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.act-green  { background: #d4edda; color: #1a5c2f; }
+.act-red    { background: #fde8e8; color: #9f3131; }
+.act-amber  { background: #fff8e6; color: #9a6418; }
+.act-neutral{ background: #f4f7f5; color: #63706a; }
+.badge.WorkBaton  { background: #e8f5f0; color: var(--green);  border-color: #91c7b4; }
+.badge.WorkStash  { background: #fef3e2; color: var(--amber);  border-color: #d6b57d; }
+.badge.WorkThread { background: #e8f2f7; color: var(--blue);   border-color: #9cb9d5; }
 </style>
 </head>
 <body>
@@ -694,6 +707,17 @@ const fmtSize = (bytes) => {
   return (bytes / 1048576).toFixed(1) + " MB";
 };
 const badge = (text, cls = "") => text ? `<span class="badge ${cls}">${esc(text)}</span>` : "";
+const actionBadge = (action) => {
+  const ja = lang === "ja";
+  const labels = {save: ja?"保存":"save", store: ja?"保存":"store",
+    delete: ja?"削除":"delete", archive: ja?"アーカイブ":"archive",
+    load: ja?"読み込み":"load", resume: ja?"読み込み":"resume"};
+  const label = labels[action] || action;
+  const cls = ["save","store","create","post_message"].includes(action) ? "act-green"
+    : ["delete","archive"].includes(action) ? "act-red"
+    : ["stale","close"].includes(action) ? "act-amber" : "act-neutral";
+  return `<span class="act-badge ${cls}">${esc(label)}</span>`;
+};
 const jsonBlock = (obj) => `<pre>${esc(JSON.stringify(obj, null, 2))}</pre>`;
 
 async function loadState() {
@@ -723,20 +747,25 @@ function render() {
 }
 
 function renderDashboard() {
+  const ja = lang === "ja";
   const counts = state.dashboard.counts;
   return `
     <div class="stats">
-      ${stat("Projects", counts.projects)}
+      ${stat(ja?"プロジェクト":"Projects", counts.projects)}
       ${stat("WorkBaton", counts.workbatons)}
       ${stat("WorkStash", counts.workstash_entries)}
       ${stat("WorkThreads", counts.workthreads)}
-      ${stat("Events", counts.events)}
+      ${stat(ja?"イベント":"Events", counts.events)}
     </div>
     <div class="grid">
-      <div class="panel"><h2>Projects</h2>${table(["Project", "Baton", "Stash", "Threads", "Updated"], state.dashboard.projects.map(p => [
-        p.project_key, p.workbaton_count, p.workstash_count, p.workthread_count, fmt(p.updated_at)
-      ]))}</div>
-      <div class="panel"><h2>Recent Events</h2>${eventList(state.dashboard.recent_events)}</div>
+      <div class="panel"><h2>${ja?"プロジェクト":"Projects"}</h2>${table(
+        [ja?"プロジェクト":"Project","WorkBaton","WorkStash","Threads",ja?"更新日時":"Updated"],
+        state.dashboard.projects.map(p => [
+          esc(p.project_key), esc(p.workbaton_count), esc(p.workstash_count),
+          esc(p.workthread_count), fmt(p.updated_at)
+        ])
+      )}</div>
+      <div class="panel"><h2>${ja?"最近のイベント":"Recent Events"}</h2>${eventList(state.dashboard.recent_events)}</div>
     </div>`;
 }
 
@@ -932,13 +961,16 @@ function renderSettings() {
 }
 
 function eventList(events) {
-  return table(["Object", "Action", "Project", "Summary", "Time"], events.map(e => [
-    `${badge(e.object_type || "")} ${esc(e.object_key || "")}`,
-    esc(e.action || ""),
-    esc(e.project_key || ""),
-    esc(e.summary || ""),
-    fmt(e.created_at)
-  ]));
+  const ja = lang === "ja";
+  return table(
+    [ja?"対象":"Object", ja?"アクション":"Action", ja?"プロジェクト":"Project", ja?"日時":"Time"],
+    events.map(e => [
+      `${badge(e.object_type || "", e.object_type || "")} ${esc(e.object_key || "")}`,
+      actionBadge(e.action || ""),
+      esc(e.project_key || ""),
+      fmt(e.created_at)
+    ])
+  );
 }
 
 function linkFor(type, key) {
