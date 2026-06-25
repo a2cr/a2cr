@@ -552,6 +552,68 @@ pre {
   color: #fff;
   font-weight: 600;
 }
+.help-steps {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.help-step-arrow {
+  padding-top: 14px;
+  font-size: 20px;
+  color: var(--muted);
+}
+.help-step {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.help-step-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green);
+}
+.help-step-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.help-step-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+.help-detail {
+  border-top: 2px solid var(--line);
+  margin-top: 10px;
+  padding-top: 14px;
+}
+.help-prompt {
+  background: #101714;
+  color: #eef6f1;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.help-prompt li {
+  margin-bottom: 4px;
+}
+.views-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 16px;
+  align-items: baseline;
+}
+.views-grid dt {
+  font-weight: 600;
+  font-size: 13px;
+}
+.views-grid dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
@@ -777,7 +839,87 @@ function renderTimeline() {
 }
 
 function renderHelp() {
-  return `<div class="panel"><h2>Help</h2><div class="detail-body">Loading...</div></div>`;
+  const ja = lang === "ja";
+  return `
+    <div class="panel" style="max-width:720px">
+      <h2>${ja ? "A2CR とは" : "What is A2CR"}</h2>
+      <div class="detail-body">
+        <p>${ja
+          ? "AIエージェントが保存した作業状態（WorkBaton・WorkStash・WorkThreads）をローカルで管理・閲覧するためのダッシュボードです。"
+          : "A dashboard for viewing and managing AI agent work state (WorkBaton, WorkStash, WorkThreads) stored locally on your machine."}</p>
+      </div>
+    </div>
+    <div class="panel" style="max-width:720px">
+      <h2>${ja ? "基本の流れ" : "Basic Flow"}</h2>
+      <div class="detail-body">
+        <div class="help-steps">
+          <div class="help-step">
+            <div class="help-step-num">①</div>
+            <div class="help-step-label">${ja ? "保存" : "Save"}</div>
+            <div class="help-step-sub">${ja ? "AIにWorkBatonへ保存するよう指示する" : "Ask the AI to save to WorkBaton"}</div>
+          </div>
+          <div class="help-step-arrow">→</div>
+          <div class="help-step">
+            <div class="help-step-num">②</div>
+            <div class="help-step-label">${ja ? "再開" : "Resume"}</div>
+            <div class="help-step-sub">${ja ? "新しいAIセッションで「再開して」と指示する" : "Tell the AI to resume in a new session"}</div>
+          </div>
+        </div>
+        <div class="help-detail">
+          <strong>${ja ? "① 保存するには" : "① How to save"}</strong>
+          <ul style="margin:8px 0;padding-left:18px;font-size:13px">
+            ${ja ? `<li>作業の区切りで、AIに保存を依頼します</li>
+            <li>AIが <code>save_context</code> ツールを呼び出し、WorkBatonに保存します</li>
+            <li>Slot名はAIが自動で命名しますが、指定もできます</li>`
+            : `<li>At a natural stopping point, ask the AI to save</li>
+            <li>The AI calls <code>save_context</code> and writes a WorkBaton checkpoint</li>
+            <li>The AI auto-names the Slot, but you can specify one</li>`}
+          </ul>
+          <div class="help-prompt"><ul style="margin:0;padding-left:16px">
+            ${ja ? `<li>「ここまでの作業をWorkBatonに保存してください」</li>
+            <li>「save して」</li>
+            <li>「"feature-auth" というSlot名で保存して」</li>`
+            : `<li>"Save the current work to WorkBaton"</li>
+            <li>"save"</li>
+            <li>"Save as slot 'feature-auth'"</li>`}
+          </ul></div>
+        </div>
+        <div class="help-detail" style="margin-top:16px">
+          <strong>${ja ? "② 再開するには" : "② How to resume"}</strong>
+          <ul style="margin:8px 0;padding-left:18px;font-size:13px">
+            ${ja ? `<li>新しいAIセッションを開き、再開を依頼します</li>
+            <li>AIが <code>resume_context</code> ツールを呼び出し、前回の状態を復元します</li>
+            <li>Slot名を指定すると特定の保存ポイントから再開できます</li>`
+            : `<li>Open a new AI session and ask to resume</li>
+            <li>The AI calls <code>resume_context</code> to restore the previous state</li>
+            <li>Specify a Slot name to resume from a specific checkpoint</li>`}
+          </ul>
+          <div class="help-prompt"><ul style="margin:0;padding-left:16px">
+            ${ja ? `<li>「前回の続きを再開して」</li>
+            <li>「WorkBatonを読み込んで作業を再開してください」</li>
+            <li>「"feature-auth" のSlotから再開して」</li>`
+            : `<li>"Resume from last WorkBaton"</li>
+            <li>"Load the WorkBaton and continue"</li>
+            <li>"Resume from slot 'feature-auth'"</li>`}
+          </ul></div>
+        </div>
+        <p style="margin-top:14px;padding:10px 14px;background:var(--soft);border-radius:6px;font-size:13px">
+          💡 ${ja ? "ダッシュボードでいつでも保存済みの作業状態を確認・管理できます" : "Use the Dashboard to review and manage your saved work state at any time"}
+        </p>
+      </div>
+    </div>
+    <div class="panel" style="max-width:720px">
+      <h2>${ja ? "各ビューの説明" : "Views Reference"}</h2>
+      <div class="detail-body">
+        <dl class="views-grid">
+          <dt>Dashboard</dt><dd>${ja ? "プロジェクト一覧と最近のイベントを俯瞰する" : "Overview of projects and recent events"}</dd>
+          <dt>WorkBaton</dt><dd>${ja ? "作業引き継ぎ用のチェックポイント。Slot名で保存・管理" : "Work handoff checkpoints, saved and managed by Slot name"}</dd>
+          <dt>WorkStash</dt><dd>${ja ? "一時的なメモ領域。バトンから参照される補助データ" : "Temporary note area; auxiliary data referenced by WorkBaton"}</dd>
+          <dt>WorkThreads</dt><dd>${ja ? "複数AIエージェントの協調作業スペース" : "Collaborative workspace for multi-agent coordination"}</dd>
+          <dt>Search</dt><dd>${ja ? "プロジェクト・タグ・エージェントなどで横断検索" : "Cross-search by project, tag, agent, and more"}</dd>
+        </dl>
+      </div>
+    </div>`;
 }
 
 function renderSettings() {
