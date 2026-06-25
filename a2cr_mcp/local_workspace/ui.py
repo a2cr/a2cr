@@ -651,6 +651,8 @@ pre {
 .badge.WorkBaton  { background: #e8f5f0; color: var(--green);  border-color: #91c7b4; }
 .badge.WorkStash  { background: #fef3e2; color: var(--amber);  border-color: #d6b57d; }
 .badge.WorkThread { background: #e8f2f7; color: var(--blue);   border-color: #9cb9d5; }
+.badge.pinned-b  { background: #e0f0ff; color: #2f5d8c; border-color: #9cb9d5; }
+.badge.archived-b { background: #f4f7f5; color: #63706a; border-color: var(--line); }
 </style>
 </head>
 <body>
@@ -886,14 +888,25 @@ function renderSearchResults(results) {
 }
 
 function renderWorkbatons() {
+  const ja = lang === "ja";
   const rows = state.workbatons.items.map(item => [
     linkFor("WorkBaton", item.slot_name),
     esc(item.project_key || ""),
-    `${item.pinned ? badge("pinned", "pinned") : ""}${item.stale ? badge("stale", "stale") : ""}${item.archived ? badge("archived", "archived") : ""}`,
+    [
+      item.pinned   ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : "",
+      item.stale    ? `<span class="badge stale">stale</span>` : "",
+      item.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""
+    ].join(""),
     esc(item.slot_number ?? ""),
     fmt(item.updated_at)
   ]);
-  return `<div class="grid"><div class="panel"><h2>Slots</h2>${table(["Slot", "Project", "State", "No.", "Updated"], rows)}</div><div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select a Slot</div></div></div>`;
+  return `<div class="grid">
+    <div class="panel"><h2>${ja?"Slot 一覧":"Slots"}</h2>${table(
+      [ja?"Slot名":"Slot", ja?"プロジェクト":"Project", ja?"状態":"State", "No.", ja?"更新日時":"Updated"],
+      rows
+    )}</div>
+    <div class="panel detail" id="detail"><h2>${ja?"詳細":"Detail"}</h2><div class="empty">${ja?"Slotを選択してください":"Select a Slot"}</div></div>
+  </div>`;
 }
 
 function renderWorkstash() {
@@ -1075,11 +1088,16 @@ function detailHtml(type, detail) {
 }
 
 function batonActions(key, detail) {
+  const ja = lang === "ja";
   return `<div class="actions">
-    <button onclick="runAction('WorkBaton','${esc(key)}','${detail.pinned ? "unpin" : "pin"}')">${detail.pinned ? "Unpin" : "Pin"}</button>
-    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','${detail.stale ? "unstale" : "stale"}')">${detail.stale ? "Fresh" : "Stale"}</button>
-    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','archive')">Archive</button>
-    <button class="danger" onclick="runAction('WorkBaton','${esc(key)}','delete')">Delete</button>
+    <button onclick="runAction('WorkBaton','${esc(key)}','${detail.pinned ? "unpin" : "pin"}')">
+      ${detail.pinned ? (ja?"ピン解除":"Unpin") : (ja?"ピン留め":"Pin")}
+    </button>
+    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','${detail.stale ? "unstale" : "stale"}')">
+      ${detail.stale ? (ja?"最新に戻す":"Fresh") : (ja?"Staleにする":"Stale")}
+    </button>
+    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','archive')">${ja?"アーカイブ":"Archive"}</button>
+    <button class="danger" onclick="runAction('WorkBaton','${esc(key)}','delete')">${ja?"削除":"Delete"}</button>
   </div>`;
 }
 
