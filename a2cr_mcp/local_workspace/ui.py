@@ -1042,7 +1042,8 @@ function renderAgents() {
 }
 
 function renderTimeline() {
-  return `<div class="panel"><h2>Timeline</h2>${eventList(state.events.events)}</div>`;
+  const ja = lang === "ja";
+  return `<div class="panel"><h2>${ja?"イベント一覧":"Events"}</h2>${eventList(state.events.events)}</div>`;
 }
 
 function renderHelp() {
