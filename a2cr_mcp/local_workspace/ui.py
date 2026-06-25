@@ -489,17 +489,41 @@ pre {
   overflow: auto;
 }
 .filters {
-  display: grid;
-  grid-template-columns: 2fr repeat(7, minmax(90px, 1fr));
-  gap: 8px;
-  padding: 12px;
+  padding: 12px 14px;
 }
-.filters input, .filters select {
-  min-width: 0;
-  padding: 8px;
+.filter-keyword {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.filter-keyword input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.filter-grid label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.filter-grid input,
+.filter-grid select {
+  width: 100%;
+  padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 12px;
 }
 .hidden { display: none; }
 .empty {
@@ -781,17 +805,48 @@ function table(headers, rows, attrs = "") {
 }
 
 function renderSearch() {
+  const ja = lang === "ja";
   return `
     <div class="panel">
       <div class="filters">
-        <input id="q" placeholder="Query">
-        <select id="type"><option value="">All</option><option>WorkBaton</option><option>WorkStash</option><option>WorkThread</option><option>Event</option></select>
-        <input id="project" placeholder="Project">
-        <input id="tag" placeholder="Tag">
-        <select id="threadState"><option value="">State</option><option>open</option><option>closed</option><option>archived</option></select>
-        <input id="agent" placeholder="Agent">
-        <input id="slot" placeholder="Slot">
-        <button class="primary" onclick="runSearch()">Search</button>
+        <div class="filter-keyword">
+          <input id="q" placeholder="${ja ? "キーワードで検索..." : "Search by keyword..."}">
+          <button class="primary" onclick="runSearch()">${ja ? "検索" : "Search"}</button>
+        </div>
+        <div class="filter-grid">
+          <div>
+            <label>${ja ? "種別" : "Type"}</label>
+            <select id="type">
+              <option value="">${ja ? "すべて" : "All"}</option>
+              <option>WorkBaton</option><option>WorkStash</option>
+              <option>WorkThread</option>
+              <option value="Event">${ja ? "イベント" : "Event"}</option>
+            </select>
+          </div>
+          <div>
+            <label>${ja ? "プロジェクト" : "Project"}</label>
+            <input id="project">
+          </div>
+          <div>
+            <label>${ja ? "タグ" : "Tag"}</label>
+            <input id="tag">
+          </div>
+          <div>
+            <label>${ja ? "状態" : "State"}</label>
+            <select id="threadState">
+              <option value="">${ja ? "すべて" : "All"}</option>
+              <option>open</option><option>closed</option><option>archived</option>
+            </select>
+          </div>
+          <div>
+            <label>${ja ? "エージェント" : "Agent"}</label>
+            <input id="agent">
+          </div>
+          <div>
+            <label>Slot</label>
+            <input id="slot">
+          </div>
+        </div>
       </div>
       <div id="search-results" class="detail-body"></div>
     </div>`;
@@ -813,13 +868,21 @@ async function runSearch() {
 }
 
 function renderSearchResults(results) {
-  return table(["Type", "Handle", "Project", "Snippet", "Updated"], results.map(item => [
-    badge(item.object_type),
-    linkFor(item.object_type, item.handle),
-    esc(item.project_key || ""),
-    esc(item.snippet || ""),
-    fmt(item.updated_at)
-  ]));
+  const ja = lang === "ja";
+  const header = `<div style="padding:9px 14px;font-size:12px;font-weight:600;border-bottom:1px solid var(--line);color:var(--muted)">
+    ${ja ? "検索結果" : "Results"} <span class="badge">${results.length}${ja ? "件" : ""}</span>
+  </div>`;
+  if (!results.length) return header + `<div class="empty">${ja ? "— 該当なし —" : "— No results —"}</div>`;
+  return header + table(
+    [ja?"種別":"Type", ja?"名前":"Name", ja?"プロジェクト":"Project", ja?"スニペット":"Snippet", ja?"更新日時":"Updated"],
+    results.map(item => [
+      badge(item.object_type, item.object_type),
+      linkFor(item.object_type, item.handle),
+      esc(item.project_key || ""),
+      esc(item.snippet || ""),
+      fmt(item.updated_at)
+    ])
+  );
 }
 
 function renderWorkbatons() {
