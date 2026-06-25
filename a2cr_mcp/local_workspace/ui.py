@@ -545,7 +545,7 @@ pre {
   .filter-grid { grid-template-columns: 1fr 1fr; }
 }
 .lang-switcher {
-  margin-top: auto;
+  margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid #344a41;
 }
