@@ -112,7 +112,7 @@ def test_ui_server_serves_html_api_details_actions_and_auth(tmp_path, monkeypatc
     thread.start()
     try:
         html = urllib.request.urlopen(url, timeout=5).read().decode("utf-8")
-        assert "A2CR Local" in html
+        assert "<title>A2CR</title>" in html
         assert "/api/state" in html
 
         state = get_json(url, "/api/state")
