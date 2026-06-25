@@ -314,7 +314,7 @@ INDEX_HTML = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A2CR Local</title>
+<title>A2CR</title>
 <style>
 :root {
   color-scheme: light;
@@ -362,6 +362,8 @@ button:hover { filter: brightness(0.97); }
   background: #17201c;
   color: #eef6f1;
   padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
 }
 .brand {
   font-size: 18px;
@@ -487,17 +489,41 @@ pre {
   overflow: auto;
 }
 .filters {
-  display: grid;
-  grid-template-columns: 2fr repeat(7, minmax(90px, 1fr));
-  gap: 8px;
-  padding: 12px;
+  padding: 12px 14px;
 }
-.filters input, .filters select {
-  min-width: 0;
-  padding: 8px;
+.filter-keyword {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.filter-keyword input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.filter-grid label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.filter-grid input,
+.filter-grid select {
+  width: 100%;
+  padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 12px;
 }
 .hidden { display: none; }
 .empty {
@@ -516,14 +542,227 @@ pre {
   .nav button { width: auto; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .grid { grid-template-columns: 1fr; }
-  .filters { grid-template-columns: 1fr 1fr; }
+  .filter-grid { grid-template-columns: 1fr 1fr; }
+}
+.lang-switcher {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #344a41;
+}
+.lang-switcher > span {
+  display: block;
+  font-size: 10px;
+  color: #63706a;
+  margin-bottom: 6px;
+}
+.lang-toggle {
+  display: flex;
+  border: 1px solid #344a41;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.lang-toggle button {
+  flex: 1;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 11px;
+  background: transparent;
+  color: #aaa;
+  border: none;
+  border-radius: 0;
+}
+.lang-toggle button.active {
+  background: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+.help-steps {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.help-step-arrow {
+  padding-top: 14px;
+  font-size: 20px;
+  color: var(--muted);
+}
+.help-step {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.help-step-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green);
+}
+.help-step-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.help-step-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+.help-detail {
+  border-top: 2px solid var(--line);
+  margin-top: 10px;
+  padding-top: 14px;
+}
+.help-prompt {
+  background: #101714;
+  color: #eef6f1;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.help-prompt li {
+  margin-bottom: 4px;
+}
+.views-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 16px;
+  align-items: baseline;
+}
+.views-grid dt {
+  font-weight: 600;
+  font-size: 13px;
+}
+.views-grid dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.act-badge {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.act-green  { background: #d4edda; color: #1a5c2f; }
+.act-red    { background: #fde8e8; color: #9f3131; }
+.act-amber  { background: #fff8e6; color: #9a6418; }
+.act-neutral{ background: #f4f7f5; color: #63706a; }
+.badge.WorkBaton  { background: #e8f5f0; color: var(--green);  border-color: #91c7b4; }
+.badge.WorkStash  { background: #fef3e2; color: var(--amber);  border-color: #d6b57d; }
+.badge.WorkThread { background: #e8f2f7; color: var(--blue);   border-color: #9cb9d5; }
+.badge.pinned-b  { background: #e0f0ff; color: #2f5d8c; border-color: #9cb9d5; }
+.badge.archived-b { background: #f4f7f5; color: #63706a; border-color: var(--line); }
+.field-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.field-card.highlight {
+  border-left: 3px solid var(--green);
+}
+.field-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.field-label.highlight { color: var(--green); }
+.field-value {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.field-value ul {
+  margin: 0;
+  padding-left: 16px;
+}
+details > summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 4px 10px;
+  display: inline-block;
+  user-select: none;
+  margin-top: 10px;
+}
+.msg-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  background: #f9fbfa;
+  border-bottom: 1px solid var(--line);
+}
+.msg-time {
+  font-size: 10px;
+  color: var(--muted);
+}
+.msg-body {
+  margin: 0;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 11px;
+}
+.settings-panel {
+  max-width: 480px;
+  margin-bottom: 14px;
+}
+.pref-item {
+  margin-bottom: 14px;
+}
+.pref-item:last-child { margin-bottom: 0; }
+.pref-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.pref-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.code-block {
+  font-family: monospace;
+  font-size: 11px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px 10px;
+  overflow-wrap: anywhere;
 }
 </style>
 </head>
 <body>
 <div class="shell">
   <aside class="nav">
-    <div class="brand">A2CR Local</div>
+    <div class="brand">A2CR</div>
     <button class="active" data-view="dashboard">Dashboard</button>
     <button data-view="search">Search</button>
     <button data-view="workbatons">WorkBaton</button>
@@ -532,6 +771,14 @@ pre {
     <button data-view="agents">Agents</button>
     <button data-view="timeline">Timeline</button>
     <button data-view="settings">Settings</button>
+    <button data-view="help">Help</button>
+    <div class="lang-switcher">
+      <span>Language</span>
+      <div class="lang-toggle">
+        <button id="lang-ja" class="active" onclick="setLang('ja')">日本語</button>
+        <button id="lang-en" onclick="setLang('en')">English</button>
+      </div>
+    </div>
   </aside>
   <main class="main">
     <div class="topbar">
@@ -549,6 +796,25 @@ pre {
 const token = new URLSearchParams(location.search).get("token") || "";
 let state = null;
 let currentView = "dashboard";
+let lang = "ja";
+
+const TITLES = {
+  ja: {dashboard:"ダッシュボード", search:"検索", workbatons:"WorkBaton",
+       workstash:"WorkStash", workthreads:"WorkThreads", agents:"Agents",
+       timeline:"Timeline", settings:"Settings", help:"使い方ガイド"},
+  en: {dashboard:"Dashboard", search:"Search", workbatons:"WorkBaton",
+       workstash:"WorkStash", workthreads:"WorkThreads", agents:"Agents",
+       timeline:"Timeline", settings:"Settings", help:"User Guide"}
+};
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("a2cr_lang", l);
+  document.getElementById("lang-ja").classList.toggle("active", l === "ja");
+  document.getElementById("lang-en").classList.toggle("active", l === "en");
+  document.getElementById("view-title").textContent = TITLES[lang][currentView] || currentView;
+  render();
+}
 
 const api = async (path, options = {}) => {
   const sep = path.includes("?") ? "&" : "?";
@@ -564,7 +830,24 @@ const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({
 }[ch]));
 
 const fmt = (value) => value ? String(value).replace("T", " ").replace("Z", "") : "";
+const fmtSize = (bytes) => {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / 1048576).toFixed(1) + " MB";
+};
 const badge = (text, cls = "") => text ? `<span class="badge ${cls}">${esc(text)}</span>` : "";
+const actionBadge = (action) => {
+  const ja = lang === "ja";
+  const labels = {save: ja?"保存":"save", store: ja?"保存":"store",
+    delete: ja?"削除":"delete", archive: ja?"アーカイブ":"archive",
+    load: ja?"読み込み":"load", resume: ja?"読み込み":"resume"};
+  const label = labels[action] || action;
+  const cls = ["save","store","create","post_message"].includes(action) ? "act-green"
+    : ["delete","archive"].includes(action) ? "act-red"
+    : ["stale","close"].includes(action) ? "act-amber" : "act-neutral";
+  return `<span class="act-badge ${cls}">${esc(label)}</span>`;
+};
 const jsonBlock = (obj) => `<pre>${esc(JSON.stringify(obj, null, 2))}</pre>`;
 
 async function loadState() {
@@ -574,11 +857,8 @@ async function loadState() {
 
 function setView(view) {
   currentView = view;
-  document.querySelectorAll(".nav button").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
-  document.getElementById("view-title").textContent = ({
-    dashboard: "Dashboard", search: "Search", workbatons: "WorkBaton", workstash: "WorkStash",
-    workthreads: "WorkThreads", agents: "Agents", timeline: "Timeline", settings: "Settings"
-  })[view];
+  document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
+  document.getElementById("view-title").textContent = TITLES[lang][view] || view;
   render();
 }
 
@@ -593,23 +873,29 @@ function render() {
   if (currentView === "agents") content.innerHTML = renderAgents();
   if (currentView === "timeline") content.innerHTML = renderTimeline();
   if (currentView === "settings") content.innerHTML = renderSettings();
+  if (currentView === "help") content.innerHTML = renderHelp();
 }
 
 function renderDashboard() {
+  const ja = lang === "ja";
   const counts = state.dashboard.counts;
   return `
     <div class="stats">
-      ${stat("Projects", counts.projects)}
+      ${stat(ja?"プロジェクト":"Projects", counts.projects)}
       ${stat("WorkBaton", counts.workbatons)}
       ${stat("WorkStash", counts.workstash_entries)}
       ${stat("WorkThreads", counts.workthreads)}
-      ${stat("Events", counts.events)}
+      ${stat(ja?"イベント":"Events", counts.events)}
     </div>
     <div class="grid">
-      <div class="panel"><h2>Projects</h2>${table(["Project", "Baton", "Stash", "Threads", "Updated"], state.dashboard.projects.map(p => [
-        p.project_key, p.workbaton_count, p.workstash_count, p.workthread_count, fmt(p.updated_at)
-      ]))}</div>
-      <div class="panel"><h2>Recent Events</h2>${eventList(state.dashboard.recent_events)}</div>
+      <div class="panel"><h2>${ja?"プロジェクト":"Projects"}</h2>${table(
+        [ja?"プロジェクト":"Project","WorkBaton","WorkStash","Threads",ja?"更新日時":"Updated"],
+        state.dashboard.projects.map(p => [
+          esc(p.project_key), esc(p.workbaton_count), esc(p.workstash_count),
+          esc(p.workthread_count), fmt(p.updated_at)
+        ])
+      )}</div>
+      <div class="panel"><h2>${ja?"最近のイベント":"Recent Events"}</h2>${eventList(state.dashboard.recent_events)}</div>
     </div>`;
 }
 
@@ -625,17 +911,48 @@ function table(headers, rows, attrs = "") {
 }
 
 function renderSearch() {
+  const ja = lang === "ja";
   return `
     <div class="panel">
       <div class="filters">
-        <input id="q" placeholder="Query">
-        <select id="type"><option value="">All</option><option>WorkBaton</option><option>WorkStash</option><option>WorkThread</option><option>Event</option></select>
-        <input id="project" placeholder="Project">
-        <input id="tag" placeholder="Tag">
-        <select id="threadState"><option value="">State</option><option>open</option><option>closed</option><option>archived</option></select>
-        <input id="agent" placeholder="Agent">
-        <input id="slot" placeholder="Slot">
-        <button class="primary" onclick="runSearch()">Search</button>
+        <div class="filter-keyword">
+          <input id="q" placeholder="${ja ? "キーワードで検索..." : "Search by keyword..."}">
+          <button class="primary" onclick="runSearch()">${ja ? "検索" : "Search"}</button>
+        </div>
+        <div class="filter-grid">
+          <div>
+            <label>${ja ? "種別" : "Type"}</label>
+            <select id="type">
+              <option value="">${ja ? "すべて" : "All"}</option>
+              <option>WorkBaton</option><option>WorkStash</option>
+              <option>WorkThread</option>
+              <option value="Event">${ja ? "イベント" : "Event"}</option>
+            </select>
+          </div>
+          <div>
+            <label>${ja ? "プロジェクト" : "Project"}</label>
+            <input id="project">
+          </div>
+          <div>
+            <label>${ja ? "タグ" : "Tag"}</label>
+            <input id="tag">
+          </div>
+          <div>
+            <label>${ja ? "状態" : "State"}</label>
+            <select id="threadState">
+              <option value="">${ja ? "すべて" : "All"}</option>
+              <option>open</option><option>closed</option><option>archived</option>
+            </select>
+          </div>
+          <div>
+            <label>${ja ? "エージェント" : "Agent"}</label>
+            <input id="agent">
+          </div>
+          <div>
+            <label>Slot</label>
+            <input id="slot">
+          </div>
+        </div>
       </div>
       <div id="search-results" class="detail-body"></div>
     </div>`;
@@ -657,38 +974,65 @@ async function runSearch() {
 }
 
 function renderSearchResults(results) {
-  return table(["Type", "Handle", "Project", "Snippet", "Updated"], results.map(item => [
-    badge(item.object_type),
-    linkFor(item.object_type, item.handle),
-    esc(item.project_key || ""),
-    esc(item.snippet || ""),
-    fmt(item.updated_at)
-  ]));
+  const ja = lang === "ja";
+  const header = `<div style="padding:9px 14px;font-size:12px;font-weight:600;border-bottom:1px solid var(--line);color:var(--muted)">
+    ${ja ? "検索結果" : "Results"} <span class="badge">${results.length}${ja ? "件" : ""}</span>
+  </div>`;
+  if (!results.length) return header + `<div class="empty">${ja ? "— 該当なし —" : "— No results —"}</div>`;
+  return header + table(
+    [ja?"種別":"Type", ja?"名前":"Name", ja?"プロジェクト":"Project", ja?"スニペット":"Snippet", ja?"更新日時":"Updated"],
+    results.map(item => [
+      badge(item.object_type, item.object_type),
+      linkFor(item.object_type, item.handle),
+      esc(item.project_key || ""),
+      esc(item.snippet || ""),
+      fmt(item.updated_at)
+    ])
+  );
 }
 
 function renderWorkbatons() {
+  const ja = lang === "ja";
   const rows = state.workbatons.items.map(item => [
     linkFor("WorkBaton", item.slot_name),
     esc(item.project_key || ""),
-    `${item.pinned ? badge("pinned", "pinned") : ""}${item.stale ? badge("stale", "stale") : ""}${item.archived ? badge("archived", "archived") : ""}`,
+    [
+      item.pinned   ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : "",
+      item.stale    ? `<span class="badge stale">${ja?"Stale":"stale"}</span>` : "",
+      item.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""
+    ].join(""),
     esc(item.slot_number ?? ""),
     fmt(item.updated_at)
   ]);
-  return `<div class="grid"><div class="panel"><h2>Slots</h2>${table(["Slot", "Project", "State", "No.", "Updated"], rows)}</div><div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select a Slot</div></div></div>`;
+  return `<div class="grid">
+    <div class="panel"><h2>${ja?"Slot 一覧":"Slots"}</h2>${table(
+      [ja?"Slot名":"Slot", ja?"プロジェクト":"Project", ja?"状態":"State", "No.", ja?"更新日時":"Updated"],
+      rows
+    )}</div>
+    <div class="panel detail" id="detail"><h2>${ja?"詳細":"Detail"}</h2><div class="empty">${ja?"Slotを選択してください":"Select a Slot"}</div></div>
+  </div>`;
 }
 
 function renderWorkstash() {
+  const ja = lang === "ja";
   const rows = state.workstash.entries.map(item => [
     linkFor("WorkStash", item.entry_key),
     esc(item.project_key || ""),
     item.tags.map(t => badge(t)).join(""),
-    esc(item.size_bytes),
+    esc(fmtSize(item.size_bytes)),
     fmt(item.updated_at)
   ]);
-  return `<div class="grid"><div class="panel"><h2>Entries</h2>${table(["Key", "Project", "Tags", "Size", "Updated"], rows)}</div><div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select an entry</div></div></div>`;
+  return `<div class="grid">
+    <div class="panel"><h2>${ja?"エントリー一覧":"Entries"}</h2>${table(
+      [ja?"キー":"Key", ja?"プロジェクト":"Project", ja?"タグ":"Tags", ja?"サイズ":"Size", ja?"更新日時":"Updated"],
+      rows
+    )}</div>
+    <div class="panel detail" id="detail"><h2>${ja?"詳細":"Detail"}</h2><div class="empty">${ja?"エントリーを選択してください":"Select an entry"}</div></div>
+  </div>`;
 }
 
 function renderWorkthreads() {
+  const ja = lang === "ja";
   const rows = state.workthreads.threads.map(item => [
     linkFor("WorkThread", item.thread_key),
     esc(item.project_key || ""),
@@ -697,37 +1041,245 @@ function renderWorkthreads() {
     esc(item.participant_count),
     fmt(item.updated_at)
   ]);
-  return `<div class="grid"><div class="panel"><h2>Threads</h2>${table(["Thread", "Project", "State", "Messages", "Agents", "Updated"], rows)}</div><div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select a thread</div></div></div>`;
+  return `<div class="grid">
+    <div class="panel"><h2>${ja?"Thread 一覧":"Threads"}</h2>${table(
+      ["Thread", ja?"プロジェクト":"Project", ja?"状態":"State",
+       ja?"件数":"Messages", ja?"参加者":"Agents", ja?"更新日時":"Updated"],
+      rows
+    )}</div>
+    <div class="panel detail" id="detail"><h2>${ja?"詳細":"Detail"}</h2><div class="empty">${ja?"Threadを選択してください":"Select a thread"}</div></div>
+  </div>`;
 }
 
 function renderAgents() {
-  return `<div class="panel"><h2>Agents</h2>${table(["Client", "Agent", "Model", "Session", "Baton", "Stash", "Thread Msg", "Updated"], state.actors.actors.map(a => [
-    esc(a.client_name || ""), esc(a.agent_label || ""), esc(a.model_source || ""), esc(a.session_id || ""),
-    esc(a.workbaton_count), esc(a.workstash_count), esc(a.workthread_message_count), fmt(a.updated_at)
-  ]))}</div>`;
+  const ja = lang === "ja";
+  const CLIENT_COLORS = {"claude-code":{bg:"#e8f5f0",color:"#1e6f54"}, "cursor":{bg:"#e8f2f7",color:"#2f5d8c"}};
+  return `<div class="panel"><h2>${ja?"エージェント一覧":"Agents"}</h2>
+    <div style="overflow-x:auto">${table(
+      [ja?"クライアント":"Client", ja?"エージェント":"Agent",
+       ja?"モデル":"Model", ja?"セッション":"Session",
+       "WorkBaton","WorkStash","Thread Msg", ja?"更新日時":"Updated"],
+      state.actors.actors.map(a => {
+        const c = CLIENT_COLORS[a.client_name] || {bg:"#f4f7f5",color:"#63706a"};
+        const clientBadge = a.client_name
+          ? `<span class="badge" style="background:${c.bg};color:${c.color};border-color:${c.color}40">${esc(a.client_name)}</span>`
+          : "";
+        const sid = a.session_id ? esc(a.session_id.slice(0,8)) + "..." : "";
+        const sidFull = esc(a.session_id || "");
+        return [
+          clientBadge,
+          esc(a.agent_label || ""),
+          `<span style="color:var(--muted);font-size:11px">${esc(a.model_source || "")}</span>`,
+          `<span title="${sidFull}" style="font-family:monospace;font-size:10px;color:var(--muted)">${sid}</span>`,
+          `<strong>${esc(a.workbaton_count)}</strong>`,
+          `<strong>${esc(a.workstash_count)}</strong>`,
+          `<strong>${esc(a.workthread_message_count)}</strong>`,
+          fmt(a.updated_at)
+        ];
+      })
+    )}</div></div>`;
 }
 
 function renderTimeline() {
-  return `<div class="panel"><h2>Timeline</h2>${eventList(state.events.events)}</div>`;
+  const ja = lang === "ja";
+  return `<div class="panel"><h2>${ja?"イベント一覧":"Events"}</h2>${eventList(state.events.events)}</div>`;
+}
+
+function renderHelp() {
+  const ja = lang === "ja";
+  return `
+    <div class="panel" style="max-width:720px">
+      <h2>${ja ? "A2CR とは" : "What is A2CR"}</h2>
+      <div class="detail-body">
+        <p>${ja
+          ? "AIエージェントが保存した作業状態（WorkBaton・WorkStash・WorkThreads）をローカルで管理・閲覧するためのダッシュボードです。"
+          : "A dashboard for viewing and managing AI agent work state (WorkBaton, WorkStash, WorkThreads) stored locally on your machine."}</p>
+      </div>
+    </div>
+    <div class="panel" style="max-width:720px">
+      <h2>${ja ? "基本の流れ" : "Basic Flow"}</h2>
+      <div class="detail-body">
+        <div class="help-steps">
+          <div class="help-step">
+            <div class="help-step-num">①</div>
+            <div class="help-step-label">${ja ? "保存" : "Save"}</div>
+            <div class="help-step-sub">${ja ? "AIにWorkBatonへ保存するよう指示する" : "Ask the AI to save to WorkBaton"}</div>
+          </div>
+          <div class="help-step-arrow">→</div>
+          <div class="help-step">
+            <div class="help-step-num">②</div>
+            <div class="help-step-label">${ja ? "再開" : "Resume"}</div>
+            <div class="help-step-sub">${ja ? "新しいAIセッションで「再開して」と指示する" : "Tell the AI to resume in a new session"}</div>
+          </div>
+        </div>
+        <div class="help-detail">
+          <strong>${ja ? "① 保存するには" : "① How to save"}</strong>
+          <ul style="margin:8px 0;padding-left:18px;font-size:13px">
+            ${ja ? `<li>作業の区切りで、AIに保存を依頼します</li>
+            <li>AIが <code>save_context</code> ツールを呼び出し、WorkBatonに保存します</li>
+            <li>Slot名はAIが自動で命名しますが、指定もできます</li>`
+            : `<li>At a natural stopping point, ask the AI to save</li>
+            <li>The AI calls <code>save_context</code> and writes a WorkBaton checkpoint</li>
+            <li>The AI auto-names the Slot, but you can specify one</li>`}
+          </ul>
+          <div class="help-prompt"><ul style="margin:0;padding-left:16px">
+            ${ja ? `<li>「ここまでの作業をWorkBatonに保存してください」</li>
+            <li>「save して」</li>
+            <li>「"feature-auth" というSlot名で保存して」</li>`
+            : `<li>"Save the current work to WorkBaton"</li>
+            <li>"save"</li>
+            <li>"Save as slot 'feature-auth'"</li>`}
+          </ul></div>
+        </div>
+        <div class="help-detail" style="margin-top:16px">
+          <strong>${ja ? "② 再開するには" : "② How to resume"}</strong>
+          <ul style="margin:8px 0;padding-left:18px;font-size:13px">
+            ${ja ? `<li>新しいAIセッションを開き、再開を依頼します</li>
+            <li>AIが <code>resume_context</code> ツールを呼び出し、前回の状態を復元します</li>
+            <li>Slot名を指定すると特定の保存ポイントから再開できます</li>`
+            : `<li>Open a new AI session and ask to resume</li>
+            <li>The AI calls <code>resume_context</code> to restore the previous state</li>
+            <li>Specify a Slot name to resume from a specific checkpoint</li>`}
+          </ul>
+          <div class="help-prompt"><ul style="margin:0;padding-left:16px">
+            ${ja ? `<li>「前回の続きを再開して」</li>
+            <li>「WorkBatonを読み込んで作業を再開してください」</li>
+            <li>「"feature-auth" のSlotから再開して」</li>`
+            : `<li>"Resume from last WorkBaton"</li>
+            <li>"Load the WorkBaton and continue"</li>
+            <li>"Resume from slot 'feature-auth'"</li>`}
+          </ul></div>
+        </div>
+        <p style="margin-top:14px;padding:10px 14px;background:var(--soft);border-radius:6px;font-size:13px">
+          💡 ${ja ? "ダッシュボードでいつでも保存済みの作業状態を確認・管理できます" : "Use the Dashboard to review and manage your saved work state at any time"}
+        </p>
+      </div>
+    </div>
+    <div class="panel" style="max-width:720px">
+      <h2>${ja ? "各ビューの説明" : "Views Reference"}</h2>
+      <div class="detail-body">
+        <dl class="views-grid">
+          <dt>Dashboard</dt><dd>${ja ? "プロジェクト一覧と最近のイベントを俯瞰する" : "Overview of projects and recent events"}</dd>
+          <dt>WorkBaton</dt><dd>${ja ? "作業引き継ぎ用のチェックポイント。Slot名で保存・管理" : "Work handoff checkpoints, saved and managed by Slot name"}</dd>
+          <dt>WorkStash</dt><dd>${ja ? "一時的なメモ領域。バトンから参照される補助データ" : "Temporary note area; auxiliary data referenced by WorkBaton"}</dd>
+          <dt>WorkThreads</dt><dd>${ja ? "複数AIエージェントの協調作業スペース" : "Collaborative workspace for multi-agent coordination"}</dd>
+          <dt>Search</dt><dd>${ja ? "プロジェクト・タグ・エージェントなどで横断検索" : "Cross-search by project, tag, agent, and more"}</dd>
+        </dl>
+      </div>
+    </div>`;
 }
 
 function renderSettings() {
+  const ja = lang === "ja";
   const d = state.dashboard;
-  return `<div class="panel"><h2>Settings</h2><div class="detail-body">
-    <p><strong>Database</strong><br>${esc(d.database_path)}</p>
-    <p><strong>Size</strong><br>${esc(d.database_size_bytes)} bytes</p>
-    <p><strong>Mode</strong><br>local</p>
-  </div></div>`;
+  const savedView = localStorage.getItem("a2cr_default_view") || "dashboard";
+  const viewOptions = [
+    {v:"dashboard",  ja:"Dashboard（デフォルト）", en:"Dashboard (default)"},
+    {v:"workbatons", ja:"WorkBaton",               en:"WorkBaton"},
+    {v:"workstash",  ja:"WorkStash",               en:"WorkStash"},
+    {v:"workthreads",ja:"WorkThreads",             en:"WorkThreads"},
+    {v:"search",     ja:"Search",                  en:"Search"},
+    {v:"agents",     ja:"Agents",                  en:"Agents"},
+    {v:"timeline",   ja:"Timeline",                en:"Timeline"},
+  ];
+  return `
+    <div class="settings-panel panel">
+      <h2>${ja?"表示設定":"Display Preferences"}</h2>
+      <div class="detail-body">
+        <div class="pref-item">
+          <div class="pref-label">${ja?"言語 / Language":"Language"}</div>
+          <div class="radio-group">
+            <label><input type="radio" name="pref-lang" value="ja" ${lang==="ja"?"checked":""} onchange="setLang(this.value)"> 日本語</label>
+            <label><input type="radio" name="pref-lang" value="en" ${lang==="en"?"checked":""} onchange="setLang(this.value)"> English</label>
+          </div>
+          <div class="pref-hint">${ja?"ブラウザを閉じても保持されます":"Saved across sessions"}</div>
+        </div>
+        <div class="pref-item">
+          <div class="pref-label">${ja?"起動時のページ":"Default page on startup"}</div>
+          <select style="padding:6px 10px;border:1px solid var(--line);border-radius:5px;font-size:12px;background:#fff"
+            onchange="localStorage.setItem('a2cr_default_view',this.value)">
+            ${viewOptions.map(o => `<option value="${o.v}" ${savedView===o.v?"selected":""}>${ja?o.ja:o.en}</option>`).join("")}
+          </select>
+          <div class="pref-hint">${ja?"次回起動時から反映されます":"Applied on next load"}</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-panel panel">
+      <h2>${ja?"データベース情報":"Database Info"}</h2>
+      <div class="detail-body">
+        <div class="pref-item">
+          <div class="pref-label">${ja?"データベースパス":"Database Path"}</div>
+          <div class="code-block">${esc(d.database_path)}</div>
+        </div>
+        <div style="display:flex;gap:24px">
+          <div class="pref-item">
+            <div class="pref-label">${ja?"データベースサイズ":"Database Size"}</div>
+            <div style="font-size:13px;font-weight:600">${fmtSize(d.database_size_bytes)}</div>
+          </div>
+          <div class="pref-item">
+            <div class="pref-label">${ja?"動作モード":"Mode"}</div>
+            <span class="badge open">local</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function eventList(events) {
-  return table(["Object", "Action", "Project", "Summary", "Time"], events.map(e => [
-    `${badge(e.object_type || "")} ${esc(e.object_key || "")}`,
-    esc(e.action || ""),
-    esc(e.project_key || ""),
-    esc(e.summary || ""),
-    fmt(e.created_at)
-  ]));
+  const ja = lang === "ja";
+  return table(
+    [ja?"対象":"Object", ja?"アクション":"Action", ja?"プロジェクト":"Project", ja?"日時":"Time"],
+    events.map(e => [
+      `${badge(e.object_type || "", e.object_type || "")} ${esc(e.object_key || "")}`,
+      actionBadge(e.action || ""),
+      esc(e.project_key || ""),
+      fmt(e.created_at)
+    ])
+  );
+}
+
+function batonFields(content) {
+  if (!content || typeof content !== "object") return "";
+  const ja = lang === "ja";
+  const FIELDS = [
+    {key:"goal",         jaLabel:"目標",           enLabel:"Goal",          highlight:false},
+    {key:"current_state",jaLabel:"現在の状態",      enLabel:"Current State", highlight:false},
+    {key:"next_action",  jaLabel:"次のアクション",  enLabel:"Next Action",   highlight:true},
+    {key:"blockers",     jaLabel:"ブロッカー",      enLabel:"Blockers",      highlight:false},
+    {key:"decisions",    jaLabel:"決定事項",        enLabel:"Decisions",     highlight:false},
+    {key:"problems",     jaLabel:"課題",            enLabel:"Problems",      highlight:false},
+  ];
+  return FIELDS.filter(f => {
+    const v = content[f.key];
+    return v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0);
+  }).map(f => {
+    const v = content[f.key];
+    const label = ja ? f.jaLabel : f.enLabel;
+    const display = ja ? `${label} (${f.key})` : label;
+    const valueHtml = Array.isArray(v)
+      ? `<ul>${v.map(i => `<li>${esc(String(i))}</li>`).join("")}</ul>`
+      : `<div>${esc(String(v))}</div>`;
+    return `<div class="field-card${f.highlight ? " highlight" : ""}">
+      <div class="field-label${f.highlight ? " highlight" : ""}">${esc(display)}</div>
+      <div class="field-value">${valueHtml}</div>
+    </div>`;
+  }).join("");
+}
+
+const AGENT_COLORS = [
+  {bg:"#e8f5f0", color:"#1e6f54"},
+  {bg:"#e8f2f7", color:"#2f5d8c"},
+  {bg:"#fff8e6", color:"#9a6418"},
+  {bg:"#f4f7f5", color:"#63706a"},
+];
+function agentColorMap(participants) {
+  const map = {};
+  (participants || []).forEach((p, i) => {
+    const c = AGENT_COLORS[i % AGENT_COLORS.length];
+    const key = p.agent_label || p.client_name || "agent";
+    map[key] = c;
+  });
+  return map;
 }
 
 function linkFor(type, key) {
@@ -744,36 +1296,71 @@ async function openDetail(type, encodedKey) {
 }
 
 function detailHtml(type, detail) {
-  if (detail.status === "not_found") return `<div class="empty">Not found</div>`;
+  if (detail.status === "not_found") return `<div class="empty">${lang === "ja" ? "見つかりません" : "Not found"}</div>`;
   if (type === "WorkBaton") {
+    const ja = lang === "ja";
     return `${batonActions(detail.slot_name, detail)}
-      <p>${badge(detail.project_key || "")}${detail.pinned ? badge("pinned", "pinned") : ""}${detail.stale ? badge("stale", "stale") : ""}${detail.archived ? badge("archived", "archived") : ""}</p>
-      ${jsonBlock(detail.content)}
-      <h3>References</h3>${referenceList(detail.references)}
-      <h3>Referenced By</h3>${referenceList(detail.referenced_by, true)}`;
+      <p>${badge(detail.project_key || "")}${detail.pinned ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : ""}${detail.stale ? `<span class="badge stale">${ja?"Stale":"stale"}</span>` : ""}${detail.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""}</p>
+      ${batonFields(detail.content)}
+      <details><summary>${ja?"▶ 生 JSON を表示":"▶ Show raw JSON"}</summary>${jsonBlock(detail.content)}</details>
+      <h3 style="margin-top:14px">${ja?"参照":"References"}</h3>${referenceList(detail.references)}
+      <h3>${ja?"参照元":"Referenced By"}</h3>${referenceList(detail.referenced_by, true)}`;
   }
   if (type === "WorkStash") {
-    return `<div class="actions"><button class="danger" onclick="runAction('WorkStash','${esc(detail.entry_key)}','delete')">Delete</button></div>
+    const ja = lang === "ja";
+    return `<div class="actions">
+        <button class="danger" onclick="runAction('WorkStash','${esc(detail.entry_key)}','delete')">${ja?"削除":"Delete"}</button>
+      </div>
       <p>${badge(detail.project_key || "")}${(detail.tags || []).map(t => badge(t)).join("")}</p>
+      <div style="display:flex;gap:16px;margin-bottom:10px;font-size:11px;color:var(--muted)">
+        <span>${ja?"サイズ":"Size"}: <strong style="color:var(--ink)">${esc(fmtSize(detail.size_bytes))}</strong></span>
+        <span>${ja?"更新":"Updated"}: <strong style="color:var(--ink)">${fmt(detail.updated_at)}</strong></span>
+      </div>
+      <div class="field-label" style="margin-bottom:4px">${ja?"内容":"Content"}</div>
       <pre>${esc(detail.value || "")}</pre>
-      <h3>Referenced By</h3>${referenceList(detail.referenced_by, true)}`;
+      <h3>${ja?"参照元":"Referenced By"}</h3>${referenceList(detail.referenced_by, true)}`;
   }
   if (type === "WorkThread") {
-    return `<div class="actions"><button class="warn" onclick="runAction('WorkThread','${esc(detail.thread_key)}','close')">Close</button><button class="danger" onclick="runAction('WorkThread','${esc(detail.thread_key)}','archive')">Archive</button></div>
+    const ja = lang === "ja";
+    const colorMap = agentColorMap(detail.participants);
+    const msgCards = (detail.messages || []).map(m => {
+      const agentKey = m.agent_label || m.client_name || "agent";
+      const c = colorMap[agentKey] || AGENT_COLORS[3];
+      return `<div class="msg-card">
+        <div class="msg-header">
+          <span class="badge" style="background:${c.bg};color:${c.color};border-color:${c.color}40">${esc(agentKey)}</span>
+          <span class="msg-time">${fmt(m.created_at)}</span>
+        </div>
+        <pre class="msg-body">${esc(m.body || "")}</pre>
+      </div>`;
+    }).join("");
+    return `<div class="actions">
+        <button class="warn" onclick="runAction('WorkThread','${esc(detail.thread_key)}','close')">${ja?"クローズ":"Close"}</button>
+        <button class="danger" onclick="runAction('WorkThread','${esc(detail.thread_key)}','archive')">${ja?"アーカイブ":"Archive"}</button>
+      </div>
       <p>${badge(detail.project_key || "")}${badge(detail.state, detail.state)}</p>
-      <h3>Participants</h3>${table(["Role", "Client", "Agent", "Model"], detail.participants.map(p => [esc(p.role), esc(p.client_name || ""), esc(p.agent_label || ""), esc(p.model_source || "")]))}
-      <h3>Messages</h3>${detail.messages.map(m => `<p>${badge(m.agent_label || m.client_name || "agent")} ${esc(fmt(m.created_at))}</p><pre>${esc(m.body || "")}</pre>`).join("")}
-      <h3>References</h3>${referenceList(detail.references)}`;
+      <h3>${ja?"参加者":"Participants"}</h3>${table(
+        [ja?"役割":"Role", ja?"クライアント":"Client", ja?"エージェント":"Agent", ja?"モデル":"Model"],
+        (detail.participants || []).map(p => [esc(p.role), esc(p.client_name || ""), esc(p.agent_label || ""), esc(p.model_source || "")])
+      )}
+      <h3>${ja?"メッセージ":"Messages"} <span class="badge">${(detail.messages||[]).length}${ja?"件":""}</span></h3>
+      <div class="msg-list">${msgCards || `<div class="empty">${ja?"メッセージなし":"No messages"}</div>`}</div>
+      <h3>${ja?"参照":"References"}</h3>${referenceList(detail.references)}`;
   }
   return jsonBlock(detail);
 }
 
 function batonActions(key, detail) {
+  const ja = lang === "ja";
   return `<div class="actions">
-    <button onclick="runAction('WorkBaton','${esc(key)}','${detail.pinned ? "unpin" : "pin"}')">${detail.pinned ? "Unpin" : "Pin"}</button>
-    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','${detail.stale ? "unstale" : "stale"}')">${detail.stale ? "Fresh" : "Stale"}</button>
-    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','archive')">Archive</button>
-    <button class="danger" onclick="runAction('WorkBaton','${esc(key)}','delete')">Delete</button>
+    <button onclick="runAction('WorkBaton','${esc(key)}','${detail.pinned ? "unpin" : "pin"}')">
+      ${detail.pinned ? (ja?"ピン解除":"Unpin") : (ja?"ピン留め":"Pin")}
+    </button>
+    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','${detail.stale ? "unstale" : "stale"}')">
+      ${detail.stale ? (ja?"最新に戻す":"Fresh") : (ja?"Staleにする":"Stale")}
+    </button>
+    <button class="warn" onclick="runAction('WorkBaton','${esc(key)}','archive')">${ja?"アーカイブ":"Archive"}</button>
+    <button class="danger" onclick="runAction('WorkBaton','${esc(key)}','delete')">${ja?"削除":"Delete"}</button>
   </div>`;
 }
 
@@ -793,7 +1380,7 @@ async function runAction(objectType, key, action) {
   await loadState();
 }
 
-document.querySelectorAll(".nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 document.getElementById("refresh").addEventListener("click", loadState);
 document.getElementById("backup").addEventListener("click", async () => {
   const result = await api("/api/backup", {method: "POST", body: "{}"});
@@ -808,6 +1395,13 @@ document.getElementById("export").addEventListener("click", async () => {
   a.click();
   URL.revokeObjectURL(a.href);
 });
+// Initialize from localStorage
+lang = localStorage.getItem("a2cr_lang") || "ja";
+currentView = localStorage.getItem("a2cr_default_view") || "dashboard";
+document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === currentView));
+document.getElementById("lang-ja").classList.toggle("active", lang === "ja");
+document.getElementById("lang-en").classList.toggle("active", lang === "en");
+document.getElementById("view-title").textContent = TITLES[lang][currentView] || currentView;
 loadState();
 </script>
 </body>
