@@ -7,6 +7,7 @@ const config: A2crConfig = {
   apiKey: "TEST_API_KEY_SHOULD_NOT_LEAK",
   baseUrl: "https://a2cr.example",
   clientType: "mcp",
+  localStorePath: "/tmp/a2cr-test-store.json",
 };
 
 describe("A2crApiClient", () => {
@@ -35,7 +36,7 @@ describe("A2crApiClient", () => {
     expect(requests[0]?.headers).toMatchObject({
       Authorization: "Bearer TEST_API_KEY_SHOULD_NOT_LEAK",
       "X-A2CR-Client-Type": "claude",
-      "X-A2CR-MCP-Version": "0.1.6",
+      "X-A2CR-MCP-Version": "0.1.7",
     });
   });
 

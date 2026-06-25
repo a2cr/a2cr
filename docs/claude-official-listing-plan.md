@@ -1,72 +1,64 @@
 # Claude Official Listing Plan
 
-Current as of 2026-05-20.
+Current as of 2026-06-24.
 
 This document defines the A2CR path toward official Claude distribution through
 Anthropic's Connectors Directory. It is public-safe planning only: it must not
-include reviewer credentials, production operations notes, private support
-runbooks, secrets, customer data, or unpublished backend details.
+include reviewer credentials, private support runbooks, secrets, customer data,
+or unpublished backend details.
 
 ## Decision
 
-A2CR should target Claude in this order:
+A2CR should target Claude with a local Desktop Extension / MCPB distributed from
+GitHub Releases and, after approval, the Anthropic Connectors Directory.
 
-1. Build and test a Claude Desktop Extension / MCPB for the local A2CR wrapper.
-2. Submit the MCPB once privacy, manifest metadata, tool annotations, install
-   testing, and reviewer instructions are complete.
-3. Defer a Remote MCP connector until A2CR has an explicit remote security
-   boundary that preserves or intentionally changes the current local encryption
-   claim.
+The submitted artifact should be named and described as A2CR, not as a separate
+"A2CR Local" product. The product boundary is local-only:
 
-The first Claude artifact should be local, not remote. A2CR's current public
-security promise is that WorkBaton and WorkStash bodies are encrypted on the
-user's machine before upload, and that the hosted A2CR service stores ciphertext
-rather than user plaintext. A local MCPB preserves that model because the MCP
-server runs on the user's machine and communicates with Claude Desktop over
-stdio.
+- no A2CR account;
+- no API key;
+- no hosted base URL;
+- no SaaS dashboard;
+- no remote MCP connector;
+- no upload of saved WorkBaton or WorkStash content.
 
-## Official Claude Requirements That Matter
+The earlier SaaS/hosted relay path is being retired from the public
+distribution and should not appear in reviewer setup instructions.
 
-Anthropic's current docs describe the Connectors Directory as a catalog of
-reviewed MCP servers. Directory submissions can include Remote MCP servers,
-Desktop extensions packaged as MCPB, and MCP Apps.
+## Requirements That Matter
+
+Anthropic's current MCPB path expects a local MCP server packaged as a `.mcpb`
+archive with a valid `manifest.json`.
 
 Requirements relevant to A2CR:
 
-- Local MCP servers distributed through package registries such as PyPI are not
-  listed directly; they should be packaged as MCPB for desktop distribution or
-  bundled in a plugin.
-- MCPB packages are `.mcpb` archives containing a local MCP server and
-  `manifest.json`; they run locally, use stdio, bundle dependencies, and do not
-  require OAuth.
-- Node.js is strongly recommended for MCPB because it ships with Claude Desktop
-  on macOS and Windows and has the best compatibility path.
-- Every submitted tool must have a `title` and the applicable `readOnlyHint` or
-  `destructiveHint`.
-- Read and write behavior must be separated into purpose-built tools. A2CR
-  already has separate tools, which is favorable.
-- Local connectors must include a privacy policy section in README, a
-  `privacy_policies` array in MCPB `manifest.json`, and HTTPS privacy-policy
-  URLs.
-- Reviewers exercise every tool and expect useful, actionable errors rather than
-  generic failures.
-- A fully populated test account and step-by-step reviewer instructions are
-  required for directory submission.
+- The MCPB runs locally and communicates with Claude Desktop over stdio.
+- Node.js is the preferred runtime because Claude Desktop supplies it on macOS
+  and Windows.
+- Every submitted tool must have a title and accurate annotations.
+- Local tools that do not call external services should set `openWorldHint:
+  false`.
+- Read, write, and destructive behavior should be separated into clear tools.
+- The manifest should include support, repository, icon, and privacy-policy
+  metadata.
+- Reviewers must be able to exercise every tool with harmless sample data and no
+  credentials.
 
 ## Target User Experience
 
 The desired install flow:
 
-1. User downloads or opens `a2cr.mcpb`.
+1. User downloads `a2cr-<version>.mcpb` from a GitHub Release or installs it
+   from the Directory after approval.
 2. Claude Desktop shows the A2CR extension install screen.
-3. User reviews permissions and enters `A2CR_API_KEY`.
-4. Optional advanced setting: `A2CR_BASE_URL`, defaulting to `https://a2cr.app`.
-5. Claude Desktop starts the local A2CR MCP server.
-6. Claude can call A2CR tools without the user hand-editing MCP JSON.
-7. WorkBaton and WorkStash bodies are encrypted locally before upload.
+3. User reviews permissions and completes the install.
+4. Claude Desktop starts the local A2CR MCP server.
+5. Claude can call A2CR tools without hand-editing MCP JSON.
+6. WorkBaton data is validated, encrypted, saved, listed, loaded, and decrypted
+   locally.
 
-The desired reviewer flow is the same, but with a seeded test account and
-explicit prompts that exercise each tool.
+No reviewer test account is required for the local-only MCPB. Reviewer
+instructions should provide a disposable Slot name and harmless WorkBaton JSON.
 
 ## Architecture
 
@@ -77,92 +69,42 @@ Claude Desktop
   -> stdio MCP
 A2CR Claude MCPB local Node.js wrapper
   -> local validation, guardrails, encryption, decryption
-  -> HTTPS A2CR API
-A2CR hosted service
-  -> stores ciphertext, metadata, limits, and non-secret relay state
+  -> local MCPB store file
 ```
 
 The Node.js wrapper should be a thin sibling of the Python `a2cr-mcp` wrapper,
-not a separate product. It should mirror the public tool contract and security
-behavior while optimizing for Claude Desktop extension distribution.
+not a separate product. It should mirror the public tool contract while
+optimizing for Claude Desktop extension distribution.
 
 Distribution before approval:
 
-- package the Node wrapper as `.mcpb`
+- package the Node wrapper as `.mcpb`;
 - publish the `.mcpb` as a GitHub Release asset for manual Claude Desktop
-  installation
-- include a SHA-256 checksum for the asset
+  installation;
+- include a SHA-256 checksum for the asset;
 - keep the npm package private; end users install the `.mcpb`, not an npm
-  package
+  package;
 - describe this as "Claude Desktop Extension / MCPB" before approval, not as an
-  approved or listed Anthropic connector
-
-Repository layout:
-
-```text
-packages/
-  claude-extension/
-    package.json
-    IMPLEMENTATION.md
-    manifest.json
-    src/
-      index.ts
-      crypto.ts
-      api.ts
-      tools.ts
-    assets/
-      icon.png
-    README.md
-```
-
-This keeps the canonical public repository as `a2cr/a2cr` while adding a
-Claude-specific distribution artifact.
-
-## Why Not Remote First
-
-Remote MCP is attractive because it works across Claude web, mobile, Desktop,
-Claude Code, and Cowork. However, a full remote `save_context` or
-`store_work_stash` tool would naturally receive WorkBaton or WorkStash content
-over Anthropic's remote connector path before A2CR can encrypt it. If A2CR
-encrypts on the server, A2CR has seen plaintext. That conflicts with the current
-public claim.
-
-Remote MCP should remain blocked until one of these is true:
-
-- the remote design is read-only or metadata-only and does not receive sensitive
-  WorkBaton/WorkStash bodies;
-- encryption still happens client-side before any A2CR-hosted component receives
-  user content;
-- or A2CR intentionally changes its privacy model and clearly documents that
-  the hosted service may receive plaintext before encryption.
+  approved or listed Anthropic connector.
 
 ## Tool Surface For Claude MCPB
 
-The MCPB should expose the same user-facing concepts as `a2cr-mcp`, but tool
-descriptions should be tightened for Claude review. They should describe what
-each tool does, not instruct Claude to override behavior or call unrelated tools.
-
-Initial tool inventory:
+Initial submission inventory:
 
 | Tool | Class | Claude annotation | Notes |
 |---|---|---|---|
-| `explain_a2cr_flows` | read | `readOnlyHint: true` | Explains WorkBaton, WorkStash, and WorkThreads concepts. |
-| `should_save_workbaton` | read | `readOnlyHint: true` | Advisory sizing and timing decision. |
-| `save_context` | write | neither read-only nor destructive | Creates or overwrites a WorkBaton Slot after local validation and encryption. |
-| `resume_context` | read | `readOnlyHint: true` | Finds and loads the best matching Slot; decrypts locally. |
-| `load_context` | read | `readOnlyHint: true` | Loads a specific Slot by name or number; decrypts locally. |
-| `list_contexts` | read | `readOnlyHint: true` | Lists metadata only. |
-| `get_account_limits` | read | `readOnlyHint: true` | Reads account limits and quotas. |
-| `delete_context` | destructive | `destructiveHint: true` | Deletes a named Slot. |
-| `get_handoff` | read | `readOnlyHint: true` | Returns Markdown handoff text for a loaded Slot. |
-| `should_use_work_stash` | read | `readOnlyHint: true` | Advisory WorkStash suitability check. |
-| `store_work_stash` | write | neither read-only nor destructive | Creates an encrypted temporary note. |
-| `get_work_stash` | read | `readOnlyHint: true` | Retrieves and decrypts one WorkStash entry by key. |
-| `list_work_stash` | read | `readOnlyHint: true` | Lists WorkStash metadata only. |
-| `delete_work_stash` | destructive | `destructiveHint: true` | Deletes one WorkStash entry. |
+| `get_account_limits` | read | `readOnlyHint: true`, `openWorldHint: false` | Returns local storage metadata and limits. |
+| `list_contexts` | read | `readOnlyHint: true`, `openWorldHint: false` | Lists Slot metadata only. |
+| `save_context` | write | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` | Creates or overwrites a WorkBaton Slot after local validation and encryption. |
+| `load_context` | read | `readOnlyHint: true`, `openWorldHint: false` | Loads a Slot by name or number and decrypts locally. |
+| `store_work_stash` | write | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` | Encrypts and stores a temporary supporting note in the local store. It can overwrite an existing entry key. |
+| `get_work_stash` | read | `readOnlyHint: true`, `openWorldHint: false` | Loads one referenced WorkStash entry and decrypts locally. |
+| `list_work_stash` | read | `readOnlyHint: true`, `openWorldHint: false` | Lists WorkStash metadata only. Stored values are not returned. |
+| `delete_work_stash` | destructive | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` | Deletes one local WorkStash entry. |
 
-Write tools should be explicit about mutation. Destructive tools must always be
-separate from read or create/update tools.
+Future parity work can add advisory, resume, handoff, WorkThreads, and
+WorkBaton delete tools, but each tool must preserve the local-only storage
+boundary unless a new public design decision changes it.
 
 ## Manifest And Submission Metadata
 
@@ -170,234 +112,87 @@ The MCPB `manifest.json` should include:
 
 - name: `a2cr`
 - display name: `A2CR`
-- description: AI-agent handoff checkpoints and temporary work memory
+- description: local AI-agent handoff checkpoints and temporary work memory
 - supported platforms: `darwin`, `win32`
 - runtime: Node.js-compatible MCP server entrypoint
-- user configuration:
-  - `A2CR_API_KEY` as required and sensitive
-  - `A2CR_BASE_URL` as optional, default `https://a2cr.app`
+- user configuration: none required for the local-only submission
 - icon metadata, with at least a 512x512 transparent PNG
-- privacy policy URLs through `privacy_policies`
+- privacy-policy URL through `privacy_policies`
 - tool metadata with titles and annotations
 - public repository and support links
 
-Initial manifest draft:
+Initial manifest:
 
 - `packages/claude-extension/manifest.json`
-- `privacy_policies`: `https://a2cr.app/en/privacy`
 - icon: `packages/claude-extension/assets/icon.png`
 - extension/package version: aligned with the public Python `a2cr-mcp`
-  compatibility version for the current MVP, currently `0.1.6`
+  compatibility version for the current submission, currently `0.1.7`
 
-Packaging draft:
+Packaging:
 
 - `npm run mcpb:validate` validates the manifest with
   `@anthropic-ai/mcpb@2.1.2`
 - `npm run mcpb:pack` builds `dist/`, stages runtime files with production
-  dependencies only, and writes `build/mcpb/artifacts/a2cr-0.1.6.mcpb` plus
+  dependencies only, and writes `build/mcpb/artifacts/a2cr-0.1.7.mcpb` plus
   `build/mcpb/artifacts/SHA256SUMS.txt`
 - the staged artifact excludes TypeScript sources, tests, and dev dependencies
-- GitHub Release is the manual distribution point for `a2cr-0.1.6.mcpb` until
+- GitHub Release is the manual distribution point for `a2cr-0.1.7.mcpb` until
   Anthropic Directory approval; npm is not an end-user distribution channel for
   this package
 
-Manual verification draft:
+Manual verification:
 
 - `packages/claude-extension/VERIFY.md`
 - verifies custom MCPB install through Claude Desktop Extensions settings
 - exercises read-only limits, save/load roundtrip, metadata-only list, and
-  manual reinstall/update behavior with harmless test data
+  manual reinstall/update behavior with harmless local data
 
-Public documentation needed before submission:
+## Release And Review Checklist
 
-- MCPB install guide
-- privacy policy section in README and an HTTPS privacy-policy page
-- security boundary page explaining local encryption and local key loss
-- support contact
-- directory description and tagline
-- reviewer setup instructions using a seeded test account
+Before submission:
 
-Reviewer-only details, test credentials, operational logs, and abuse controls
-belong in private planning, not in this public repository.
-
-## Implementation Roadmap
-
-### Phase C0 - Source Alignment
-
-Goal: make the Claude package design traceable to the existing public wrapper.
-
-Tasks:
-
-- inventory Python wrapper tools, parameters, responses, and errors
-- identify the encryption/decryption algorithm and local key lifecycle that must
-  be preserved
-- mark each tool as read, write, or destructive
-- define a shared test fixture for harmless WorkBaton and WorkStash data
-
-Exit criteria:
-
-- tool inventory table is complete
-- local encryption boundary is written in public docs
-- no private implementation details are required to build the local wrapper
-
-### Phase C1 - Node.js MCP Wrapper MVP
-
-Goal: prove Claude Desktop can call a local Node.js A2CR wrapper.
-
-Tasks:
-
-- scaffold `packages/claude-extension`
-- implement MCP stdio server using the TypeScript MCP SDK
-- implement `get_account_limits`, `save_context`, `load_context`, and
-  `list_contexts`
-- implement local encryption/decryption compatible with existing A2CR stored
-  ciphertext
-- support `A2CR_API_KEY` and optional `A2CR_BASE_URL`
-- add focused tests for validation, encryption roundtrip, and API error mapping
-
-Exit criteria:
-
-- MCP Inspector can list and call MVP tools
-- a fresh test key can save and load a harmless WorkBaton
-- invalid inputs return actionable errors
-
-### Phase C2 - Full Tool Parity
-
-Goal: reach parity with the public Python wrapper for Claude-facing workflows.
-
-Tasks:
-
-- implement resume, handoff, WorkStash, advisory, and delete tools
-- add titles and read/write/destructive annotations to every tool
-- tighten descriptions to satisfy Claude review guidance
-- add tests for destructive confirmation metadata and metadata-only list tools
-- confirm response sizes are bounded and do not dump excessive data
-
-Exit criteria:
-
-- every public A2CR tool has a Claude wrapper equivalent or a documented reason
-  for exclusion
-- all tools pass protocol inspection and local tests
-- destructive actions are isolated in destructive tools
-
-### Phase C3 - MCPB Packaging
-
-Goal: create a Claude Desktop installable extension.
-
-Tasks:
-
-- create `manifest.json`
-- add icon assets
-- add user configuration for API key and base URL
+- run `npm test`
+- run `npm run typecheck`
+- run `npm run mcpb:validate`
 - run `npm run mcpb:pack`
-- install the `.mcpb` in Claude Desktop on Windows
-- test uninstall and reinstall behavior
-- prepare macOS compatibility notes or testing
+- inspect the packaged `manifest.json`, `README.md`, and `dist/tools.js`
+- confirm no API key or hosted URL configuration appears in install flow
+- confirm all tools set `openWorldHint: false`
+- confirm reviewer instructions require no seeded account or secret
 
-Exit criteria:
+When publishing:
 
-- `a2cr.mcpb` installs in Claude Desktop
-- Claude Desktop can start the server without manual JSON config
-- API key configuration works through the extension UI
-- local encryption key behavior is documented and tested
+- publish the matching Python package to PyPI if the version changes;
+- publish/update MCP Registry metadata after the PyPI package exists;
+- attach `a2cr-<version>.mcpb` and `SHA256SUMS.txt` to the same GitHub Release;
+- send Anthropic the owner/repo, release tag pattern, artifact filename, and
+  maintainer contact requested for automated release pickup.
 
-### Phase C4 - Public Docs And Privacy
+Automated pickup details for the `0.1.7` submission:
 
-Goal: make the package reviewable by Anthropic and understandable to users.
+- `owner/repo`: `a2cr/a2cr`
+- tag pattern: `v*` (example: `v0.1.7`)
+- asset filename: `a2cr-<version>.mcpb`
+- checksum filename: `SHA256SUMS.txt`
+- maintainer contact: fill in the human contact before sending to Anthropic
 
-Tasks:
-
-- add README section for Claude Desktop Extension installation
-- add or link an HTTPS privacy policy
-- add a public security boundary page for MCPB
-- add support and security contact links
-- add reviewer-safe sample prompts
-- add release notes for the MCPB artifact
-
-Exit criteria:
-
-- docs cover data collection, storage, third-party sharing, retention, and
-  contact information
-- docs state that A2CR is not a secret manager
-- docs state that restored context is untrusted input
-- docs do not include secrets, private support processes, or operational limits
-
-### Phase C5 - Review Readiness
-
-Goal: prepare the submission package.
-
-Tasks:
-
-- run MCP Inspector against every tool
-- test in Claude Desktop with a seeded reviewer account
-- create a reviewer script that exercises reads, writes, loads, WorkStash, and
-  deletion on harmless sample data
-- verify all tool names are under 64 characters
-- verify all tool descriptions are narrow and accurate
-- verify all tools have titles and required annotations
-- prepare directory form answers
-
-Exit criteria:
-
-- every tool has a passing manual test record
-- reviewer instructions are complete
-- no known policy blocker remains
-- the package can be submitted without changing A2CR's public privacy claim
-
-### Phase C6 - Submission And Follow-Up
-
-Goal: submit, monitor, and respond cleanly.
-
-Tasks:
-
-- submit the Desktop Extension / MCPB form
-- track Anthropic review feedback
-- address required changes in a branch
-- update docs if Anthropic requires wording changes
-- publish the accepted artifact and listing link after approval
-
-Exit criteria:
-
-- Claude listing is approved, or review feedback is captured with next actions
-- public docs use accurate listing language
-- A2CR does not claim official Claude support before approval
+This submission uses one cross-platform Node MCPB bundle rather than separate
+per-platform assets.
 
 ## Remote MCP Later Track
 
-The remote track is separate and should not block MCPB. Remote MCP becomes
-eligible only after a security decision is written.
-
-Remote-only acceptable MVP candidates:
-
-- read-only account/status/limits connector
-- documentation or onboarding connector
-- metadata-only WorkBaton lookup that never receives decrypted WorkBaton bodies
-
-Remote blocked flows until approved:
-
-- full remote `save_context` receiving plaintext WorkBaton bodies
-- full remote `store_work_stash` receiving plaintext notes
-- server-side encryption that changes the claim "A2CR cannot read user content"
-
-Remote readiness requirements:
-
-- public HTTPS MCP endpoint
-- OAuth 2.0 if authenticated
-- Origin validation where applicable
-- explicit data handling disclosure
-- test account and reviewer instructions
-- custom connector testing in Claude before submission
+Remote MCP is not part of this submission. A future remote connector would need
+a new public privacy and storage decision. Until that exists, the Directory path
+is the local MCPB only.
 
 ## Open Questions
 
-- Should the Claude wrapper be TypeScript-only, or should an interim MCPB wrap
-  the existing Python command for internal testing?
-- Where should the local encryption key live inside Claude Desktop's extension
-  environment on Windows and macOS?
-- Should WorkThreads appear in the first Claude package, or stay omitted until
-  the public WorkThreads privacy boundary is complete?
-- What seeded test data should Anthropic reviewers use without exposing
-  operational details?
+- Should WorkThreads appear in the Claude package before Python/Node tool parity
+  is complete?
+- Should the MCPB eventually share the Python SQLite database directly, or keep
+  its local JSON store until the Claude package has full parity?
+- What public privacy-policy URL should replace any legacy SaaS-oriented page if
+  `a2cr.app` is fully retired?
 
 ## References
 

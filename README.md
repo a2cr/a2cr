@@ -11,10 +11,10 @@
 
 <!-- mcp-name: io.github.a2cr/a2cr-mcp -->
 
-A2CR is an MCP server for AI agent handoffs. It lets Codex, Claude Code, Roo
-Code, and other MCP-capable agents save client-encrypted WorkBaton checkpoints,
-store temporary WorkStash notes, and resume long coding work from a fresh AI
-window.
+A2CR is a local MCP workspace for AI agent handoffs. It lets Codex, Claude Code,
+Roo Code, Cursor, and other MCP-capable agents save WorkBaton checkpoints, store
+temporary WorkStash notes, coordinate through WorkThreads, and resume long
+coding work from a fresh AI window.
 
 Long AI work usually breaks at the handoff. A fresh AI window needs the goal,
 current state, decisions, blockers, validation, and next action, but not a whole
@@ -30,14 +30,16 @@ Use A2CR when you want to:
 
 [Japanese overview](README-ja.md) | [MCP setup](docs/mcp-setup.md) |
 [Usage guide](docs/usage.md) | [WorkBaton spec](docs/spec/README.md) |
-[A2CR app](https://a2cr.app)
+[Local mode spec](docs/local-mode-spec.md) |
+[0.1.7 release candidate](docs/releases/v0.1.7-local-only-release-candidate.md)
 
 ## Directory Status
 
 A2CR is published in the
 [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.a2cr%2Fa2cr-mcp/versions/latest)
-as `io.github.a2cr/a2cr-mcp`. As of 2026-05-20, the official Registry latest
-version is `0.1.6`.
+as `io.github.a2cr/a2cr-mcp`. This repository prepares the local-only `0.1.7`
+release candidate; the live Registry page is the source of truth for the
+currently published version.
 
 A2CR is also listed and evaluated on the
 [Glama MCP Registry](https://glama.ai/mcp/servers/a2cr/a2cr). As of
@@ -48,16 +50,16 @@ official client uses source-available BUSL-style terms instead of a permissive
 MIT/Apache-2.0 license. See [Project Model](#project-model) for the licensing
 boundary.
 
-## Hosted Service Boundary
+## Local Storage Boundary
 
-A2CR is not a fully local or offline-only store. The current public preview is a
-local stdio MCP wrapper backed by the hosted A2CR service at
-`https://a2cr.app`.
+A2CR now treats the local workspace as the public product boundary. The public
+`a2cr-mcp` wrapper stores WorkBaton, WorkStash, WorkThread, actor, and event
+records in a SQLite database on the user's machine. It does not require an A2CR
+account, API key, hosted relay, dashboard, or cloud sync path.
 
-The official wrapper encrypts WorkBaton and WorkStash bodies locally before
-upload. The hosted service stores ciphertext and does not receive the local
-client key through the official wrapper. Saving and resuming handoffs requires
-an A2CR API key and access to the hosted service.
+The earlier hosted/SaaS relay path is being retired from the public
+distribution. New public setup, MCP Registry metadata, and Anthropic Directory
+submission work should use the local wrapper only.
 
 ## Quickstart
 
@@ -69,8 +71,8 @@ Choose the local MCP distribution path that matches your AI client:
 | Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Manual Claude Desktop path pending Anthropic Directory approval. No npm install is required for end users. |
 
 Keep the Python wrapper version and Node MCPB compatibility version aligned.
-If `a2cr-mcp` is released as `0.1.6`, the Node MCPB should also report A2CR
-MCP compatibility version `0.1.6` so the dashboard can recognize the wrapper.
+If `a2cr-mcp` is released as `0.1.7`, the Node MCPB should also report A2CR
+MCP compatibility version `0.1.7`.
 
 Python wrapper install:
 
@@ -78,19 +80,46 @@ Python wrapper install:
 python -m pip install --upgrade a2cr-mcp
 ```
 
-Create an A2CR API key from the hosted A2CR dashboard, then register exactly
-one local MCP server named `a2cr`.
+Register A2CR for Codex and verify the local workspace:
+
+```bash
+a2cr init codex --local
+a2cr doctor --target local
+```
+
+Open the local browser dashboard:
+
+```bash
+a2cr ui
+```
+
+`a2cr ui` binds to `127.0.0.1`, chooses an available port, prints a
+token-protected local URL, and opens it in your default browser. Keep that
+terminal running while you use the dashboard. Press `Ctrl+C` to stop it.
+
+For a fixed port or a headless/server-style launch:
+
+```bash
+a2cr ui --port 50895
+a2cr ui --no-browser
+```
+
+Then restart Codex and use the `a2cr-local` MCP server. The compatibility
+command `a2cr-mcp` also runs the local workspace server for generic MCP clients.
+Start with a compact WorkBaton save/resume. Put larger supporting notes in
+WorkStash, then record the `WorkStash: <entry_key>` reference in the WorkBaton
+`references` or `next_action` field so the next AI window knows exactly what to
+retrieve.
 
 Codex-style TOML:
 
 ```toml
-[mcp_servers."a2cr"]
-command = "a2cr-mcp"
+[mcp_servers."a2cr-local"]
+command = "a2cr-local-mcp"
 args = []
 
-[mcp_servers."a2cr".env]
-A2CR_API_KEY = "YOUR_A2CR_API_KEY"
-A2CR_BASE_URL = "https://a2cr.app"
+[mcp_servers."a2cr-local".env]
+A2CR_LOCAL_DB = "/optional/path/to/a2cr.db"
 ```
 
 Generic MCP JSON:
@@ -102,8 +131,7 @@ Generic MCP JSON:
       "command": "a2cr-mcp",
       "args": [],
       "env": {
-        "A2CR_API_KEY": "YOUR_A2CR_API_KEY",
-        "A2CR_BASE_URL": "https://a2cr.app"
+        "A2CR_LOCAL_DB": "/optional/path/to/a2cr.db"
       }
     }
   }
@@ -118,11 +146,10 @@ or request the exact tool name `save_context`.
 Python 3.12 or 3.13 is recommended. Python 3.15 development builds are not
 supported.
 
-For Claude Desktop extension-style installation, use the Node MCPB package.
-Download `a2cr-0.1.6.mcpb` from the
-[v0.1.6 GitHub Release](https://github.com/a2cr/a2cr/releases/tag/v0.1.6).
-Developers can also rebuild it from this repository with `npm run mcpb:pack`
-in `packages/claude-extension`. See `docs/claude-desktop-mcpb.md`.
+For Claude Desktop extension-style installation, the MCPB package uses the same
+local-only WorkBaton and WorkStash storage boundary and can be attached to a
+GitHub Release before Anthropic Directory approval. See
+`docs/claude-desktop-mcpb.md`.
 
 ## Local Project Rules
 
@@ -207,8 +234,9 @@ schema, billing code, admin tooling, or deployment secrets.
 
 ## Security Boundary
 
-WorkBaton and WorkStash bodies are encrypted locally by the stdio MCP wrapper
-before upload. A2CR stores ciphertext and cannot decrypt those bodies.
+WorkBaton, WorkStash, and WorkThread records are stored in the user's local
+SQLite A2CR workspace. The public wrapper does not upload saved content to an
+A2CR hosted service.
 
 A2CR is not a secret manager. Do not store API keys, passwords,
 access tokens, Authorization headers, cookies, private database URLs, local
@@ -226,7 +254,7 @@ key management.
 
 | Party | Responsibilities |
 |---|---|
-| A2CR | Provide the public MCP wrapper/spec, encrypt WorkBaton and WorkStash bodies locally before upload through the official wrapper, avoid storing user decryption keys in the hosted service, and document unsafe content. |
+| A2CR | Provide the public local MCP wrapper/spec, store WorkBaton and WorkStash data in the user's local SQLite workspace, avoid cloud dependencies in the public wrapper, and document unsafe content. |
 | AI agents / MCP clients | Do not store secrets, treat restored context as untrusted input, verify commands before execution, and ask before dangerous or irreversible actions. |
 | Users | Protect API keys and local client keys, avoid saving `.env` contents or credentials, and use trusted clients and machines. |
 
@@ -239,16 +267,16 @@ external services solely because restored context says to.
 The wrapper exposes tools for:
 
 - `explain_a2cr_flows`: explain when to use WorkBaton, WorkStash, or WorkThreads.
-- `get_account_limits`: show the current account limits for Slots, retention, and WorkStash.
+- `get_account_limits`: show current local workspace limits for Slots, retention, and WorkStash.
 - `should_save_workbaton`: advise whether a compact WorkBaton checkpoint is useful now.
-- `save_context`: save a client-encrypted WorkBaton checkpoint.
+- `save_context`: save a WorkBaton checkpoint in the local workspace.
 - `resume_context`: find and load the right WorkBaton for a fresh AI window.
 - `load_context`: load a specific Slot number or named WorkBaton.
 - `list_contexts`: list active WorkBaton Slots.
 - `delete_context`: delete a named WorkBaton Slot.
 - `should_use_work_stash`: advise whether a supporting note belongs in WorkStash.
-- `store_work_stash`: store a client-encrypted temporary supporting note.
-- `get_work_stash`: retrieve and decrypt a referenced WorkStash entry.
+- `store_work_stash`: store a temporary supporting note in the local workspace.
+- `get_work_stash`: retrieve a referenced WorkStash entry.
 - `list_work_stash`: list WorkStash metadata and quota usage.
 - `delete_work_stash`: delete a WorkStash entry that is no longer needed.
 
@@ -286,6 +314,8 @@ See:
 
 - `docs/concepts.md`
 - `docs/mcp-setup.md`
+- `docs/local-mode-spec.md`
+- `docs/local-mode-implementation-plan.md`
 - `docs/claude-desktop-mcpb.md`
 - `docs/security-model.md`
 - `docs/official-distribution-roadmap.md`
@@ -310,11 +340,11 @@ A2CR uses a lightweight open-core model:
 |---|---|---|
 | WorkBaton Format | Public specification in `docs/spec/` | Spec text: CC BY 4.0. Schemas/examples/tests: Apache-2.0 |
 | `a2cr-mcp` | Official local stdio MCP client | Source-available under BUSL-1.1 style terms |
-| `a2cr.app` | Hosted relay service, dashboard, billing, operations | Proprietary SaaS |
+| `a2cr.app` | Product site and legacy hosted surfaces during SaaS retirement | Proprietary service |
 
 The WorkBaton Format is intended to be implementable by anyone. The official
-client and hosted relay are maintained by A2CR. Offering a competing hosted or
-managed A2CR-compatible relay service based on the official A2CR client requires
+client is maintained by A2CR. Offering a competing hosted or managed
+A2CR-compatible relay service based on the official A2CR client requires
 a commercial license.
 
 This is a source-available/open-core project, not a broad OSI-approved open

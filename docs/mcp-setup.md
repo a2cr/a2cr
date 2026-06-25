@@ -18,20 +18,49 @@ Install the Python wrapper:
 python -m pip install --upgrade a2cr-mcp
 ```
 
-Register the MCP server as `a2cr`.
+Register the MCP server as `a2cr` or, for Codex, run:
 
-`A2CR_BASE_URL` is optional. Omit it to use `https://a2cr.app`.
+```bash
+a2cr init codex --local
+a2cr doctor --target local
+```
+
+`A2CR_LOCAL_DB` is optional. Omit it to use the OS default local app-data
+location.
+
+## Browser Dashboard
+
+The Python wrapper also installs the local browser UI:
+
+```bash
+a2cr ui
+```
+
+The UI runs only on loopback by default. It binds to `127.0.0.1`, chooses an
+available port, prints a token-protected URL, and opens that URL in the default
+browser. Keep the command running while using the dashboard; press `Ctrl+C` to
+stop it.
+
+Useful options:
+
+```bash
+a2cr ui --port 50895
+a2cr ui --no-browser
+a2cr ui --db /absolute/path/to/a2cr.db
+```
+
+Use `--no-browser` when you want to copy the printed URL manually or run the UI
+from a terminal that should not open a browser window.
 
 ## Codex-Style TOML
 
 ```toml
-[mcp_servers."a2cr"]
-command = "a2cr-mcp"
+[mcp_servers."a2cr-local"]
+command = "a2cr-local-mcp"
 args = []
 
-[mcp_servers."a2cr".env]
-A2CR_API_KEY = "YOUR_A2CR_API_KEY"
-A2CR_BASE_URL = "https://a2cr.app"
+[mcp_servers."a2cr-local".env]
+A2CR_LOCAL_DB = "/optional/path/to/a2cr.db"
 ```
 
 ## JSON MCP Config
@@ -40,12 +69,11 @@ A2CR_BASE_URL = "https://a2cr.app"
 {
   "mcpServers": {
     "a2cr": {
-      "command": "a2cr-mcp",
-      "args": [],
-      "env": {
-        "A2CR_API_KEY": "YOUR_A2CR_API_KEY",
-        "A2CR_BASE_URL": "https://a2cr.app"
-      }
+        "command": "a2cr-mcp",
+        "args": [],
+        "env": {
+        "A2CR_LOCAL_DB": "/optional/path/to/a2cr.db"
+        }
     }
   }
 }
@@ -53,9 +81,10 @@ A2CR_BASE_URL = "https://a2cr.app"
 
 ## Notes
 
-- Configure exactly one A2CR MCP server named `a2cr`.
+- Configure exactly one A2CR MCP server.
 - Use the local stdio wrapper for WorkBaton saves.
-- Do not paste real API keys into public issues, PRs, or screenshots.
+- Do not paste local database paths into public issues, PRs, or screenshots if
+  they reveal private project names.
 - If `save_context` is not visible in a lazy MCP client, search for the exact
   tool name `save_context`.
 
@@ -102,10 +131,10 @@ Distribution path:
 1. Public GitHub Release asset: `a2cr-<version>.mcpb`.
 2. Anthropic Directory after approval.
 
-For `0.1.6`, download `a2cr-0.1.6.mcpb` from:
+For `0.1.7`, download `a2cr-0.1.7.mcpb` from:
 
 ```text
-https://github.com/a2cr/a2cr/releases/tag/v0.1.6
+https://github.com/a2cr/a2cr/releases/tag/v0.1.7
 ```
 
 Developers can rebuild locally from source:

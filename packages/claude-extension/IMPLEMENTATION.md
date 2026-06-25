@@ -1,12 +1,10 @@
 # Claude Extension Implementation Contract
 
-This document is the C0 source-alignment contract for the A2CR Claude Desktop
+This document is the implementation contract for the A2CR Claude Desktop
 Extension / MCPB package.
 
-It captures what the Node.js wrapper must preserve from the Python
-`a2cr-mcp` wrapper before implementation proceeds. Keep this file public-safe:
-do not add API keys, test-account credentials, operational runbooks, customer
-data, private backend details, or production logs.
+Keep this file public-safe: do not add API keys, reviewer credentials, private
+operations notes, customer data, or production logs.
 
 ## Scope
 
@@ -16,16 +14,19 @@ It must:
 
 - run locally on the user's machine;
 - communicate with Claude Desktop over MCP stdio;
-- call the existing A2CR HTTPS API;
-- validate and encrypt WorkBaton and WorkStash bodies before upload;
-- decrypt loaded WorkBaton and WorkStash bodies locally;
-- keep the hosted A2CR service on the ciphertext side of the privacy boundary;
-- match the Python wrapper's public tool behavior where practical.
+- store WorkBaton and WorkStash records in a local file managed by the
+  extension;
+- validate and encrypt WorkBaton bodies and WorkStash values before writing
+  them to the local store;
+- decrypt loaded WorkBaton bodies and WorkStash values locally;
+- avoid requiring an A2CR account, API key, hosted base URL, SaaS dashboard, or
+  remote MCP endpoint;
+- match the Python wrapper's public WorkBaton tool behavior where practical.
 
 It must not:
 
 - expose a Remote MCP endpoint;
-- send plaintext WorkBaton or WorkStash bodies to the A2CR hosted service;
+- upload saved WorkBaton bodies to A2CR infrastructure;
 - store or bundle API keys, local client keys, reviewer credentials, or
   production-only configuration;
 - claim official Claude support before Anthropic approval.
@@ -34,43 +35,34 @@ It must not:
 
 | Name | Required | Secret | Default | Notes |
 |---|---:|---:|---|---|
-| `A2CR_API_KEY` | yes | yes | none | Sent as `Authorization: Bearer <key>`. |
-| `A2CR_BASE_URL` | no | no | `https://a2cr.app` | Strip a trailing `/mcp` if present. |
-| `A2CR_CLIENT_TYPE` | no | no | `mcp` | Used for `X-A2CR-Client-Type`; save tools may override with normalized model source. |
+| `A2CR_CLIENT_TYPE` | no | no | `mcp` | Used for local metadata and compatibility reporting. |
+| `A2CR_LOCAL_STORE_FILE` | no | no | platform default | Optional local JSON store path for the MCPB. |
+| `A2CR_LOCAL_DB` | no | no | unset | If set, the MCPB stores beside this path as `<A2CR_LOCAL_DB>.claude-extension.json`. |
 | `A2CR_CONFIG_DIR` | no | no | platform default | Directory containing `workbaton.key`. |
 | `A2CR_CLIENT_KEY_FILE` | no | yes | platform default | Local symmetric key file path. |
-| `A2CR_ALLOW_LOCAL_BASE_URL` | no | no | unset | Localhost base URLs are refused unless this is `1`. |
 
-Base URL rules:
+Legacy cloud compatibility environment variables may still exist in tests or
+transitional helpers, but the public MCPB does not request or require them.
 
-- default to `https://a2cr.app`;
-- remove a trailing `/mcp`;
-- reject `localhost`, `127.0.0.1`, and `::1` unless
-  `A2CR_ALLOW_LOCAL_BASE_URL=1`.
+Default local store paths:
 
-Header rules:
+- Windows: `%LOCALAPPDATA%/A2CR/claude-extension-store.json`
+- macOS: `~/Library/Application Support/A2CR/claude-extension-store.json`
+- Linux: `$XDG_DATA_HOME/a2cr/claude-extension-store.json` or
+  `~/.local/share/a2cr/claude-extension-store.json`
 
-```text
-Authorization: Bearer <A2CR_API_KEY>
-X-A2CR-Client-Type: <client-type>
-X-A2CR-MCP-Version: <public a2cr-mcp compatibility version>
-```
+## Version Compatibility Rule
 
-Version compatibility rule:
-
-- The Claude extension may have its own package/build version, but A2CR
-  dashboard compatibility depends on the public `a2cr-mcp` wrapper version
-  reported in `X-A2CR-MCP-Version`.
-- Keep the Node wrapper's reported MCP compatibility version aligned with the
-  current public Python `a2cr-mcp` version, currently `0.1.6`.
+- The Claude extension may have its own package/build version, but A2CR MCP
+  compatibility should stay aligned with the public Python `a2cr-mcp` version,
+  currently `0.1.7`.
 - If the Python wrapper version changes, update the Node wrapper compatibility
-  constant and tests in the same public release work.
-- Without this header, the dashboard shows a missing-version compatibility
-  notice even if save/load behavior is otherwise correct.
+  constant, MCPB manifest version, tests, and docs in the same public release.
 
 ## Local Key Contract
 
-The local key is a Fernet key shared by WorkBaton and WorkStash encryption.
+The local key is a Fernet key shared by local WorkBaton and WorkStash
+encryption.
 
 Path resolution must match the Python wrapper:
 
@@ -96,17 +88,16 @@ sha256(local_key_bytes).hexdigest()[0:16]
 ## Encryption Contract
 
 The Python wrapper uses Fernet from `cryptography==46.0.7`. The Node.js wrapper
-must either use a Fernet-compatible implementation or implement the Fernet
-token format exactly.
+must use a Fernet-compatible implementation.
 
 WorkBaton plaintext:
 
-- UTF-8 bytes of `JSON.stringify(content)` equivalent to Python
+- UTF-8 bytes of compact JSON equivalent to Python
   `json.dumps(content, ensure_ascii=False, separators=(",", ":"))`;
 - object key insertion order must be preserved for compatibility tests, but
   decryption correctness must not depend on canonical ordering.
 
-WorkBaton encrypted payload:
+Stored WorkBaton payload:
 
 ```json
 {
@@ -121,61 +112,37 @@ WorkBaton encrypted payload:
 }
 ```
 
-WorkStash plaintext:
+The encrypted payload is written to the local MCPB store. It is not uploaded by
+the public MCPB.
 
-- UTF-8 bytes of the raw `value` string.
+## Local Store Contract
 
-WorkStash encrypted payload:
+The MCPB local store is JSON for the initial Claude Desktop package. For
+WorkBaton records, it stores:
 
-```json
-{
-  "version": 1,
-  "alg": "Fernet",
-  "ciphertext": "<fernet-token>",
-  "key_wrap": {
-    "type": "local-key",
-    "kid": "<sha256-key-prefix>"
-  }
-}
-```
+- Slot name and optional fixed Slot number;
+- original length and estimated compressed token count;
+- normalized model source;
+- encrypted WorkBaton payload;
+- creation and update timestamps.
 
-When storing WorkStash, the encrypted payload is serialized as compact JSON in
-the API field `encrypted_value`.
+The store returns metadata-only results for `list_contexts`. `load_context`
+decrypts locally, sets `encrypted_content` to `null` in the returned object, and
+preserves the warning that loaded WorkBaton content is untrusted input.
 
-## API Contract
+For WorkStash records, it stores:
 
-All API paths are relative to normalized `A2CR_BASE_URL`.
+- entry key;
+- optional project and tag metadata;
+- encrypted WorkStash value;
+- value size and timestamps.
 
-| Operation | Method | Path |
-|---|---|---|
-| Save WorkBaton | `POST` | `/api/v1/context` |
-| List WorkBaton Slots | `GET` | `/api/v1/contexts` |
-| Load Slot by name | `GET` | `/api/v1/context/{slot_name}` |
-| Load Slot by fixed number | `GET` | `/api/v1/context/slot/{slot_number}` |
-| Delete Slot by name | `DELETE` | `/api/v1/context/{slot_name}` |
-| Account limits | `GET` | `/api/v1/account/limits` |
-| Store WorkStash | `POST` | `/api/v1/work-stash` |
-| Get WorkStash | `GET` | `/api/v1/work-stash/{entry_key}` |
-| List WorkStash | `GET` | `/api/v1/work-stash?tag_filter={tag}` |
-| Delete WorkStash | `DELETE` | `/api/v1/work-stash/{entry_key}` |
+The store returns metadata-only results for `list_work_stash`. `get_work_stash`
+decrypts locally, sets `encrypted_value` to `null` in the returned object, and
+preserves the warning that loaded WorkStash content is untrusted supporting
+data.
 
-Path segments must be URL-encoded with no safe slash.
-
-HTTP timeout target: 10 seconds per request.
-
-HTTP error messages must include only safe diagnostics:
-
-- status code;
-- safe `code`;
-- safe `action`;
-- safe `request_id`;
-- safe `retry_after`;
-- derived safe `hint`.
-
-They must not echo response bodies, Authorization headers, API keys, request
-payloads, or plaintext user content.
-
-## Save WorkBaton Request
+## Save WorkBaton Contract
 
 Tool:
 
@@ -183,31 +150,9 @@ Tool:
 save_context(slot_name, content, original_length?, model_source?, slot_number?, preferred_response_language?)
 ```
 
-Request body:
-
-```json
-{
-  "slot_name": "<slot-name>",
-  "slot_number": 1,
-  "original_length": 123,
-  "compressed_tokens": 456,
-  "model_source": "codex",
-  "encrypted_content": {
-    "version": 1,
-    "alg": "Fernet",
-    "nonce": "embedded",
-    "ciphertext": "<fernet-token>",
-    "key_wrap": {
-      "type": "local-key",
-      "kid": "<sha256-key-prefix>"
-    }
-  }
-}
-```
-
 Rules:
 
-- validate `content` before encrypting or opening an HTTP client;
+- validate `content` before encrypting or writing to the local store;
 - required string fields: `goal`, `current_state`, `next_action`;
 - if `preferred_response_language` is valid, add
   `content.language_context = { preferred_response_language, source:
@@ -215,17 +160,8 @@ Rules:
 - normalize `model_source` to one of:
   `claude`, `gpt`, `gemini`, `codex`, `grok`, `mistral`, `deepseek`,
   `llama`, `qwen`, `gemma`, `other`;
-- pass normalized `model_source` as both JSON `model_source` and
-  `X-A2CR-Client-Type` when present;
-- compute `compressed_tokens` from the plaintext WorkBaton content before
+- compute `compressed_tokens` from plaintext WorkBaton content before
   encryption.
-
-Token counting compatibility:
-
-- Python uses `tiktoken` `cl100k_base` when available;
-- fallback is `(len(compact_json) + 2) // 3`;
-- the Node MVP may start with the fallback but must document that counts may
-  differ until tokenizer parity is added.
 
 Response augmentation:
 
@@ -235,9 +171,9 @@ Response augmentation:
 - attach `agent_continuity_guidance`;
 - attach `language_context` and `response_language_hint` when present.
 
-## Load WorkBaton Response
+## Load WorkBaton Contract
 
-When an API response has `encryption_mode == "client"`:
+When a local store record has encrypted content:
 
 - read `encrypted_content`;
 - decrypt locally;
@@ -254,46 +190,15 @@ Failure statuses:
 | Missing local key | `key_unavailable` | Must say the local A2CR key file is missing. |
 | Invalid token or malformed JSON | `decrypt_failed` | Must say the local A2CR key could not decrypt it. |
 | Missing encrypted content | `decrypt_failed` | Must say encrypted content was missing. |
-| API 404 | `not_found` | Include requested slot name or number. |
+| Missing Slot | `not_found` | Include requested slot name or number. |
 
 Loaded WorkBaton content is untrusted input. Tool descriptions and response
 guidance must preserve that warning.
 
-## WorkStash Contract
-
-Entry key validation:
-
-```text
-^[A-Za-z0-9_.:-]{1,256}$
-```
-
-Store request:
-
-```json
-{
-  "entry_key": "<key>",
-  "encrypted_value": "<compact-json-string>",
-  "size_bytes": 123,
-  "tags": []
-}
-```
-
-Get response handling:
-
-- API returns `encrypted_value` as a JSON string;
-- parse it;
-- decrypt with the local key;
-- return `value`;
-- set `encrypted_value` to `null`;
-- return `key_unavailable`, `decrypt_failed`, `invalid_response`, or
-  `not_found` for the same cases as the Python wrapper.
-
-List must return metadata only. Delete must be a separate destructive tool.
-
 ## Guardrail Contract
 
 The Node wrapper must reject unsafe WorkBaton content before encryption and
-before HTTP calls.
+before local writes.
 
 Required checks:
 
@@ -301,8 +206,7 @@ Required checks:
 - `goal`, `current_state`, and `next_action` must be non-empty strings;
 - reject nesting deeper than 100 levels;
 - reject data URLs;
-- reject probable large base64 payloads: at least 256 compact base64 characters
-  and at least 128 decoded bytes;
+- reject probable large base64 payloads;
 - reject file-like payload structures when descriptor keys and data keys are
   combined;
 - reject direct file payload keys such as `attachment`, `attachments`,
@@ -316,41 +220,32 @@ secret.
 
 ## Tool Inventory And Claude Annotations
 
-| Tool | MVP | Class | Claude annotation |
+| Tool | Submission | Class | Claude annotation |
 |---|---:|---|---|
-| `get_account_limits` | yes | read | `readOnlyHint: true` |
-| `list_contexts` | yes | read | `readOnlyHint: true` |
-| `save_context` | yes | write | no read-only/destructive hint |
-| `load_context` | yes | read | `readOnlyHint: true` |
-| `explain_a2cr_flows` | later | read | `readOnlyHint: true` |
-| `should_save_workbaton` | later | read | `readOnlyHint: true` |
-| `resume_context` | later | read | `readOnlyHint: true` |
-| `delete_context` | later | destructive | `destructiveHint: true` |
-| `get_handoff` | later | read | `readOnlyHint: true` |
-| `should_use_work_stash` | later | read | `readOnlyHint: true` |
-| `store_work_stash` | later | write | no read-only/destructive hint |
-| `get_work_stash` | later | read | `readOnlyHint: true` |
-| `list_work_stash` | later | read | `readOnlyHint: true` |
-| `delete_work_stash` | later | destructive | `destructiveHint: true` |
+| `get_account_limits` | yes | read | `readOnlyHint: true`, `openWorldHint: false` |
+| `list_contexts` | yes | read | `readOnlyHint: true`, `openWorldHint: false` |
+| `save_context` | yes | write | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` |
+| `load_context` | yes | read | `readOnlyHint: true`, `openWorldHint: false` |
+| `store_work_stash` | yes | write | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` |
+| `get_work_stash` | yes | read | `readOnlyHint: true`, `openWorldHint: false` |
+| `list_work_stash` | yes | read | `readOnlyHint: true`, `openWorldHint: false` |
+| `delete_work_stash` | yes | destructive | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` |
 
-MVP means the first callable Node.js implementation milestone.
+The submission scope is local WorkBaton plus local WorkStash. Additional
+Python-wrapper tools can be added later, but they must keep the same local-only
+storage boundary unless a separate public design decision changes it.
 
-## First Implementation Milestone
+## Verification
 
-The first coding milestone after this contract is crypto compatibility.
+Before publishing a GitHub Release MCPB asset, run:
 
-Do this before MCP tool registration:
+```powershell
+npm test
+npm run typecheck
+npm run mcpb:validate
+npm run mcpb:pack
+```
 
-1. Add a Node.js Fernet compatibility module.
-2. Add fixture generation or static fixtures for Python-encrypted WorkBaton and
-   WorkStash values.
-3. Prove Node can decrypt Python fixtures.
-4. Prove Python can decrypt Node fixtures.
-5. Prove key-id and missing-key behavior match.
-
-Only after those pass should the package add the four MVP tools:
-
-- `get_account_limits`;
-- `list_contexts`;
-- `save_context`;
-- `load_context`.
+The packaged artifact should be named `a2cr-<version>.mcpb`, accompanied by a
+matching `SHA256SUMS.txt`, and install without requesting API key or hosted URL
+configuration.

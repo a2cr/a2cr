@@ -2,19 +2,19 @@
   "manifest_version": "0.3",
   "name": "a2cr",
   "display_name": "A2CR",
-  "version": "0.1.6",
-  "description": "AI-agent handoff checkpoints and temporary work memory with local encryption before upload.",
-  "long_description": "A2CR lets Claude Desktop save and load compact WorkBaton checkpoints through a local MCP server. WorkBaton content is validated and encrypted on the user's machine before it is sent to the A2CR hosted service.",
+  "version": "0.1.7",
+  "description": "AI-agent handoff checkpoints and temporary WorkStash notes stored in a local workspace.",
+  "long_description": "A2CR lets Claude Desktop save and load compact WorkBaton checkpoints and supporting WorkStash notes through a local MCP server. WorkBaton and WorkStash content is validated, encrypted, and stored on the user's machine; this MCPB does not upload saved content.",
   "author": {
     "name": "A2CR",
-    "url": "https://a2cr.app/"
+    "url": "https://github.com/a2cr/a2cr"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/a2cr/a2cr.git"
   },
-  "homepage": "https://a2cr.app/",
-  "documentation": "https://a2cr.app/en/manual",
+  "homepage": "https://github.com/a2cr/a2cr",
+  "documentation": "https://github.com/a2cr/a2cr/blob/main/docs/claude-desktop-mcpb.md",
   "support": "https://github.com/a2cr/a2cr/issues",
   "icon": "assets/icon.png",
   "icons": [
@@ -30,8 +30,6 @@
       "command": "node",
       "args": ["${__dirname}/dist/index.js"],
       "env": {
-        "A2CR_API_KEY": "${user_config.a2cr_api_key}",
-        "A2CR_BASE_URL": "${user_config.a2cr_base_url}",
         "A2CR_CLIENT_TYPE": "claude"
       }
     }
@@ -39,7 +37,7 @@
   "tools": [
     {
       "name": "get_account_limits",
-      "description": "Return current A2CR account limits and quota metadata."
+      "description": "Return current local A2CR workspace limits and storage metadata."
     },
     {
       "name": "list_contexts",
@@ -47,11 +45,27 @@
     },
     {
       "name": "save_context",
-      "description": "Validate and locally encrypt compact WorkBaton handoff content before saving it to A2CR."
+      "description": "Validate and save compact WorkBaton handoff content in the local A2CR workspace."
     },
     {
       "name": "load_context",
       "description": "Load a WorkBaton Slot by name or number and decrypt its content locally."
+    },
+    {
+      "name": "store_work_stash",
+      "description": "Encrypt and save a temporary supporting note in the local A2CR workspace."
+    },
+    {
+      "name": "get_work_stash",
+      "description": "Load one referenced WorkStash entry and decrypt its content locally."
+    },
+    {
+      "name": "list_work_stash",
+      "description": "List local WorkStash metadata without returning stored note values."
+    },
+    {
+      "name": "delete_work_stash",
+      "description": "Delete one local WorkStash entry that is no longer needed."
     }
   ],
   "tools_generated": false,
@@ -65,27 +79,12 @@
     "workstash"
   ],
   "license": "LicenseRef-A2CR-Source-Available",
-  "privacy_policies": ["https://a2cr.app/en/privacy"],
+  "privacy_policies": ["https://github.com/a2cr/a2cr/blob/main/docs/privacy.md"],
   "compatibility": {
     "platforms": ["darwin", "win32"],
     "runtimes": {
       "node": ">=22.0.0"
     }
   },
-  "user_config": {
-    "a2cr_api_key": {
-      "type": "string",
-      "title": "A2CR API Key",
-      "description": "API key for the A2CR hosted service.",
-      "sensitive": true,
-      "required": true
-    },
-    "a2cr_base_url": {
-      "type": "string",
-      "title": "A2CR Base URL",
-      "description": "A2CR service URL. Keep the default unless you are testing a compatible deployment.",
-      "default": "https://a2cr.app",
-      "required": false
-    }
-  }
+  "user_config": {}
 }

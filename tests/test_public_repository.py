@@ -158,7 +158,7 @@ def test_mcp_registry_metadata_matches_package_readme():
 
     assert server["$schema"] == "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
     assert server["name"] == "io.github.a2cr/a2cr-mcp"
-    assert server["version"] == "0.1.6"
+    assert server["version"] == "0.1.7"
     assert "<!-- mcp-name: io.github.a2cr/a2cr-mcp -->" in readme
     assert "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.a2cr%2Fa2cr-mcp/versions/latest" in readme
 
@@ -168,12 +168,12 @@ def test_mcp_registry_metadata_matches_package_readme():
     assert package["version"] == server["version"]
     assert package["transport"]["type"] == "stdio"
 
-    api_key_env = next(
+    local_db_env = next(
         item for item in package["environmentVariables"]
-        if item["name"] == "A2CR_API_KEY"
+        if item["name"] == "A2CR_LOCAL_DB"
     )
-    assert api_key_env["isRequired"] is True
-    assert api_key_env["isSecret"] is True
+    assert local_db_env["isRequired"] is False
+    assert local_db_env["isSecret"] is False
 
 
 def test_public_mcp_setup_examples_match_registry_environment():
@@ -197,8 +197,9 @@ def test_public_mcp_setup_examples_match_registry_environment():
         ]
     )
 
-    assert "A2CR_API_KEY" in registry_env_names
-    assert "A2CR_BASE_URL" in registry_env_names
+    assert "A2CR_LOCAL_DB" in registry_env_names
+    assert "A2CR_API_KEY" not in registry_env_names
+    assert "A2CR_BASE_URL" not in registry_env_names
     assert "A2CR_SERVICE_URL" not in registry_env_names
     assert "A2CR_SERVICE_URL" not in docs
 
@@ -230,7 +231,7 @@ def test_readme_is_cleanly_separated_for_public_technical_docs():
         assert marker not in readme
         assert marker not in readme_ja
 
-    assert "A2CR is an MCP server for AI agent handoffs" in readme
+    assert "A2CR is a local MCP workspace for AI agent handoffs" in readme
     assert "Long AI work usually breaks at the handoff" in readme
     assert "In this repository, an AI window means one active chat/session" in readme
     assert '"goal": "Fix the failing login test"' in readme
@@ -336,8 +337,9 @@ def test_public_docs_define_security_responsibility_boundary():
 def test_env_example_contains_only_public_wrapper_settings():
     env_example = read(".env.example")
 
-    assert "A2CR_API_KEY=YOUR_A2CR_API_KEY" in env_example
-    assert "A2CR_BASE_URL=https://a2cr.app" in env_example
+    assert "A2CR_LOCAL_DB" in env_example
+    assert "A2CR_API_KEY" not in env_example
+    assert "A2CR_BASE_URL" not in env_example
     assert "DATABASE_URL" not in env_example
     assert "SUPABASE" not in env_example
     assert "FERNET_KEY" not in env_example
