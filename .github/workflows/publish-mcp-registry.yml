@@ -46,7 +46,7 @@ jobs:
           import json
           import urllib.request
 
-          expected = "0.1.6"
+          expected = "0.1.7"
           with urllib.request.urlopen("https://pypi.org/pypi/a2cr-mcp/json", timeout=20) as response:
               data = json.load(response)
           versions = set(data.get("releases", {}))
