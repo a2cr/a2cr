@@ -4,7 +4,7 @@ import urllib.error
 import urllib.request
 
 from a2cr_mcp.local_workspace.store import LocalWorkspaceStore
-from a2cr_mcp.local_workspace.ui import create_ui_server
+from a2cr_mcp.local_workspace.ui import _format_startup_message, create_ui_server
 
 
 def seed_workspace(tmp_path, monkeypatch):
@@ -147,6 +147,29 @@ def test_ui_server_serves_html_api_details_actions_and_auth(tmp_path, monkeypatc
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_ui_startup_message_tells_users_how_to_open_fallback_url():
+    url = "http://127.0.0.1:50895/?token=test-token"
+
+    message = _format_startup_message(url=url, open_browser=True)
+
+    assert "A2CR Local UI is running." in message
+    assert f"A2CR_UI_URL={url}" in message
+    assert "if the browser does not appear" in message
+    assert "?token=" in message
+    assert "bare 127.0.0.1 URL is rejected" in message
+    assert "Ctrl+C" in message
+    assert "--no-browser" not in message
+
+
+def test_ui_startup_message_explains_no_browser_mode():
+    url = "http://127.0.0.1:50895/?token=test-token"
+
+    message = _format_startup_message(url=url, open_browser=False)
+
+    assert f"A2CR_UI_URL={url}" in message
+    assert "Browser auto-open is disabled by --no-browser." in message
 
 
 def get_json(base_url, path):

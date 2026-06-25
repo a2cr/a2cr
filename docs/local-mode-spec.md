@@ -563,6 +563,8 @@ Default behavior:
 - bind to `127.0.0.1`
 - choose an available port automatically
 - use a random local session token in the URL
+- print a copy-pasteable full URL for users whose browser does not open
+  automatically
 - never expose the UI to the LAN by default
 - never upload content in the public local-only release
 

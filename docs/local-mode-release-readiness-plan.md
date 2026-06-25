@@ -173,7 +173,9 @@ Target first-use flow:
 3. Resume in a fresh AI window with `resume_context`.
 4. Run `a2cr ui` to open the local browser dashboard. The command binds to
    `127.0.0.1`, prints a token-protected local URL, opens it in the default
-   browser, and runs until the user presses `Ctrl+C`.
+   browser, and runs until the user presses `Ctrl+C`. If browser auto-open is
+   unavailable, copy the printed `A2CR_UI_URL` including `?token=...`; the bare
+   `127.0.0.1:<port>` URL is rejected by design.
 5. Use `a2cr search <query>` or the browser dashboard when the user wants to
    inspect local history.
 
@@ -186,8 +188,8 @@ Documentation updates:
 - Explain that local mode requires no A2CR account and no API key.
 - Explain that `a2cr-local` is the recommended local MCP server name.
 - Keep `a2cr-mcp` documented only as the compatibility command.
-- Document `a2cr ui`, including loopback binding, tokenized URL, `Ctrl+C`
-  shutdown, `--no-browser`, `--port`, and `--db`.
+- Document `a2cr ui`, including loopback binding, tokenized URL, copy-paste
+  fallback, `Ctrl+C` shutdown, `--no-browser`, `--port`, and `--db`.
 - Add troubleshooting for:
   - command not found
   - old package still installed

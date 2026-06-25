@@ -108,6 +108,10 @@ python -m pip install --upgrade a2cr-mcp
 a2cr ui
 ```
 
+If the browser does not open automatically, copy the full printed
+`A2CR_UI_URL` into a browser on the same computer. Keep the `?token=...` query
+string; opening the bare `127.0.0.1:<port>` URL is rejected by design.
+
 ## Current Scope
 
 The Node MCPB is the Claude Desktop packaging path. Keep it aligned with the

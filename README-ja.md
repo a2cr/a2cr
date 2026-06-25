@@ -31,6 +31,17 @@ a2cr init codex --local
 a2cr doctor --target local
 ```
 
+ブラウザUIを開くには次を実行します。
+
+```bash
+a2cr ui
+```
+
+`a2cr ui` は `127.0.0.1` だけで起動し、token付きのローカルURLを表示して
+既定ブラウザを開きます。ブラウザが開かない場合は、端末に表示された
+`A2CR_UI_URL` 全体をコピーしてください。`?token=...` まで含める必要があり、
+tokenなしの `127.0.0.1:<port>` は拒否されます。端末を閉じるとUIも止まります。
+
 Codex の設定例:
 
 ```toml
