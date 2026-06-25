@@ -314,7 +314,7 @@ INDEX_HTML = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A2CR Local</title>
+<title>A2CR</title>
 <style>
 :root {
   color-scheme: light;
@@ -362,6 +362,8 @@ button:hover { filter: brightness(0.97); }
   background: #17201c;
   color: #eef6f1;
   padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
 }
 .brand {
   font-size: 18px;
@@ -518,12 +520,44 @@ pre {
   .grid { grid-template-columns: 1fr; }
   .filters { grid-template-columns: 1fr 1fr; }
 }
+.lang-switcher {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #344a41;
+}
+.lang-switcher > span {
+  display: block;
+  font-size: 10px;
+  color: #63706a;
+  margin-bottom: 6px;
+}
+.lang-toggle {
+  display: flex;
+  border: 1px solid #344a41;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.lang-toggle button {
+  flex: 1;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 11px;
+  background: transparent;
+  color: #aaa;
+  border: none;
+  border-radius: 0;
+}
+.lang-toggle button.active {
+  background: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
 </style>
 </head>
 <body>
 <div class="shell">
   <aside class="nav">
-    <div class="brand">A2CR Local</div>
+    <div class="brand">A2CR</div>
     <button class="active" data-view="dashboard">Dashboard</button>
     <button data-view="search">Search</button>
     <button data-view="workbatons">WorkBaton</button>
@@ -532,6 +566,14 @@ pre {
     <button data-view="agents">Agents</button>
     <button data-view="timeline">Timeline</button>
     <button data-view="settings">Settings</button>
+    <button data-view="help">Help</button>
+    <div class="lang-switcher">
+      <span>Language</span>
+      <div class="lang-toggle">
+        <button id="lang-ja" class="active" onclick="setLang('ja')">日本語</button>
+        <button id="lang-en" onclick="setLang('en')">English</button>
+      </div>
+    </div>
   </aside>
   <main class="main">
     <div class="topbar">
@@ -549,6 +591,25 @@ pre {
 const token = new URLSearchParams(location.search).get("token") || "";
 let state = null;
 let currentView = "dashboard";
+let lang = "ja";
+
+const TITLES = {
+  ja: {dashboard:"ダッシュボード", search:"検索", workbatons:"WorkBaton",
+       workstash:"WorkStash", workthreads:"WorkThreads", agents:"Agents",
+       timeline:"Timeline", settings:"Settings", help:"使い方ガイド"},
+  en: {dashboard:"Dashboard", search:"Search", workbatons:"WorkBaton",
+       workstash:"WorkStash", workthreads:"WorkThreads", agents:"Agents",
+       timeline:"Timeline", settings:"Settings", help:"User Guide"}
+};
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("a2cr_lang", l);
+  document.getElementById("lang-ja").classList.toggle("active", l === "ja");
+  document.getElementById("lang-en").classList.toggle("active", l === "en");
+  document.getElementById("view-title").textContent = TITLES[lang][currentView] || currentView;
+  render();
+}
 
 const api = async (path, options = {}) => {
   const sep = path.includes("?") ? "&" : "?";
@@ -564,6 +625,12 @@ const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({
 }[ch]));
 
 const fmt = (value) => value ? String(value).replace("T", " ").replace("Z", "") : "";
+const fmtSize = (bytes) => {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / 1048576).toFixed(1) + " MB";
+};
 const badge = (text, cls = "") => text ? `<span class="badge ${cls}">${esc(text)}</span>` : "";
 const jsonBlock = (obj) => `<pre>${esc(JSON.stringify(obj, null, 2))}</pre>`;
 
@@ -574,11 +641,8 @@ async function loadState() {
 
 function setView(view) {
   currentView = view;
-  document.querySelectorAll(".nav button").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
-  document.getElementById("view-title").textContent = ({
-    dashboard: "Dashboard", search: "Search", workbatons: "WorkBaton", workstash: "WorkStash",
-    workthreads: "WorkThreads", agents: "Agents", timeline: "Timeline", settings: "Settings"
-  })[view];
+  document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
+  document.getElementById("view-title").textContent = TITLES[lang][view] || view;
   render();
 }
 
@@ -593,6 +657,7 @@ function render() {
   if (currentView === "agents") content.innerHTML = renderAgents();
   if (currentView === "timeline") content.innerHTML = renderTimeline();
   if (currentView === "settings") content.innerHTML = renderSettings();
+  if (currentView === "help") content.innerHTML = renderHelp();
 }
 
 function renderDashboard() {
@@ -711,6 +776,10 @@ function renderTimeline() {
   return `<div class="panel"><h2>Timeline</h2>${eventList(state.events.events)}</div>`;
 }
 
+function renderHelp() {
+  return `<div class="panel"><h2>Help</h2><div class="detail-body">Loading...</div></div>`;
+}
+
 function renderSettings() {
   const d = state.dashboard;
   return `<div class="panel"><h2>Settings</h2><div class="detail-body">
@@ -793,7 +862,7 @@ async function runAction(objectType, key, action) {
   await loadState();
 }
 
-document.querySelectorAll(".nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 document.getElementById("refresh").addEventListener("click", loadState);
 document.getElementById("backup").addEventListener("click", async () => {
   const result = await api("/api/backup", {method: "POST", body: "{}"});
@@ -808,6 +877,13 @@ document.getElementById("export").addEventListener("click", async () => {
   a.click();
   URL.revokeObjectURL(a.href);
 });
+// Initialize from localStorage
+lang = localStorage.getItem("a2cr_lang") || "ja";
+currentView = localStorage.getItem("a2cr_default_view") || "dashboard";
+document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === currentView));
+document.getElementById("lang-ja").classList.toggle("active", lang === "ja");
+document.getElementById("lang-en").classList.toggle("active", lang === "en");
+document.getElementById("view-title").textContent = TITLES[lang][currentView] || currentView;
 loadState();
 </script>
 </body>
