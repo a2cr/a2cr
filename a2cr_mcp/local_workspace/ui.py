@@ -542,7 +542,7 @@ pre {
   .nav button { width: auto; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .grid { grid-template-columns: 1fr; }
-  .filters { grid-template-columns: 1fr 1fr; }
+  .filter-grid { grid-template-columns: 1fr 1fr; }
 }
 .lang-switcher {
   margin-top: auto;
@@ -998,7 +998,7 @@ function renderWorkbatons() {
     esc(item.project_key || ""),
     [
       item.pinned   ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : "",
-      item.stale    ? `<span class="badge stale">stale</span>` : "",
+      item.stale    ? `<span class="badge stale">${ja?"Stale":"stale"}</span>` : "",
       item.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""
     ].join(""),
     esc(item.slot_number ?? ""),
@@ -1296,11 +1296,11 @@ async function openDetail(type, encodedKey) {
 }
 
 function detailHtml(type, detail) {
-  if (detail.status === "not_found") return `<div class="empty">Not found</div>`;
+  if (detail.status === "not_found") return `<div class="empty">${lang === "ja" ? "見つかりません" : "Not found"}</div>`;
   if (type === "WorkBaton") {
     const ja = lang === "ja";
     return `${batonActions(detail.slot_name, detail)}
-      <p>${badge(detail.project_key || "")}${detail.pinned ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : ""}${detail.stale ? badge("stale","stale") : ""}${detail.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""}</p>
+      <p>${badge(detail.project_key || "")}${detail.pinned ? `<span class="badge pinned-b">${ja?"ピン留め":"pinned"}</span>` : ""}${detail.stale ? `<span class="badge stale">${ja?"Stale":"stale"}</span>` : ""}${detail.archived ? `<span class="badge archived-b">${ja?"アーカイブ":"archived"}</span>` : ""}</p>
       ${batonFields(detail.content)}
       <details><summary>${ja?"▶ 生 JSON を表示":"▶ Show raw JSON"}</summary>${jsonBlock(detail.content)}</details>
       <h3 style="margin-top:14px">${ja?"参照":"References"}</h3>${referenceList(detail.references)}
