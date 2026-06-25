@@ -41,6 +41,10 @@ available port, prints a token-protected URL, and opens that URL in the default
 browser. Keep the command running while using the dashboard; press `Ctrl+C` to
 stop it.
 
+If the browser does not appear, copy the full printed `A2CR_UI_URL` into a
+browser on the same computer. The URL must include `?token=...`; opening the
+bare `127.0.0.1:<port>` address is rejected by design.
+
 Useful options:
 
 ```bash
@@ -50,7 +54,8 @@ a2cr ui --db /absolute/path/to/a2cr.db
 ```
 
 Use `--no-browser` when you want to copy the printed URL manually or run the UI
-from a terminal that should not open a browser window.
+from a terminal that should not open a browser window. It still prints the full
+token-protected local URL.
 
 ## Codex-Style TOML
 

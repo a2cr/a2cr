@@ -57,11 +57,20 @@ def main(argv: list[str] | None = None) -> int:
     search.add_argument("--slot")
     search.add_argument("--db", type=Path)
 
-    ui = sub.add_parser("ui")
-    ui.add_argument("--host", default="127.0.0.1")
-    ui.add_argument("--port", type=int, default=0)
-    ui.add_argument("--db", type=Path)
-    ui.add_argument("--no-browser", action="store_true")
+    ui = sub.add_parser("ui", help="Open the local browser dashboard.")
+    ui.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Loopback host for the UI. Only 127.0.0.1 or localhost are allowed.",
+    )
+    ui.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        help="Local port. Use 0 to choose an available port.",
+    )
+    ui.add_argument("--db", type=Path, help="Local SQLite database path.")
+    ui.add_argument("--no-browser", action="store_true", help="Print the token URL without opening a browser.")
     ui.add_argument("--token", help=argparse.SUPPRESS)
 
     args = parser.parse_args(argv)

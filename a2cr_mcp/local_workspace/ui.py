@@ -239,6 +239,34 @@ def create_ui_server(
     return server, url
 
 
+def _format_startup_message(*, url: str, open_browser: bool) -> str:
+    browser_status = (
+        "Opening your default browser now."
+        if open_browser
+        else "Browser auto-open is disabled by --no-browser."
+    )
+    return "\n".join([
+        "A2CR Local UI is running.",
+        f"A2CR_UI_URL={url}",
+        "Open the full URL above on this computer if the browser does not appear.",
+        "The ?token= value is required; a bare 127.0.0.1 URL is rejected.",
+        browser_status,
+        "Keep this terminal open. Press Ctrl+C to stop the UI.",
+    ])
+
+
+def _open_browser(url: str) -> None:
+    try:
+        opened = webbrowser.open(url)
+    except Exception as exc:  # pragma: no cover - depends on desktop integration
+        print(f"Browser auto-open failed: {exc}", flush=True)
+        print("Copy and paste A2CR_UI_URL from this terminal instead.", flush=True)
+        return
+    if not opened:
+        print("Browser auto-open did not report success.", flush=True)
+        print("Copy and paste A2CR_UI_URL from this terminal instead.", flush=True)
+
+
 def serve_ui(
     *,
     host: str = DEFAULT_HOST,
@@ -249,8 +277,9 @@ def serve_ui(
 ) -> str:
     server, url = create_ui_server(host=host, port=port, db_path=db_path, token=token)
     if open_browser:
-        threading.Timer(0.2, lambda: webbrowser.open(url)).start()
+        threading.Timer(0.2, _open_browser, args=(url,)).start()
     print(url, flush=True)
+    print(_format_startup_message(url=url, open_browser=open_browser), flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

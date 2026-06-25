@@ -61,6 +61,11 @@ a token-protected URL, and opens it in your default browser. The URL looks like:
 http://127.0.0.1:<port>/?token=<local-session-token>
 ```
 
+If no browser opens, copy the full printed `A2CR_UI_URL` into a browser on the
+same computer. Include the `?token=...` part. Opening only
+`http://127.0.0.1:<port>` is rejected by design because the local UI requires
+the session token.
+
 Keep the terminal running while the dashboard is open. Press `Ctrl+C` to stop
 the UI server.
 
@@ -72,8 +77,9 @@ a2cr ui --no-browser
 a2cr ui --db /absolute/path/to/a2cr.db
 ```
 
-`--no-browser` prints the URL without opening a browser. `--db` points the UI at
-a specific local A2CR SQLite database.
+`--no-browser` prints the full token URL without opening a browser. Use it on
+headless terminals or when you want to copy the URL manually. `--db` points the
+UI at a specific local A2CR SQLite database.
 
 ## Project Memory
 

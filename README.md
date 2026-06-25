@@ -94,8 +94,11 @@ a2cr ui
 ```
 
 `a2cr ui` binds to `127.0.0.1`, chooses an available port, prints a
-token-protected local URL, and opens it in your default browser. Keep that
-terminal running while you use the dashboard. Press `Ctrl+C` to stop it.
+token-protected local URL, and opens it in your default browser. If the browser
+does not open, copy the full printed `A2CR_UI_URL`, including `?token=...`, into
+a browser on the same computer. The bare `127.0.0.1:<port>` URL is rejected by
+design. Keep that terminal running while you use the dashboard. Press `Ctrl+C`
+to stop it.
 
 For a fixed port or a headless/server-style launch:
 
@@ -103,6 +106,9 @@ For a fixed port or a headless/server-style launch:
 a2cr ui --port 50895
 a2cr ui --no-browser
 ```
+
+Use `--no-browser` when installing on a machine where the terminal cannot or
+should not launch a browser; it still prints the full local URL to copy.
 
 Then restart Codex and use the `a2cr-local` MCP server. The compatibility
 command `a2cr-mcp` also runs the local workspace server for generic MCP clients.
