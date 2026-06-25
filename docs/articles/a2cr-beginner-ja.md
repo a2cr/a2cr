@@ -144,10 +144,10 @@ Codexで作業して、別の新しい窓で検証を続ける。
 
 ## リンク
 
-- A2CR: https://a2cr.app
-- 使い方の入り口: https://a2cr.app/en/manual
-- 設定に進む人向けの記事: https://qiita.com/a2cr/items/acb3caac242aeec34539
-- GitHub: https://github.com/a2cr/a2cr
+- A2CR GitHub: https://github.com/a2cr/a2cr
+- 使い方の入り口: https://github.com/a2cr/a2cr/blob/main/README-ja.md
+- ローカル版の設定: https://github.com/a2cr/a2cr/blob/main/docs/mcp-setup.md
+- 詳しい使い方: https://github.com/a2cr/a2cr/blob/main/docs/usage.md
 
 A2CRは、AIに全部を覚えさせるためのものではありません。
 

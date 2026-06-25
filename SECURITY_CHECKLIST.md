@@ -1,8 +1,8 @@
 # A2CR Security Checklist
 
 This checklist is for low-cost security hygiene before and after public release.
-It covers the public repository, the official MCP wrapper, AI-agent handoff
-safety, and the hosted service boundary.
+It covers the public repository, the official local MCP wrapper, AI-agent
+handoff safety, and the local storage boundary.
 
 ## GitHub Repository Settings
 
@@ -36,9 +36,9 @@ These items are configured in GitHub Settings, not in source code:
 - [ ] WorkStash `entry_key` is validated.
 - [ ] Oversized or bulk-style payloads are rejected where practical.
 - [ ] Error responses do not expose local paths, keys, decrypted bodies, or internal traces.
-- [ ] WorkBaton and WorkStash bodies are encrypted locally before upload to a hosted relay.
-- [ ] API keys and local client keys are not confused or stored together.
-- [ ] Local client key loss behavior is documented.
+- [ ] WorkBaton, WorkStash, and WorkThreads are stored locally and do not require hosted upload.
+- [ ] API keys are not required for public local setup.
+- [ ] Local database location and cleanup behavior are documented.
 
 ## Secret Handling
 
@@ -58,9 +58,10 @@ These items are configured in GitHub Settings, not in source code:
 - [ ] Agent guidance tells agents not to store secrets in WorkBaton or WorkStash.
 - [ ] Prompt injection inside restored context is treated as a realistic risk.
 
-## Hosted SaaS Boundary
+## Legacy Hosted SaaS Boundary
 
-These checks apply to the private hosted service, not this public repository:
+These checks are retained only for legacy/private hosted service retirement work,
+not for the public local wrapper:
 
 - [ ] Unauthenticated users cannot call protected APIs.
 - [ ] User A cannot read User B's WorkBaton.
@@ -90,7 +91,7 @@ These checks apply to the private hosted service, not this public repository:
 - [ ] OpenAI public distribution is treated as an Apps SDK / remote MCP app, not as the current local stdio wrapper.
 - [ ] Any remote Claude or OpenAI submission has a written plaintext/privacy boundary before review.
 - [ ] Remote tool metadata accurately marks read-only, write, delete, and destructive behavior.
-- [ ] Reviewer test accounts contain only disposable data and no production secrets.
+- [ ] Local reviewer data contains only disposable data and no production secrets.
 
 ## Local Free Security Tools
 
@@ -101,12 +102,6 @@ python -m pytest -q
 python -m pip install pip-audit bandit
 python -m pip_audit
 bandit -r a2cr_mcp mcp -x tests
-```
-
-For the hosted web service, scan only A2CR-owned environments:
-
-```bash
-docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://a2cr.app
 ```
 
 Do not run active scans against third-party sites or systems you do not own.

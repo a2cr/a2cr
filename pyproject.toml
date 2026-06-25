@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "a2cr-mcp"
-version = "0.1.6"
-description = "MCP server for client-encrypted AI agent handoff checkpoints with WorkBaton and WorkStash."
+version = "0.1.7"
+description = "Local MCP workspace for AI agent handoff checkpoints, WorkStash notes, and WorkThreads."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = { file = "LICENSE" }
@@ -42,8 +42,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://a2cr.app/"
-Documentation = "https://a2cr.app/en/manual"
+Homepage = "https://github.com/a2cr/a2cr"
+Documentation = "https://github.com/a2cr/a2cr/blob/main/docs/mcp-setup.md"
 Source = "https://github.com/a2cr/a2cr"
 Issues = "https://github.com/a2cr/a2cr/issues"
 Changelog = "https://github.com/a2cr/a2cr/blob/main/CHANGELOG.md"
@@ -51,6 +51,8 @@ Changelog = "https://github.com/a2cr/a2cr/blob/main/CHANGELOG.md"
 
 [project.scripts]
 a2cr-mcp = "a2cr_mcp.server:main"
+a2cr-local-mcp = "a2cr_mcp.entrypoints:local_main"
+a2cr = "a2cr_mcp.local_workspace.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["a2cr_mcp*"]

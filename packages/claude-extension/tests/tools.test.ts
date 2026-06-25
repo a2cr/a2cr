@@ -13,6 +13,8 @@ describe("A2CR tool handlers", () => {
 
     expect(server.isConnected()).toBe(false);
     expect(MCP_INSTRUCTIONS).toContain("save_context");
+    expect(MCP_INSTRUCTIONS).toContain("store_work_stash");
+    expect(MCP_INSTRUCTIONS).toContain("WorkStash values");
   });
 
   it("saves through the API client with encrypted content", async () => {
@@ -98,6 +100,71 @@ describe("A2CR tool handlers", () => {
       slot_number: 9,
     });
   });
+
+  it("stores and decrypts WorkStash values locally", async () => {
+    const savedBodies: Record<string, unknown>[] = [];
+    const saveHandlers = createA2crToolHandlers({
+      key: TEST_KEY,
+      client: fakeClient({
+        storeWorkStash: async (body) => {
+          savedBodies.push(body);
+          return { status: "stored", entry_key: body.entry_key };
+        },
+      }),
+    });
+
+    const stored = await saveHandlers.storeWorkStash({
+      entry_key: "demo-note",
+      value: "supporting note",
+      tags: ["note"],
+      project: "demo",
+    });
+
+    expect(stored).toMatchObject({ status: "stored", entry_key: "demo-note" });
+    expect(JSON.stringify(savedBodies[0])).not.toContain("supporting note");
+
+    const loadHandlers = createA2crToolHandlers({
+      key: TEST_KEY,
+      client: fakeClient({
+        getWorkStash: async () => ({
+          status: "loaded",
+          encryption_mode: "client",
+          encrypted_value: savedBodies[0]?.encrypted_value,
+          value: null,
+        }),
+      }),
+    });
+
+    const loaded = await loadHandlers.getWorkStash({ entry_key: "demo-note" });
+
+    expect(loaded).toMatchObject({
+      status: "loaded",
+      value: "supporting note",
+      encrypted_value: null,
+    });
+  });
+
+  it("returns not-found statuses for missing WorkStash entries", async () => {
+    const handlers = createA2crToolHandlers({
+      client: fakeClient({
+        getWorkStash: async () => {
+          throw new A2crHttpError(404, []);
+        },
+        deleteWorkStash: async () => {
+          throw new A2crHttpError(404, []);
+        },
+      }),
+    });
+
+    expect(await handlers.getWorkStash({ entry_key: "missing" })).toMatchObject({
+      status: "not_found",
+      entry_key: "missing",
+    });
+    expect(await handlers.deleteWorkStash({ entry_key: "missing" })).toMatchObject({
+      status: "not_found",
+      entry_key: "missing",
+    });
+  });
 });
 
 function fakeClient(overrides: Partial<A2crClient>): A2crClient {
@@ -107,6 +174,10 @@ function fakeClient(overrides: Partial<A2crClient>): A2crClient {
     saveContext: async () => ({}),
     loadContextByName: async () => ({}),
     loadContextByNumber: async () => ({}),
+    storeWorkStash: async () => ({}),
+    getWorkStash: async () => ({}),
+    listWorkStash: async () => ({}),
+    deleteWorkStash: async () => ({}),
     ...overrides,
   };
 }

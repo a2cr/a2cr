@@ -46,6 +46,23 @@ export class A2crApiClient {
     return this.requestJson("GET", `/api/v1/context/slot/${slotNumber}`) as Promise<Record<string, unknown>>;
   }
 
+  storeWorkStash(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.requestJson("POST", "/api/v1/work-stash", { body }) as Promise<Record<string, unknown>>;
+  }
+
+  getWorkStash(entryKey: string): Promise<Record<string, unknown>> {
+    return this.requestJson("GET", `/api/v1/work-stash/${pathSegment(entryKey)}`) as Promise<Record<string, unknown>>;
+  }
+
+  listWorkStash(tagFilter?: string | null): Promise<unknown> {
+    const suffix = tagFilter ? `?${new URLSearchParams({ tag_filter: tagFilter }).toString()}` : "";
+    return this.requestJson("GET", `/api/v1/work-stash${suffix}`);
+  }
+
+  deleteWorkStash(entryKey: string): Promise<Record<string, unknown>> {
+    return this.requestJson("DELETE", `/api/v1/work-stash/${pathSegment(entryKey)}`) as Promise<Record<string, unknown>>;
+  }
+
   private async requestJson(
     method: string,
     path: string,

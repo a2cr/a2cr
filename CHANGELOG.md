@@ -1,6 +1,25 @@
 # Changelog
 
-## Unreleased - Distribution Documentation
+## 0.1.7 - Local-Only Workspace And Claude MCPB
+
+- Prepare `0.1.7` as the local-only public release candidate, with release
+  scope, expected artifacts, publish gates, and GitHub Release notes recorded in
+  `docs/releases/v0.1.7-local-only-release-candidate.md`.
+- Switch the public release line to local-only A2CR: no account, API key,
+  hosted base URL, SaaS dashboard, remote MCP connector, or cloud sync is
+  required for the public wrapper.
+- Add local A2CR workspace support for WorkBaton, WorkStash, WorkThreads,
+  search, CLI diagnostics, Codex local config generation, and a loopback
+  browser UI behind the dedicated `a2cr-local-mcp` command.
+- Add dedicated command entrypoints for `a2cr`, `a2cr-local-mcp`, and the
+  compatibility `a2cr-mcp` path.
+- Associate local WorkStash entries with project metadata so supporting notes
+  can be searched and reviewed alongside related WorkBaton records.
+- Add Claude Desktop MCPB local runtime support for WorkBaton and WorkStash,
+  including local encryption, local storage, reviewer smoke prompts, and
+  GitHub Release publishing guidance.
+- Add local-mode tests and package smoke coverage for save, resume, WorkStash,
+  search, WorkThreads, CLI doctor/init, and wheel installation.
 
 - Record that `io.github.a2cr/a2cr-mcp` is published in the official MCP
   Registry with `0.1.6` as the latest active version.

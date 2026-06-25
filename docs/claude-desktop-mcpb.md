@@ -28,17 +28,31 @@ For each public release that includes the Claude Desktop Extension, attach:
 - `SHA256SUMS.txt` or equivalent checksum text
 - release notes that say this is a Claude Desktop MCPB package
 
-For `0.1.6`, the expected artifact name is:
+For `0.1.7`, the expected artifact name is:
 
 ```text
-a2cr-0.1.6.mcpb
+a2cr-0.1.7.mcpb
 ```
 
 The GitHub Release URL pattern is:
 
 ```text
-https://github.com/a2cr/a2cr/releases/tag/v0.1.6
+https://github.com/a2cr/a2cr/releases/tag/v0.1.7
 ```
+
+## Anthropic Automated Pickup
+
+After the GitHub Release is published with the MCPB asset and checksum, send
+Anthropic these details once so later releases can be picked up from GitHub:
+
+- `owner/repo`: `a2cr/a2cr`
+- tag pattern: `v*` (example: `v0.1.7`)
+- asset filename: `a2cr-<version>.mcpb`
+- checksum filename: `SHA256SUMS.txt`
+- maintainer contact: fill in the human contact immediately before sending
+
+A2CR currently publishes one cross-platform Node MCPB bundle for Claude Desktop
+on macOS and Windows.
 
 ## Build Locally Before Publishing
 
@@ -55,7 +69,7 @@ npm run mcpb:pack
 Expected output:
 
 ```text
-build/mcpb/artifacts/a2cr-0.1.6.mcpb
+build/mcpb/artifacts/a2cr-0.1.7.mcpb
 build/mcpb/artifacts/SHA256SUMS.txt
 ```
 
@@ -63,13 +77,13 @@ The pack script writes `SHA256SUMS.txt` automatically. To verify it manually on
 Windows:
 
 ```powershell
-Get-FileHash .\build\mcpb\artifacts\a2cr-0.1.6.mcpb -Algorithm SHA256
+Get-FileHash .\build\mcpb\artifacts\a2cr-0.1.7.mcpb -Algorithm SHA256
 ```
 
 On macOS/Linux:
 
 ```bash
-shasum -a 256 build/mcpb/artifacts/a2cr-0.1.6.mcpb
+shasum -a 256 build/mcpb/artifacts/a2cr-0.1.7.mcpb
 ```
 
 ## Install In Claude Desktop
@@ -79,28 +93,40 @@ shasum -a 256 build/mcpb/artifacts/a2cr-0.1.6.mcpb
 3. Open Advanced settings.
 4. Choose Install Extension.
 5. Select the downloaded `a2cr-<version>.mcpb`.
-6. Enter the A2CR API key in the extension settings UI.
-7. Keep `A2CR Base URL` as `https://a2cr.app` unless testing a compatible
-   deployment.
-8. Restart Claude Desktop if the tools do not appear immediately.
+6. Review the extension metadata and complete the install.
+7. Restart Claude Desktop if the tools do not appear immediately.
 
-The API key is sensitive. Do not paste real keys into public issues, screenshots,
-or chat transcripts.
+No A2CR account, API key, hosted base URL, or SaaS dashboard connection is
+required. The MCPB stores WorkBaton data in a local file managed by the
+extension.
+
+The MCPB does not install the Python CLI or browser dashboard command. Users
+who want the local browser UI should also install the Python wrapper and run:
+
+```bash
+python -m pip install --upgrade a2cr-mcp
+a2cr ui
+```
 
 ## Current Scope
 
 The Node MCPB is the Claude Desktop packaging path. Keep it aligned with the
 Python wrapper, but do not pretend it is a separate product.
 
-Current MVP tools:
+Current submission-scope tools:
 
 - `get_account_limits`
 - `list_contexts`
 - `save_context`
 - `load_context`
+- `store_work_stash`
+- `get_work_stash`
+- `list_work_stash`
+- `delete_work_stash`
 
-The Python `a2cr-mcp` wrapper remains the full public wrapper path while the
-Node MCPB reaches full WorkBaton / WorkStash parity for official submission.
+The Python `a2cr-mcp` wrapper remains the full public wrapper path for advanced
+local workflows. The Node MCPB is the Claude Desktop package for local
+WorkBaton and WorkStash use.
 
 ## Version Alignment Rule
 
@@ -110,10 +136,10 @@ constant, package version, MCPB manifest version, tests, and docs in the same
 release. The two local MCP paths should report the same public compatibility
 version unless there is an explicit compatibility exception in the release notes.
 
-For `0.1.6`, both paths should report:
+For `0.1.7`, both paths should report:
 
 ```text
-X-A2CR-MCP-Version: 0.1.6
+X-A2CR-MCP-Version: 0.1.7
 ```
 
 ## Release Alignment Checklist

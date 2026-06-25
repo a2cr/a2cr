@@ -1,42 +1,41 @@
 # Security Policy
 
 A2CR handles AI-agent working state. Treat that state carefully even when it is
-client-encrypted.
+stored only on the local machine.
 
 ## Supported Scope
 
 This public repository covers:
 
 - the `a2cr-mcp` local stdio MCP wrapper
-- WorkBaton and WorkStash client-side encryption behavior
+- WorkBaton, WorkStash, and WorkThreads local storage behavior
 - public setup examples
 - public WorkBaton / WorkStash format documentation
 - AI-agent safety guidance
 - documentation and tests for the public wrapper
 
-The hosted service implementation, production database, billing, deployment,
-and admin tooling are outside this public repository.
+Legacy hosted service implementation, production database, billing, deployment,
+and admin tooling are outside this public repository and are not part of the
+public local wrapper.
 
 ## Out Of Scope
 
 - attacks against third-party AI clients or MCP hosts
-- attacks requiring a compromised local machine or stolen local client key
+- attacks requiring a compromised local machine
 - social engineering
-- hosted SaaS internals that are not part of this public repository
+- legacy hosted SaaS internals that are not part of this public repository
 - third-party infrastructure outside A2CR control
 
 ## Current Security Boundary
 
-The local stdio MCP wrapper encrypts WorkBaton and WorkStash bodies before
-upload. A2CR receives ciphertext and cannot decrypt those bodies without the
-user's local client key.
+The local stdio MCP wrapper stores WorkBaton, WorkStash, WorkThreads, actor, and
+event records in a SQLite database on the user's machine. The public wrapper
+does not upload saved content to an A2CR hosted service and does not require an
+A2CR API key.
 
-The local client key remains user-owned. If it is lost, A2CR cannot recover old
-client-encrypted WorkBaton or WorkStash bodies.
-
-Operational metadata such as slot names, entry keys, tags, timestamps, sizes,
-and access logs may still be visible to a hosted relay. Do not put secrets or
-personal data in metadata.
+Operational metadata such as slot names, entry keys, tags, timestamps, and sizes
+still live in the local database. Do not put secrets or personal data in
+metadata.
 
 ## Restored Context Is Untrusted
 
@@ -60,9 +59,9 @@ Do not store:
 - personal data, customer data, payment data, or confidential business data
 - raw full transcripts, long logs, generated caches, git diffs, or large source-code bodies
 
-Encryption protects against A2CR reading the body. It does not remove the risk
-that a future AI window, local machine, copied resume prompt, log, issue, or PR
-could expose decrypted content.
+Local storage avoids hosted-service exposure. It does not remove the risk that a
+future AI window, local machine, copied resume prompt, log, issue, or PR could
+expose restored content.
 
 ## Reporting A Vulnerability
 
@@ -76,7 +75,7 @@ repository owner privately. Include:
 - expected and observed behavior
 - whether any secrets or personal data were exposed
 
-Do not include real API keys, tokens, local client key files, or decrypted
+Do not include real API keys, tokens, local database files, or restored
 WorkBaton / WorkStash bodies in the report.
 
 ## Responsibility Boundary
@@ -84,8 +83,8 @@ WorkBaton / WorkStash bodies in the report.
 A2CR should:
 
 - provide a compact context relay mechanism
-- keep the hosted service from storing user decryption keys
-- encrypt WorkBaton and WorkStash bodies locally before upload through the official wrapper
+- keep the public wrapper local by default
+- store WorkBaton and WorkStash records on the user's machine
 - document what must not be stored
 - reject invalid or unsafe payloads where practical
 

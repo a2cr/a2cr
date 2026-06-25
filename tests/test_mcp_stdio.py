@@ -27,6 +27,20 @@ def load_stdio_server():
     return importlib.import_module("a2cr_mcp.server")
 
 
+def load_local_stdio_server(monkeypatch, tmp_path):
+    monkeypatch.setenv("A2CR_LOCAL_DB", str(tmp_path / "a2cr.db"))
+    monkeypatch.delenv("A2CR_MODE", raising=False)
+    return load_stdio_server()
+
+
+def fail_http_client():
+    class FailClient:
+        def __enter__(self):
+            raise AssertionError("local A2CR should not open httpx.Client")
+
+    return FailClient
+
+
 def test_legacy_stdio_entrypoint_imports_from_any_cwd(tmp_path):
     script = ROOT / "mcp" / "server.py"
     result = subprocess.run(
@@ -244,210 +258,73 @@ def test_mcp_stdio_http_errors_do_not_echo_non_json_body(monkeypatch):
     assert "sk-a2cr-secret" not in message
 
 
-def test_mcp_stdio_save_posts_encrypted_content_to_slot_five(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-    captured = {}
-
-    class FakeResponse:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {
-                "slot_name": "slot-a",
-                "slot_number": 5,
-                "expires_at": "2026-05-06T00:00:00",
-                "compressed_tokens": 10,
-                "saved_tokens": None,
-            }
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def post(self, url, json, headers, timeout):
-            captured["url"] = url
-            captured["json"] = json
-            captured["headers"] = headers
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+def test_mcp_stdio_save_stores_local_context_to_slot_five_without_http(tmp_path, monkeypatch):
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     result = server.save_context("slot-a", CONTENT, model_source="codex", slot_number=5)
+    loaded = server.load_context(slot_number=5)
 
+    assert result["status"] == "saved"
+    assert result["storage_mode"] == "local"
     assert result["slot_name"] == "slot-a"
     assert result["slot_number"] == 5
     assert result["user_facing_summary"].startswith("Saved WorkBaton")
     assert result["agent_continuity_guidance"]["use_proactively"] is True
-    assert captured["url"].endswith("/api/v1/context")
-    assert "Authorization" in captured["headers"]
-    assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
-    assert captured["headers"]["X-A2CR-MCP-Version"] == server.__version__
-    assert captured["json"]["slot_number"] == 5
-    assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(CONTENT)
-    assert "content" not in captured["json"]
-    assert captured["json"]["encrypted_content"]["alg"] == "Fernet"
-    assert CONTENT["goal"] not in captured["json"]["encrypted_content"]["ciphertext"]
+    assert loaded["content"]["goal"] == CONTENT["goal"]
 
 
 def test_mcp_stdio_save_normalizes_display_model_source(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-    captured = {}
-
-    class FakeResponse:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {
-                "slot_name": "slot-a",
-                "slot_number": 1,
-                "expires_at": "2026-05-06T00:00:00",
-                "compressed_tokens": 10,
-                "saved_tokens": None,
-            }
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def post(self, url, json, headers, timeout):
-            captured["json"] = json
-            captured["headers"] = headers
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     server.save_context("slot-a", CONTENT, model_source="Codex GPT-5", slot_number=1)
 
-    assert captured["json"]["model_source"] == "codex"
-    assert captured["headers"]["X-A2CR-Client-Type"] == "codex"
+    assert server.list_contexts()[0]["model_source"] == "codex"
 
 
 def test_mcp_stdio_save_maps_unknown_model_source_to_other(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-    captured = {}
-
-    class FakeResponse:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {
-                "slot_name": "slot-a",
-                "slot_number": 1,
-                "expires_at": "2026-05-06T00:00:00",
-                "compressed_tokens": 10,
-                "saved_tokens": None,
-            }
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def post(self, url, json, headers, timeout):
-            captured["json"] = json
-            captured["headers"] = headers
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     server.save_context("slot-a", CONTENT, model_source="Future Model 9", slot_number=1)
 
-    assert captured["json"]["model_source"] == "other"
-    assert captured["headers"]["X-A2CR-Client-Type"] == "other"
+    assert server.list_contexts()[0]["model_source"] == "other"
 
 
 def test_mcp_stdio_save_adds_preferred_response_language(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-    captured = {}
-
-    class FakeResponse:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {
-                "slot_name": "slot-a",
-                "slot_number": 1,
-                "expires_at": "2026-05-06T00:00:00",
-                "compressed_tokens": 10,
-                "saved_tokens": None,
-            }
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def post(self, url, json, headers, timeout):
-            captured["json"] = json
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     result = server.save_context("slot-a", CONTENT, model_source="codex", preferred_response_language="ja")
-    decrypted = server._decrypt_content(captured["json"]["encrypted_content"])
+    loaded = server.load_context(slot_name="slot-a")
 
     assert "language_context" not in CONTENT
-    assert decrypted["language_context"] == {
+    assert loaded["content"]["language_context"] == {
         "preferred_response_language": "ja",
         "source": "conversation_before_save",
         "confidence": "high",
     }
-    assert captured["json"]["compressed_tokens"] == server._count_workbaton_tokens(decrypted)
     assert result["response_language_hint"] == "ja"
-    assert result["language_context"] == decrypted["language_context"]
+    assert result["language_context"] == loaded["content"]["language_context"]
 
 
 def test_mcp_stdio_save_rejects_invalid_preferred_response_language(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-
-    class FakeClient:
-        def __enter__(self):
-            raise AssertionError("HTTP client should not be opened")
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     with pytest.raises(ValueError, match="preferred_response_language"):
         server.save_context("slot-a", CONTENT, model_source="codex", preferred_response_language="ja jp")
 
 
 def test_mcp_stdio_save_rejects_file_like_payload_before_encrypting_or_posting(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
+    server = load_local_stdio_server(monkeypatch, tmp_path)
 
     def fail_encrypt(content):
         raise AssertionError("_encrypt_content should not be called")
 
-    class FakeClient:
-        def __enter__(self):
-            raise AssertionError("HTTP client should not be opened")
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
     monkeypatch.setattr(server, "_encrypt_content", fail_encrypt)
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     payload = {
         **CONTENT,
@@ -468,17 +345,8 @@ def test_mcp_stdio_save_rejects_file_like_payload_before_encrypting_or_posting(t
 
 
 def test_mcp_stdio_save_rejects_long_base64_payload_before_posting(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-
-    class FakeClient:
-        def __enter__(self):
-            raise AssertionError("HTTP client should not be opened")
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     payload = {
         **CONTENT,
@@ -492,17 +360,8 @@ def test_mcp_stdio_save_rejects_long_base64_payload_before_posting(tmp_path, mon
 
 
 def test_mcp_stdio_save_rejects_sensitive_credentials_before_posting(tmp_path, monkeypatch):
-    monkeypatch.setenv("A2CR_CLIENT_KEY_FILE", str(tmp_path / "workbaton.key"))
-    server = load_stdio_server()
-
-    class FakeClient:
-        def __enter__(self):
-            raise AssertionError("HTTP client should not be opened")
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     payload = {
         **CONTENT,
@@ -530,44 +389,15 @@ def test_mcp_stdio_workbaton_safety_guidance_is_not_treated_as_secret():
     )
 
 
-def test_mcp_stdio_get_account_limits_uses_api_key_route():
-    server = load_stdio_server()
-    captured = {}
-
-    class FakeResponse:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {
-                "plan": "example",
-                "max_body_bytes": 12345,
-                "workstash_quota_bytes": 67890,
-                "handoff_policy": {"basis": "size_budget"},
-            }
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def get(self, url, headers, timeout):
-            captured["url"] = url
-            captured["headers"] = headers
-            captured["timeout"] = timeout
-            return FakeResponse()
-
-    server.httpx.Client = FakeClient
+def test_mcp_stdio_get_account_limits_uses_local_workspace(tmp_path, monkeypatch):
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     result = server.get_account_limits()
 
-    assert captured["url"].endswith("/api/v1/account/limits")
-    assert "Authorization" in captured["headers"]
-    assert result["plan"] == "example"
-    assert result["workstash_quota_bytes"] == 67890
-    assert result["handoff_policy"]["basis"] == "size_budget"
+    assert result["storage_mode"] == "local"
+    assert result["requires_api_key"] is False
+    assert result["database_path"].endswith("a2cr.db")
 
 
 def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
@@ -584,22 +414,23 @@ def test_mcp_stdio_explain_a2cr_flows_documents_baton_threads_and_encryption():
     assert result["workbaton"]["flow"] == "window -> WorkBaton -> new window"
     assert "should_save_workbaton" in result["workbaton"]["tools"]
     assert result["workbaton"]["stdio_wrapper_required_for_save"] is True
-    assert "remote MCP save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
+    assert "local A2CR SQLite workspace" in result["workbaton"]["how_to_check_stdio_wrapper"]
     assert "exact-search for save_context" in result["workbaton"]["how_to_check_stdio_wrapper"]
     assert "official WorkBaton save path" in result["workbaton"]["save_path"]
-    assert "Client-encrypted before upload" in result["workbaton"]["encryption"]
+    assert "No upload is performed" in result["workbaton"]["encryption"]
     assert "WorkStash entry_key" in result["workbaton"]["on_resume"]
     assert result["workstash"]["flow"] == "AI window -> WorkStash entry_key -> WorkBaton reference -> future AI window"
     assert "store_work_stash" in result["workstash"]["tools"]
     assert "WorkBaton remains the resume entrypoint" in result["workstash"]["workbaton_integration"]
-    assert "Client-encrypted locally" in result["workstash"]["encryption"]
+    assert "No upload is performed" in result["workstash"]["encryption"]
     assert "confirmed file paths" in result["workstash"]["good_examples"]
     assert "git diffs" in result["workstash"]["bad_examples"]
     assert "Do not use WorkStash as a durable project knowledge base." in result["workstash"]["must_not"]
     assert result["workthreads"]["flow"] == "agent <-> WorkThread <-> agents"
-    assert "not by this local WorkBaton wrapper" in result["workthreads"]["availability"]
-    assert "encrypted locally with a thread key" in result["workthreads"]["encryption"]
-    assert "only agents with the WorkThread key" in result["workthreads"]["encryption"]
+    assert "local stdio MCP wrapper" in result["workthreads"]["availability"]
+    assert "create_work_thread" in result["workthreads"]["tools"]
+    assert "SQLite" in result["workthreads"]["storage"]
+    assert "local SQLite workspace" in result["workthreads"]["encryption"]
     assert any("Do not send WorkThread keys to A2CR" in item for item in result["workthreads"]["must_not"])
     assert "Do not silently create or overwrite WorkBaton Slots." in result["workthreads"]["must_not"]
 
@@ -682,28 +513,21 @@ def test_mcp_stdio_uses_single_web_api_path_even_with_legacy_env(monkeypatch):
     }
 
 
-def test_mcp_stdio_defaults_to_a2cr_saas(monkeypatch):
+def test_mcp_stdio_defaults_to_local_workspace(monkeypatch):
     monkeypatch.delenv("A2CR_BASE_URL", raising=False)
     monkeypatch.delenv("A2CR_SERVICE_URL", raising=False)
     monkeypatch.delenv("A2CR_ALLOW_LOCAL_BASE_URL", raising=False)
 
     server = load_stdio_server()
 
-    assert server.BASE_URL == "https://a2cr.app"
-    assert server.SERVICE_URL == "https://a2cr.app/mcp"
+    assert server.A2CR_MODE == "local"
+    assert server.BASE_URL == "local://a2cr"
+    assert server.SERVICE_URL == "local://a2cr/mcp"
 
 
-def test_mcp_stdio_refuses_localhost_base_url_without_explicit_opt_in(monkeypatch):
+def test_mcp_stdio_allows_localhost_base_url_because_public_runtime_is_local(monkeypatch):
     monkeypatch.setenv("A2CR_BASE_URL", "http://localhost:8000")
     monkeypatch.delenv("A2CR_ALLOW_LOCAL_BASE_URL", raising=False)
-
-    with pytest.raises(RuntimeError, match="refuses localhost A2CR_BASE_URL"):
-        load_stdio_server()
-
-
-def test_mcp_stdio_allows_localhost_base_url_for_legacy_tests(monkeypatch):
-    monkeypatch.setenv("A2CR_BASE_URL", "http://localhost:8000")
-    monkeypatch.setenv("A2CR_ALLOW_LOCAL_BASE_URL", "1")
 
     server = load_stdio_server()
 
@@ -752,40 +576,19 @@ def test_mcp_stdio_resume_prompt_prefers_slot_number_and_endpoint_safe(monkeypat
 def test_mcp_stdio_http_error_hides_api_key_and_response_body(monkeypatch):
     monkeypatch.setenv("A2CR_API_KEY", TEST_API_KEY)
     server = load_stdio_server()
-
-    class FakeResponse:
-        def raise_for_status(self):
-            request = server.httpx.Request(
-                "GET",
-                "https://a2cr.example/api/v1/account/limits",
-                headers={"Authorization": f"Bearer {TEST_API_KEY}"},
-            )
-            response = server.httpx.Response(
-                401,
-                request=request,
-                text=f"redaction target {TEST_API_KEY} request_body_secret",
-            )
-            raise server.httpx.HTTPStatusError(
-                f"redaction target {TEST_API_KEY} request_body_secret",
-                request=request,
-                response=response,
-            )
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def get(self, url, headers, timeout):
-            assert headers["Authorization"] == f"Bearer {TEST_API_KEY}"
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+    request = server.httpx.Request(
+        "GET",
+        "https://a2cr.example/api/v1/account/limits",
+        headers={"Authorization": f"Bearer {TEST_API_KEY}"},
+    )
+    response = server.httpx.Response(
+        401,
+        request=request,
+        text=f"redaction target {TEST_API_KEY} request_body_secret",
+    )
 
     with pytest.raises(RuntimeError) as exc:
-        server.get_account_limits()
+        server._raise_for_status(response)
 
     message = str(exc.value)
     assert message == "A2CR HTTP request failed with status 401 (hint=check_a2cr_api_key)"
@@ -807,63 +610,30 @@ def test_mcp_stdio_client_key_file_is_owner_only_on_unix(tmp_path, monkeypatch):
         assert mode == 0o600
 
 
-def test_mcp_stdio_resume_context_tolerates_malformed_candidates(monkeypatch):
-    server = load_stdio_server()
-
-    class FakeResponse:
-        status_code = 200
-
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return [
-                {"updated_at": "2026-05-13T00:00:00Z"},
-                {"slot_name": "slot-b"},
-                {"slot_name": "slot-a", "updated_at": "2026-05-14T00:00:00Z"},
-            ]
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def get(self, url, headers, timeout):
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+def test_mcp_stdio_resume_context_returns_local_candidates(tmp_path, monkeypatch):
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
+    server.save_context("slot-a", CONTENT, slot_number=1)
+    server.save_context("slot-b", {**CONTENT, "goal": "second"}, slot_number=2)
 
     result = server.resume_context()
 
     assert result["status"] == "candidates"
-    assert [item["slot_name"] for item in result["candidates"]] == ["slot-a", "slot-b"]
+    assert result["storage_mode"] == "local"
+    assert {item["slot_name"] for item in result["candidates"]} == {"slot-a", "slot-b"}
 
 
-def test_mcp_stdio_get_handoff_returns_invalid_content_for_malformed_workbaton(monkeypatch):
-    server = load_stdio_server()
-
-    class FakeResponse:
-        status_code = 200
-
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {"slot_name": "slot-a", "content": {"goal": "g", "current_state": "s"}}
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def get(self, url, headers, timeout):
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+def test_mcp_stdio_get_handoff_returns_invalid_content_for_malformed_workbaton(tmp_path, monkeypatch):
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
+    server.get_store().save_context(
+        slot_name="slot-a",
+        content={"goal": "g", "current_state": "s"},
+        original_length=None,
+        compressed_tokens=1,
+        model_source=None,
+        slot_number=1,
+    )
 
     result = server.get_handoff("slot-a")
 
@@ -904,68 +674,28 @@ def test_mcp_stdio_work_stash_validates_entry_key_before_http(monkeypatch):
         assert "entry_key" in result["message"]
 
 
-def test_mcp_stdio_get_work_stash_missing_encrypted_value_is_invalid_response(monkeypatch):
-    server = load_stdio_server()
+def test_mcp_stdio_get_work_stash_returns_local_entry(tmp_path, monkeypatch):
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
-    class FakeResponse:
-        status_code = 200
-
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return {"entry_key": "valid_key"}
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def get(self, url, headers, timeout):
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
-
+    server.store_work_stash("valid_key", "local note", tags=["note"], project="demo")
     result = server.get_work_stash("valid_key")
 
-    assert result["status"] == "invalid_response"
-    assert "encrypted_value" in result["message"]
+    assert result["status"] == "loaded"
+    assert result["storage_mode"] == "local"
+    assert result["value"] == "local note"
 
 
-def test_mcp_stdio_should_use_work_stash_uses_size_and_precise_sensitive_terms(monkeypatch):
-    server = load_stdio_server()
-
-    class FakeResponse:
-        status_code = 200
-
-        def json(self):
-            return {
-                "total_size_bytes": 100,
-                "quota_bytes": 200,
-                "entry_count": 1,
-                "entry_limit": 10,
-            }
-
-    class FakeClient:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def get(self, url, headers, timeout):
-            return FakeResponse()
-
-    monkeypatch.setattr(server.httpx, "Client", FakeClient)
+def test_mcp_stdio_should_use_work_stash_uses_size_and_precise_sensitive_terms(tmp_path, monkeypatch):
+    server = load_local_stdio_server(monkeypatch, tmp_path)
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
 
     assert server.should_use_work_stash(reason="token count notes")["should_store"] is True
     assert server.should_use_work_stash(reason="author notes")["should_store"] is True
     assert server.should_use_work_stash(reason="access token")["should_store"] is False
-    too_large = server.should_use_work_stash(reason="large notes", estimated_size_bytes=101)
-    assert too_large["should_store"] is False
-    assert too_large["quota_status"]["remaining_bytes"] == 100
+    local_limits = server.should_use_work_stash(reason="large notes", estimated_size_bytes=101)
+    assert local_limits["should_store"] is True
+    assert local_limits["storage_mode"] == "local"
 
 
 def test_mcp_stdio_and_agent_guide_document_chained_handoff_fields():
@@ -999,7 +729,7 @@ def test_mcp_stdio_and_agent_guide_document_plan_neutral_forbidden_material():
         encoding="utf-8"
     )
     forbidden_terms = [
-        "Forbidden for all accounts",
+        "Forbidden for every local workspace",
         "local client key",
         "API keys",
         "Authorization headers",
@@ -1087,3 +817,15 @@ def test_mcp_stdio_tool_descriptions_explain_workstash_autonomy_and_baton_link()
     assert "without waiting for an explicit user prompt" in tools["store_work_stash"].description
     assert "WorkBaton remains the resume entrypoint" in tools["store_work_stash"].description
     assert "WorkBaton references or next_action" in tools["should_use_work_stash"].description
+
+
+def test_mcp_stdio_default_workthreads_use_local_storage(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2CR_LOCAL_DB", str(tmp_path / "a2cr.db"))
+    monkeypatch.delenv("A2CR_MODE", raising=False)
+    server = load_stdio_server()
+    monkeypatch.setattr(server.httpx, "Client", fail_http_client())
+
+    result = server.create_work_thread("local-thread", "Default local thread")
+
+    assert result["status"] == "created"
+    assert result["storage_mode"] == "local"

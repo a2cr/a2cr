@@ -53,7 +53,7 @@ describe("MCPB manifest", () => {
     expect(manifest.name).toBe("a2cr");
     expect(manifest.display_name).toBe("A2CR");
     expect(manifest.version).toBe(packageJson.version);
-    expect(manifest.privacy_policies).toEqual(["https://a2cr.app/en/privacy"]);
+    expect(manifest.privacy_policies).toEqual(["https://github.com/a2cr/a2cr/blob/main/docs/privacy.md"]);
   });
 
   it("runs the bundled Node entrypoint through portable MCP config", () => {
@@ -64,8 +64,6 @@ describe("MCPB manifest", () => {
         command: "node",
         args: ["${__dirname}/dist/index.js"],
         env: {
-          A2CR_API_KEY: "${user_config.a2cr_api_key}",
-          A2CR_BASE_URL: "${user_config.a2cr_base_url}",
           A2CR_CLIENT_TYPE: "claude",
         },
       },
@@ -77,25 +75,19 @@ describe("MCPB manifest", () => {
   });
 
   it("collects only the required user-facing configuration", () => {
-    expect(manifest.user_config.a2cr_api_key).toMatchObject({
-      type: "string",
-      sensitive: true,
-      required: true,
-    });
-    expect(manifest.user_config.a2cr_base_url).toMatchObject({
-      type: "string",
-      default: "https://a2cr.app",
-      required: false,
-    });
-    expect(Object.keys(manifest.user_config).sort()).toEqual(["a2cr_api_key", "a2cr_base_url"]);
+    expect(manifest.user_config).toEqual({});
   });
 
-  it("lists the current MVP tool surface", () => {
+  it("lists the current submitted tool surface", () => {
     expect(manifest.tools.map((tool) => tool.name).sort()).toEqual([
+      "delete_work_stash",
       "get_account_limits",
+      "get_work_stash",
       "list_contexts",
+      "list_work_stash",
       "load_context",
       "save_context",
+      "store_work_stash",
     ]);
     expect(manifest.tools.every((tool) => tool.description.length > 20)).toBe(true);
     expect(manifest.tools_generated).toBe(false);
@@ -103,14 +95,14 @@ describe("MCPB manifest", () => {
 
   it("keeps the packaged README ready for local connector privacy review", () => {
     expect(readme).toContain("## Privacy Policy");
-    expect(readme).toContain("https://a2cr.app/en/privacy");
+    expect(readme).toContain("https://github.com/a2cr/a2cr/blob/main/docs/privacy.md");
     expect(readme).toContain("Data collection");
     expect(readme).toContain("Usage and storage");
     expect(readme).toContain("Third-party sharing");
     expect(readme).toContain("Data retention");
     expect(readme).toContain("Contact");
     expect(readme).toContain("## Reviewer Setup");
-    expect(readme).toContain("Do not put reviewer credentials, API keys, or recovery material in this");
+    expect(readme).toContain("does not require an A2CR account");
     expect(readme).toContain("repository.");
   });
 
@@ -119,8 +111,9 @@ describe("MCPB manifest", () => {
     expect(submissionNotes).toContain("Tool annotations");
     expect(submissionNotes).toContain("readOnlyHint: false");
     expect(submissionNotes).toContain("destructiveHint: true");
+    expect(submissionNotes).toContain("openWorldHint: false");
     expect(submissionNotes).toContain("Test credentials");
-    expect(submissionNotes).toContain("Out-of-band");
+    expect(submissionNotes).toContain("Not required");
     expect(submissionNotes).toContain("Allowed link URIs");
     expect(submissionNotes).toContain("Not used");
     expect(submissionNotes).toContain("Working examples");

@@ -14,10 +14,19 @@ The two wrappers should report the same A2CR MCP compatibility version.
 python -m pip install --upgrade a2cr-mcp
 ```
 
+This installs both the local MCP commands and the browser dashboard command:
+
+```text
+a2cr
+a2cr-local-mcp
+a2cr-mcp
+```
+
 ## Configure
 
-Register one MCP server named `a2cr`.
-`A2CR_BASE_URL` is optional. Omit it to use `https://a2cr.app`.
+Register one MCP server named `a2cr`. A2CR stores saved content in a local
+SQLite workspace. `A2CR_LOCAL_DB` is optional; omit it to use the OS default
+app-data location.
 
 ```json
 {
@@ -26,17 +35,45 @@ Register one MCP server named `a2cr`.
       "command": "a2cr-mcp",
       "args": [],
       "env": {
-        "A2CR_API_KEY": "YOUR_A2CR_API_KEY",
-        "A2CR_BASE_URL": "https://a2cr.app"
+        "A2CR_LOCAL_DB": "/optional/path/to/a2cr.db"
       }
     }
   }
 }
 ```
 
-Do not configure the hosted `/mcp` URL directly as a remote WorkBaton save
-path. WorkBaton saves should go through the local stdio wrapper so content is
-encrypted before upload.
+Do not configure a remote hosted `/mcp` URL as a WorkBaton save path. WorkBaton
+saves should go through the local stdio wrapper and stay in the user's local
+A2CR workspace.
+
+## Open The Browser UI
+
+Start the local dashboard with:
+
+```bash
+a2cr ui
+```
+
+By default, A2CR binds the UI to `127.0.0.1`, chooses an available port, prints
+a token-protected URL, and opens it in your default browser. The URL looks like:
+
+```text
+http://127.0.0.1:<port>/?token=<local-session-token>
+```
+
+Keep the terminal running while the dashboard is open. Press `Ctrl+C` to stop
+the UI server.
+
+Useful options:
+
+```bash
+a2cr ui --port 50895
+a2cr ui --no-browser
+a2cr ui --db /absolute/path/to/a2cr.db
+```
+
+`--no-browser` prints the URL without opening a browser. `--db` points the UI at
+a specific local A2CR SQLite database.
 
 ## Project Memory
 
@@ -137,8 +174,8 @@ When creating a causal handoff summary entry in WorkStash (recommended key patte
   - **Next Risks**: Likely mistakes or unresolved risks for the next AI.
 - Strictly filter out credentials, database URLs, and PII before saving.
 
-Hosted A2CR accounts expose current Slot, retention, WorkStash storage, and
-rate limits through `get_account_limits`.
+Local A2CR exposes current Slot, retention, WorkStash storage, and size-budget
+limits through `get_account_limits`.
 
 ## Local Client Key
 
@@ -157,9 +194,9 @@ Default key path:
 - Windows: `%APPDATA%\A2CR\workbaton.key`
 - macOS/Linux: `$XDG_CONFIG_HOME/a2cr/workbaton.key` or `~/.config/a2cr/workbaton.key`
 
-To resume the same WorkBaton from another PC, configure the A2CR API key and
-securely copy the same local client key file. The API key alone can access
-encrypted slot data, but it cannot decrypt the WorkBaton body.
+To resume the same WorkBaton from another PC, export or copy the local A2CR
+workspace data and securely copy the same local client key file. There is no
+public SaaS relay or API-key path for the local-only release.
 
 If the local client key is lost, A2CR cannot recover old client-encrypted
 WorkBaton or WorkStash bodies.

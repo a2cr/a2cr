@@ -50,7 +50,7 @@ For that reason:
 |---|---|---|---|---|
 | P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.6`, docs, examples | Complete for 0.1.6 | Public repo is pushed, tests pass, package builds, PyPI release is live. |
 | P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Published for 0.1.6 | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
-| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | MCPB MVP released on GitHub | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
+| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | 0.1.7 release candidate prepared for GitHub Release and Anthropic pickup | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
 | P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, privacy docs, and public security boundary are ready. |
 
@@ -70,8 +70,8 @@ Service start criteria:
 - The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible as
   the latest `0.1.6` Registry version.
 - Production health/readiness checks pass.
-- A fresh API key can save and resume a harmless WorkBaton through the PyPI
-  package.
+- A fresh local install can save and resume a harmless WorkBaton through the
+  PyPI package without an A2CR API key.
 - Public docs explain local encryption, local client key loss, support contact,
   security reporting, and the rule that A2CR is not a secret manager.
 
@@ -92,10 +92,10 @@ wrapper, WorkBaton, WorkStash, local encryption, and the MCP Registry listing.
 
 Launch promotion checklist:
 
-- publish a short release note for `a2cr-mcp==0.1.6`
+- publish a short release note for the current `a2cr-mcp` release
 - announce the public repository, PyPI package, and MCP Registry entry together
-- explain the core setup path: get API key, install from PyPI, configure MCP
-  client, save/resume a WorkBaton
+- explain the core setup path: install from PyPI, configure a local MCP client,
+  save/resume a WorkBaton
 - link to the security model and remind users not to store secrets
 - collect early setup friction and error reports before expanding channels
 - prioritize fixes for installation, docs, onboarding, and wrapper errors during
@@ -175,8 +175,9 @@ Pre-approval MCPB distribution:
 - keep the Node MCPB compatibility version aligned with the Python
   `a2cr-mcp` version so dashboard version checks remain reliable
 
-For `0.1.6`, the MCPB artifact and `SHA256SUMS.txt` are attached to the public
-GitHub Release.
+For the local-only Claude submission, publish `a2cr-0.1.7.mcpb` and
+`SHA256SUMS.txt` to the public GitHub Release before sending Anthropic the
+automated pickup details.
 
 Remote Claude connector readiness checklist:
 
