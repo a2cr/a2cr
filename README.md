@@ -6,15 +6,15 @@
 
 [![PyPI](https://img.shields.io/pypi/v/a2cr-mcp.svg)](https://pypi.org/project/a2cr-mcp/)
 [![CI](https://github.com/a2cr/a2cr/actions/workflows/ci.yml/badge.svg)](https://github.com/a2cr/a2cr/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-source--available%20%2B%20CC%20BY%204.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Glama MCP](https://glama.ai/mcp/servers/a2cr/a2cr/badges/card.svg)](https://glama.ai/mcp/servers/a2cr/a2cr)
 
 <!-- mcp-name: io.github.a2cr/a2cr-mcp -->
 
-A2CR is a local MCP workspace for AI agent handoffs. It lets Codex, Claude Code,
-Roo Code, Cursor, and other MCP-capable agents save WorkBaton checkpoints, store
-temporary WorkStash notes, coordinate through WorkThreads, and resume long
-coding work from a fresh AI window.
+A2CR is an open-source local MCP workspace for AI agent handoffs. It lets
+Codex, Claude Code, Cursor, and other MCP-capable agents save WorkBaton
+checkpoints, store temporary WorkStash notes, coordinate through WorkThreads,
+and resume long coding work from a fresh AI window.
 
 Long AI work usually breaks at the handoff. A fresh AI window needs the goal,
 current state, decisions, blockers, validation, and next action, but not a whole
@@ -24,7 +24,7 @@ share between sessions.
 Use A2CR when you want to:
 
 - restart a long AI coding task from a clean context window
-- pass work state between Codex, Claude Code, Roo Code, or another MCP client
+- pass work state between Codex, Claude Code, Cursor, or another MCP client
 - keep milestone checkpoints without storing full chat transcripts
 - separate compact resume state from optional supporting notes
 
@@ -42,13 +42,9 @@ release candidate; the live Registry page is the source of truth for the
 currently published version.
 
 A2CR is also listed and evaluated on the
-[Glama MCP Registry](https://glama.ai/mcp/servers/a2cr/a2cr). As of
-2026-05-18, the public Glama evaluation shows `quality A` and `maintenance B`.
-
-The Glama license signal currently reports `license - not found` because the
-official client uses source-available BUSL-style terms instead of a permissive
-MIT/Apache-2.0 license. See [Project Model](#project-model) for the licensing
-boundary.
+[Glama MCP Registry](https://glama.ai/mcp/servers/a2cr/a2cr). Downstream
+directories may temporarily show cached metadata after a release; the official
+MCP Registry and this repository are the source of truth.
 
 ## Local Storage Boundary
 
@@ -67,7 +63,7 @@ Choose the local MCP distribution path that matches your AI client:
 
 | Path | Best for | Distribution | Notes |
 |---|---|---|---|
-| Python stdio wrapper | Codex, Claude Code, Roo Code, Cursor, generic MCP clients | PyPI package `a2cr-mcp` | Full public wrapper path for WorkBaton and WorkStash. |
+| Python stdio wrapper | Codex, Claude Code, Cursor, generic MCP clients | PyPI package `a2cr-mcp` | Full public wrapper path for WorkBaton and WorkStash. |
 | Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Manual Claude Desktop path pending Anthropic Directory approval. No npm install is required for end users. |
 
 Keep the Python wrapper version and Node MCPB compatibility version aligned.
@@ -197,7 +193,7 @@ a chat transcript store. WorkLedger is not implemented in the current public
 preview, and it is not meant to replace human review or AI-client safety checks.
 
 In this repository, an AI window means one active chat/session in an AI client
-such as Codex, Claude Code, Roo Code, or another MCP-capable agent.
+such as Codex, Claude Code, Cursor, or another MCP-capable agent.
 
 A minimal WorkBaton can be as small as:
 
@@ -225,13 +221,13 @@ More visual material:
 
 ## Repository Contents
 
-This public repository contains the source-available A2CR client and public
+This public repository contains the open-source A2CR client and public
 reference material:
 
 - the local stdio MCP wrapper package: `a2cr-mcp`
 - the early WorkBaton Format specification, schemas, examples, and conformance notes
 - AI-agent usage guidance and safety rules
-- MCP configuration examples for Codex, Claude Code, and Roo Code
+- MCP configuration examples for Codex, Claude Code, Cursor, and generic MCP clients
 - WorkBaton and WorkStash sample payloads
 - tests for the public wrapper behavior
 
@@ -312,7 +308,6 @@ See:
 
 - `examples/codex-mcp-config.json`
 - `examples/claude-code-mcp-config.json`
-- `examples/roo-code-mcp-config.json`
 - `examples/workbaton-example.json`
 - `examples/workstash-example.json`
 
@@ -340,21 +335,18 @@ See:
 
 ## Project Model
 
-A2CR uses a lightweight open-core model:
+A2CR is open source under the Apache License, Version 2.0:
 
 | Layer | Public surface | License / posture |
 |---|---|---|
 | WorkBaton Format | Public specification in `docs/spec/` | Spec text: CC BY 4.0. Schemas/examples/tests: Apache-2.0 |
-| `a2cr-mcp` | Official local stdio MCP client | Source-available under BUSL-1.1 style terms |
-| `a2cr.app` | Product site and legacy hosted surfaces during SaaS retirement | Proprietary service |
+| `a2cr-mcp` | Official local stdio MCP client | Apache-2.0 |
+| `a2cr.app` | Product site and legacy hosted surfaces during SaaS retirement | Not included in this repository |
 
 The WorkBaton Format is intended to be implementable by anyone. The official
-client is maintained by A2CR. Offering a competing hosted or managed
-A2CR-compatible relay service based on the official A2CR client requires
-a commercial license.
-
-This is a source-available/open-core project, not a broad OSI-approved open
-source release.
+client is maintained by A2CR and distributed as open-source software. Hosted or
+managed services that use A2CR must still respect the Apache-2.0 license, the
+A2CR trademark rules, and their own privacy/security responsibilities.
 
 See `LICENSE`, `NOTICE`, `TRADEMARK.md`, and `docs/spec/LICENSE.md` for the
 current boundaries. See `PUBLIC_RELEASE.md` for the public/private release
@@ -376,9 +368,9 @@ A2CR is built with AI-assisted engineering workflows and welcomes focused
 technical contributions around agent handoff design, MCP client setup,
 documentation clarity, safety review, and small reproducible tests.
 
-This is a source-available/open-core project, not a broad OSI-approved open
-source release. Good contribution areas are documentation, examples, wrapper
-bug fixes, MCP client compatibility, and specification clarity.
+This is an Apache-2.0 open-source project. Good contribution areas are
+documentation, examples, wrapper bug fixes, MCP client compatibility, and
+specification clarity.
 
 Please do not open public issues containing secrets, API keys, access tokens,
 private database URLs, local client keys, decrypted WorkBaton or WorkStash

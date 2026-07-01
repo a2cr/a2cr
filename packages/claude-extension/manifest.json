@@ -78,7 +78,7 @@
     "workbaton",
     "workstash"
   ],
-  "license": "LicenseRef-A2CR-Source-Available",
+  "license": "Apache-2.0",
   "privacy_policies": ["https://github.com/a2cr/a2cr/blob/main/docs/privacy.md"],
   "compatibility": {
     "platforms": ["darwin", "win32"],

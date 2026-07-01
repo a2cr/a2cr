@@ -92,11 +92,10 @@ Current usability note:
 
 Known packaging warnings:
 
-- `python -m build` currently reports setuptools deprecation warnings for the
-  `project.license` TOML table and license classifier. The current license file
-  is source-available/BUSL-style text rather than a simple SPDX expression, so
-  treat this as metadata cleanup before a future release rather than evidence
-  that the local mode wheel failed to build.
+- A2CR now uses a SPDX `project.license = "Apache-2.0"` expression and
+  `license-files` metadata for PyPI builds. Treat unrelated setuptools or
+  MANIFEST warnings as packaging cleanup rather than evidence that the local
+  mode wheel failed to build.
 - `MANIFEST.in` intentionally excludes some paths that may not exist in every
   checkout; setuptools reports those missing exclude/prune matches as warnings.
 

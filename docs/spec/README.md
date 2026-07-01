@@ -52,8 +52,8 @@ service, or official compatibility claims. Those boundaries are covered by
 The public split is:
 
 - anyone may implement the WorkBaton Format
-- the official `a2cr-mcp` client is source-available under BUSL-style terms
-- the hosted A2CR relay, dashboard, billing, database, and operations remain proprietary
+- the official `a2cr-mcp` client is open source under Apache-2.0
+- the legacy hosted A2CR relay, dashboard, billing, database, and operations are not included in this repository
 
 ## Compatibility Language
 

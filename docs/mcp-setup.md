@@ -4,7 +4,7 @@ Choose one local MCP path:
 
 | Path | Use when | Install/distribution |
 |---|---|---|
-| Python stdio wrapper | You use Codex, Claude Code, Roo Code, Cursor, or generic MCP JSON/TOML config. | `python -m pip install --upgrade a2cr-mcp` |
+| Python stdio wrapper | You use Codex, Claude Code, Cursor, or generic MCP JSON/TOML config. | `python -m pip install --upgrade a2cr-mcp` |
 | Node MCPB / Claude Desktop Extension | You use Claude Desktop and want extension-style install. | Download `a2cr-<version>.mcpb` from GitHub Release after it is published, or build it from `packages/claude-extension`. |
 
 The Python and Node wrappers should report the same A2CR MCP compatibility

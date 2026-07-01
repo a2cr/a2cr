@@ -4,7 +4,7 @@
   "private": true,
   "description": "Claude Desktop Extension / MCPB local wrapper for A2CR.",
   "type": "module",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "scripts": {
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run",
