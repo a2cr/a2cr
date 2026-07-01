@@ -48,13 +48,13 @@ npm run mcpb:pack
 Expected artifact:
 
 ```text
-packages/claude-extension/build/mcpb/artifacts/a2cr-0.1.7.mcpb
+packages/claude-extension/build/mcpb/artifacts/a2cr-0.1.8.mcpb
 ```
 
 Optional integrity note for the test record:
 
 ```powershell
-Get-FileHash .\build\mcpb\artifacts\a2cr-0.1.7.mcpb -Algorithm SHA256
+Get-FileHash .\build\mcpb\artifacts\a2cr-0.1.8.mcpb -Algorithm SHA256
 ```
 
 ## Install In Claude Desktop
@@ -66,7 +66,7 @@ Extensions settings flow.
 2. Go to `Settings > Extensions`.
 3. Open `Advanced settings`.
 4. In the Extension Developer section, choose `Install Extension...`.
-5. Select `build/mcpb/artifacts/a2cr-0.1.7.mcpb`.
+5. Select `build/mcpb/artifacts/a2cr-0.1.8.mcpb`.
 6. Review the extension metadata and permissions.
 7. Complete the install.
 
@@ -138,7 +138,7 @@ Expected result:
 - Claude calls `save_context`.
 - The tool returns a saved status and `storage_mode=local`.
 - The MCP server metadata reports the current compatibility version,
-  currently `0.1.7`.
+  currently `0.1.8`.
 - No hosted service, dashboard, or remote MCP URL is contacted.
 
 Then prompt Claude:
@@ -239,7 +239,7 @@ Private MCPB installs are updated manually.
 
 1. Run `npm run mcpb:pack` again.
 2. In Claude Desktop, uninstall or disable the existing A2CR extension.
-3. Install the new `a2cr-0.1.7.mcpb`.
+3. Install the new `a2cr-0.1.8.mcpb`.
 4. Repeat the read-only smoke.
 
 Expected result:

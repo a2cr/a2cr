@@ -36,7 +36,7 @@ describe("A2crApiClient", () => {
     expect(requests[0]?.headers).toMatchObject({
       Authorization: "Bearer TEST_API_KEY_SHOULD_NOT_LEAK",
       "X-A2CR-Client-Type": "claude",
-      "X-A2CR-MCP-Version": "0.1.7",
+      "X-A2CR-MCP-Version": "0.1.8",
     });
   });
 

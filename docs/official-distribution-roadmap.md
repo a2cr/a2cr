@@ -51,9 +51,9 @@ For that reason:
 
 | Phase | Target | Artifact | Status | Exit criteria |
 |---|---|---|---|---|
-| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.7`, docs, examples | Complete for 0.1.7 | Public repo is pushed, tests pass, package builds, PyPI release is live. |
-| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Published for 0.1.7 | Registry validation passes, publish succeeds, search result is visible, and a fresh public distribution smoke test passes. Public Preview Launch can be announced. |
-| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | GitHub Release MCPB asset published for 0.1.7; Anthropic Directory approval not claimed | Local storage and local key boundaries are preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
+| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.8`, docs, examples | Complete for 0.1.8 | Public repo is pushed, tests pass, package builds, PyPI release is live. |
+| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Published for 0.1.8 | Registry validation passes, publish succeeds, search result is visible, and a fresh public distribution smoke test passes. Public Preview Launch can be announced. |
+| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | GitHub Release MCPB asset published for 0.1.8; Anthropic Directory approval not claimed | Local storage and local key boundaries are preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
 | P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, privacy docs, and public security boundary are ready. |
 
@@ -68,10 +68,10 @@ Service start criteria:
 
 - `a2cr/a2cr` is public and contains only the intended public client, specs,
   docs, examples, and focused tests.
-- `a2cr-mcp==0.1.7` is live on PyPI and can be installed in a fresh environment.
+- `a2cr-mcp==0.1.8` is live on PyPI and can be installed in a fresh environment.
 - The PyPI README contains `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
 - The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible as
-  the latest `0.1.7` Registry version.
+  the latest `0.1.8` Registry version.
 - Public distribution smoke checks pass.
 - A fresh local install can save and resume a harmless WorkBaton through the
   PyPI package without an A2CR API key.
@@ -133,7 +133,7 @@ Use the current local stdio package.
 - Package: PyPI `a2cr-mcp`
 - Transport: `stdio`
 - Manifest: `server.json`
-- Current status: `0.1.7` is published, active, and latest in the official MCP
+- Current status: `0.1.8` is published, active, and latest in the official MCP
   Registry as of 2026-07-01.
 - Submission note: publish to PyPI before publishing registry metadata, because
   PyPI ownership verification uses the README `mcp-name` marker.
@@ -181,7 +181,7 @@ Pre-approval MCPB distribution:
 - keep the Node MCPB compatibility version aligned with the Python
   `a2cr-mcp` version so dashboard version checks remain reliable
 
-For the local-only Claude submission, publish `a2cr-0.1.7.mcpb` and
+For the local-only Claude submission, publish `a2cr-0.1.8.mcpb` and
 `SHA256SUMS.txt` to the public GitHub Release before sending Anthropic the
 automated pickup details.
 

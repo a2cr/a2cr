@@ -126,17 +126,17 @@ Initial manifest:
 - `packages/claude-extension/manifest.json`
 - icon: `packages/claude-extension/assets/icon.png`
 - extension/package version: aligned with the public Python `a2cr-mcp`
-  compatibility version for the current submission, currently `0.1.7`
+  compatibility version for the current submission, currently `0.1.8`
 
 Packaging:
 
 - `npm run mcpb:validate` validates the manifest with
   `@anthropic-ai/mcpb@2.1.2`
 - `npm run mcpb:pack` builds `dist/`, stages runtime files with production
-  dependencies only, and writes `build/mcpb/artifacts/a2cr-0.1.7.mcpb` plus
+  dependencies only, and writes `build/mcpb/artifacts/a2cr-0.1.8.mcpb` plus
   `build/mcpb/artifacts/SHA256SUMS.txt`
 - the staged artifact excludes TypeScript sources, tests, and dev dependencies
-- GitHub Release is the manual distribution point for `a2cr-0.1.7.mcpb` until
+- GitHub Release is the manual distribution point for `a2cr-0.1.8.mcpb` until
   Anthropic Directory approval; npm is not an end-user distribution channel for
   this package
 
@@ -168,10 +168,10 @@ When publishing:
 - send Anthropic the owner/repo, release tag pattern, artifact filename, and
   maintainer contact requested for automated release pickup.
 
-Automated pickup details for the `0.1.7` submission:
+Automated pickup details for the `0.1.8` submission:
 
 - `owner/repo`: `a2cr/a2cr`
-- tag pattern: `v*` (example: `v0.1.7`)
+- tag pattern: `v*` (example: `v0.1.8`)
 - asset filename: `a2cr-<version>.mcpb`
 - checksum filename: `SHA256SUMS.txt`
 - maintainer contact: fill in the human contact before sending to Anthropic

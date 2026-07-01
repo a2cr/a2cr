@@ -136,10 +136,10 @@ Distribution path:
 1. Public GitHub Release asset: `a2cr-<version>.mcpb`.
 2. Anthropic Directory after approval.
 
-For `0.1.7`, download `a2cr-0.1.7.mcpb` from:
+For `0.1.8`, download `a2cr-0.1.8.mcpb` from:
 
 ```text
-https://github.com/a2cr/a2cr/releases/tag/v0.1.7
+https://github.com/a2cr/a2cr/releases/tag/v0.1.8
 ```
 
 Developers can rebuild locally from source:
