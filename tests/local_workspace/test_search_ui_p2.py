@@ -115,6 +115,12 @@ def test_ui_server_serves_html_api_details_actions_and_auth(tmp_path, monkeypatc
         assert "<title>A2CR</title>" in html
         assert "/api/state" in html
         assert "a2cr_timezone" in html
+        assert "a2cr_selected_project" in html
+        assert 'data-view="projects"' in html
+        assert "All projects" in html
+        assert "function renderProjects" in html
+        assert "function createProjectThread" in html
+        assert "function copyJoinPrompt" in html
         assert "Display time zone" in html
         assert "Asia/Tokyo" in html
         assert "Stored timestamps remain UTC" in html
@@ -122,6 +128,7 @@ def test_ui_server_serves_html_api_details_actions_and_auth(tmp_path, monkeypatc
         state = get_json(url, "/api/state")
         assert state["dashboard"]["counts"]["workbatons"] == 1
         assert state["workthreads"]["thread_count"] == 2
+        assert {"alpha", "beta"} <= {item["project_key"] for item in state["dashboard"]["projects"]}
 
         detail = get_json(url, "/api/workthreads/alpha-thread")
         assert detail["status"] == "loaded"
@@ -141,6 +148,20 @@ def test_ui_server_serves_html_api_details_actions_and_auth(tmp_path, monkeypatc
         exported = get_json(url, "/api/export")
         assert exported["status"] == "ok"
         assert len(exported["workstash_entries"]) == 1
+
+        created = post_json(url, "/api/workthreads", {
+            "thread_key": "alpha-review",
+            "title": "Alpha review",
+            "project": "alpha",
+            "participant_label": "planner",
+            "initial_message": "Review project-centered dashboard state.",
+        })
+        assert created["status"] == "created"
+        updated_state = get_json(url, "/api/state")
+        assert any(
+            item["thread_key"] == "alpha-review" and item["project_key"] == "alpha"
+            for item in updated_state["workthreads"]["threads"]
+        )
 
         try:
             urllib.request.urlopen(base(url) + "/api/state?token=wrong", timeout=5)

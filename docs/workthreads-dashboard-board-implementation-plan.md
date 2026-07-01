@@ -1,6 +1,6 @@
 # WorkThreads Dashboard Board Implementation Plan
 
-Status: Phase 1 API complete; project-centered dashboard next-stage plan
+Status: Phase 2 baseline complete; board polish remains
 Last checked: 2026-07-01
 Repository scope: `public-release/`
 
@@ -23,15 +23,22 @@ Already implemented in local mode:
   - `POST /api/workthreads/<thread_key>/messages`
   - `GET /api/workthreads/<thread_key>/join-prompt`
   - endpoint tests in `tests/local_workspace/test_workthreads_board_api.py`
+- Project-centered dashboard Phase 2 baseline:
+  - `Projects` navigation and all-projects index
+  - project detail view for WorkBaton, WorkStash, WorkThreads, and recent events
+  - selected-project persistence in browser local storage
+  - project-scoped WorkThread create-room form
+  - project-scoped search shortcut
+  - copy join-prompt button in WorkThread detail
 - Local tests covering lifecycle, participants, references, search, truncation,
   close/archive, and cloud-unavailable behavior.
 
 Main gaps:
 
-- No project-centered dashboard drilldown that shows WorkBaton, WorkStash, and
-  WorkThreads together for one project.
-- No dashboard create-room form wired into the WorkThreads view.
-- No copy-join-prompt control in the rendered UI.
+- The project view is client-filtered from `GET /api/state`; add a dedicated
+  project endpoint only if state payload size becomes a real issue.
+- The create-room form currently lives in the selected project view, not the
+  global WorkThreads view.
 - No dashboard message composer in the rendered UI.
 - No board-style cards or readable post conventions in the rendered UI.
 - No automatic refresh or new-message highlighting.
@@ -99,6 +106,8 @@ Suggested tests:
 - endpoint access still rejects missing or wrong UI token
 
 ## Phase 2 - Project-Centered Dashboard Views
+
+Status: baseline complete in the current public checkout.
 
 Goal: make project the primary local dashboard organizing lens, so users can
 review WorkBaton, WorkStash, and WorkThreads together for one project.

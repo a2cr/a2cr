@@ -1,6 +1,6 @@
 # WorkThreads Dashboard Board Spec
 
-Status: Phase 1 API implemented; project-centered dashboard next-stage spec
+Status: Phase 2 baseline implemented; board polish remains
 Last checked: 2026-07-01
 Repository scope: `public-release/`
 
@@ -28,19 +28,26 @@ coordination visible and easy to resume.
 
 ## Current Implementation Snapshot
 
-As of 2026-07-01, the local UI has the first board API slice:
+As of 2026-07-01, the local UI has the first board API slice and a baseline
+project-centered dashboard view:
 
 - pure join-prompt helper in `a2cr_mcp/local_workspace/workthreads_board.py`
 - `POST /api/workthreads` for local room creation
 - `POST /api/workthreads/<thread_key>/messages` for coordinator notes
 - `GET /api/workthreads/<thread_key>/join-prompt` for copyable AI invite text
+- `Projects` dashboard view with client-side project filtering from
+  `GET /api/state`
+- project detail sections for WorkBaton, WorkStash, WorkThreads, and recent
+  events
+- project-scoped WorkThread create-room form and search shortcut
+- copy join-prompt control in WorkThread detail
 - token-protected tests in `tests/local_workspace/test_workthreads_board_api.py`
 
-The remaining board work is now UI and workflow depth: create-room controls,
-board-style room display, message composer polish, refresh/new-message badges,
-and project-centered navigation.
+The remaining board work is now workflow depth: board-style room display,
+message composer polish, participant-label prompt customization, refresh and
+new-message badges, and richer project actor/provenance summaries.
 
-## Project-Centered Next Stage
+## Project-Centered Baseline
 
 The next dashboard stage should make project the main organizing lens. A user
 should be able to pick one project and see its WorkBaton, WorkStash, and
