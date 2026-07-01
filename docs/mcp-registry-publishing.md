@@ -10,8 +10,8 @@ artifacts rather than hosting the package itself.
 ## Current Status
 
 A2CR is published in the official MCP Registry as
-`io.github.a2cr/a2cr-mcp`. Version `0.1.7` is the local-only Registry
-release target as of 2026-06-25.
+`io.github.a2cr/a2cr-mcp`. Version `0.1.7` is published, active, and latest as
+of 2026-07-01.
 
 ## Target Entry
 

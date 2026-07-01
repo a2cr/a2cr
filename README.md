@@ -31,15 +31,16 @@ Use A2CR when you want to:
 [Japanese overview](README-ja.md) | [MCP setup](docs/mcp-setup.md) |
 [Usage guide](docs/usage.md) | [WorkBaton spec](docs/spec/README.md) |
 [Local mode spec](docs/local-mode-spec.md) |
-[0.1.7 release candidate](docs/releases/v0.1.7-local-only-release-candidate.md)
+[0.1.7 release notes](docs/releases/v0.1.7-local-only-release-candidate.md)
 
 ## Directory Status
 
 A2CR is published in the
 [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.a2cr%2Fa2cr-mcp/versions/latest)
-as `io.github.a2cr/a2cr-mcp`. This repository prepares the local-only `0.1.7`
-release candidate; the live Registry page is the source of truth for the
-currently published version.
+as `io.github.a2cr/a2cr-mcp`. The local-only `0.1.7` public release is live on
+PyPI, GitHub Releases, and the official MCP Registry. See the
+[distribution inventory](docs/distribution-registration-inventory.md) for the
+current registration and mirror status.
 
 A2CR is also listed and evaluated on the
 [Glama MCP Registry](https://glama.ai/mcp/servers/a2cr/a2cr). Downstream
@@ -67,8 +68,8 @@ Choose the local MCP distribution path that matches your AI client:
 | Node MCPB / Claude Desktop Extension | Claude Desktop users who want extension-style install | GitHub Release `.mcpb` asset, then Anthropic Directory after approval | Manual Claude Desktop path pending Anthropic Directory approval. No npm install is required for end users. |
 
 Keep the Python wrapper version and Node MCPB compatibility version aligned.
-If `a2cr-mcp` is released as `0.1.7`, the Node MCPB should also report A2CR
-MCP compatibility version `0.1.7`.
+For the current public release, both the Python wrapper and Node MCPB
+compatibility version are `0.1.7`.
 
 Python wrapper install:
 

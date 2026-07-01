@@ -2,8 +2,8 @@
 
 ## 0.1.7 - Local-Only Workspace And Claude MCPB
 
-- Prepare `0.1.7` as the local-only public release candidate, with release
-  scope, expected artifacts, publish gates, and GitHub Release notes recorded in
+- Publish `0.1.7` as the local-only public release, with release scope,
+  expected artifacts, publish gates, and GitHub Release notes recorded in
   `docs/releases/v0.1.7-local-only-release-candidate.md`.
 - Switch the public release line to local-only A2CR: no account, API key,
   hosted base URL, SaaS dashboard, remote MCP connector, or cloud sync is
@@ -22,7 +22,7 @@
   search, WorkThreads, CLI doctor/init, and wheel installation.
 
 - Record that `io.github.a2cr/a2cr-mcp` is published in the official MCP
-  Registry with `0.1.6` as the latest active version.
+  Registry with `0.1.7` as the latest active version.
 - Document the two local MCP distribution paths: Python `a2cr-mcp` from PyPI
   and Node Claude Desktop MCPB from GitHub Release assets.
 - Add Claude Desktop MCPB build, checksum, install, and wording guidance.

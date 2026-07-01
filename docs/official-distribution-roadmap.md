@@ -24,23 +24,26 @@ release.
 
 P1 completion is the service-start line. A2CR should not be marketed as launched
 until the public repository, PyPI package, and official MCP Registry entry are
-all live and a fresh production smoke test passes. After that point, it is
+all live and a fresh public distribution smoke test passes. After that point, it is
 accurate to announce A2CR as a public preview.
 
 ## Why The Order Matters
 
-The current A2CR wrapper encrypts WorkBaton and WorkStash bodies locally before
-upload. A2CR stores ciphertext and does not receive the local client key.
+The current public A2CR wrapper stores WorkBaton, WorkStash, and WorkThreads in
+the user's local SQLite workspace. WorkBaton and WorkStash bodies use a local
+client key where the wrapper encrypts saved content, and the public wrapper does
+not upload saved content to A2CR.
 
 Remote MCP directory submissions change that boundary. If a remote MCP server
-receives plaintext WorkBaton content in a tool call and then encrypts it on the
-server, A2CR has received plaintext. That is a different privacy model.
+receives plaintext WorkBaton content in a tool call and then stores, processes,
+or encrypts it on the server, A2CR has received plaintext. That is a different
+privacy model.
 
 For that reason:
 
 - local distribution channels come first
 - remote distribution channels require a written security decision
-- any remote app must clearly disclose what the hosted service can see
+- any remote app must clearly disclose what the remote service can see
 - full `save_context` / `store_work_stash` remote flows should not be submitted
   until the plaintext boundary is acceptable or avoided
 
@@ -48,9 +51,9 @@ For that reason:
 
 | Phase | Target | Artifact | Status | Exit criteria |
 |---|---|---|---|---|
-| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.6`, docs, examples | Complete for 0.1.6 | Public repo is pushed, tests pass, package builds, PyPI release is live. |
-| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Published for 0.1.6 | Registry validation passes, publish succeeds, search result is visible, and a fresh production smoke test passes. Public Preview Launch can be announced. |
-| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | 0.1.7 release candidate prepared for GitHub Release and Anthropic pickup | Local encryption is preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
+| P0 | Public release foundation | `a2cr/a2cr`, `a2cr-mcp==0.1.7`, docs, examples | Complete for 0.1.7 | Public repo is pushed, tests pass, package builds, PyPI release is live. |
+| P1 | Service start / Official MCP Registry | `server.json` for `io.github.a2cr/a2cr-mcp` | Published for 0.1.7 | Registry validation passes, publish succeeds, search result is visible, and a fresh public distribution smoke test passes. Public Preview Launch can be announced. |
+| P2 | Claude local distribution | Claude Desktop Extension / MCPB using the Node local wrapper | GitHub Release MCPB asset published for 0.1.7; Anthropic Directory approval not claimed | Local storage and local key boundaries are preserved, manifest includes privacy policy links, setup is tested in Claude Desktop, GitHub Release distribution is prepared, and submission assets are ready. |
 | P3 | OpenAI app distribution | Apps SDK remote MCP app or narrower read-only companion | Later | Public HTTPS remote MCP exists, Developer Mode testing passes, OAuth/privacy/test prompts/assets are ready, plaintext boundary is approved. |
 | P4 | Claude remote distribution | Remote MCP connector or MCP App | Later | Remote OAuth, tool annotations, Origin validation, privacy docs, and public security boundary are ready. |
 
@@ -59,21 +62,21 @@ For that reason:
 A2CR's service start is **P1 complete**, not merely the GitHub repository going
 public. This keeps the launch promise tied to a user-visible distribution path:
 a user can find the project, install the wrapper from PyPI, discover it in the
-MCP Registry, and complete a real save/resume flow against production.
+MCP Registry, and complete a real save/resume flow from the published package.
 
 Service start criteria:
 
 - `a2cr/a2cr` is public and contains only the intended public client, specs,
   docs, examples, and focused tests.
-- `a2cr-mcp==0.1.6` is live on PyPI and can be installed in a fresh environment.
+- `a2cr-mcp==0.1.7` is live on PyPI and can be installed in a fresh environment.
 - The PyPI README contains `<!-- mcp-name: io.github.a2cr/a2cr-mcp -->`.
 - The MCP Registry entry `io.github.a2cr/a2cr-mcp` is published and visible as
-  the latest `0.1.6` Registry version.
-- Production health/readiness checks pass.
+  the latest `0.1.7` Registry version.
+- Public distribution smoke checks pass.
 - A fresh local install can save and resume a harmless WorkBaton through the
   PyPI package without an A2CR API key.
-- Public docs explain local encryption, local client key loss, support contact,
-  security reporting, and the rule that A2CR is not a secret manager.
+- Public docs explain local storage, local encryption/key-loss behavior, support
+  contact, security reporting, and the rule that A2CR is not a secret manager.
 
 At that point, the launch language should be:
 
@@ -88,7 +91,8 @@ Claude/OpenAI support until those phases are actually complete.
 
 Promotion starts after P1, not before it. The initial promotion should present
 A2CR as a public preview for AI-agent handoff, centered on the local stdio MCP
-wrapper, WorkBaton, WorkStash, local encryption, and the MCP Registry listing.
+wrapper, WorkBaton, WorkStash, local storage/encryption, and the MCP Registry
+listing.
 
 Launch promotion checklist:
 
@@ -114,8 +118,9 @@ behavior, support runbooks, and other service operations belong in private
 planning until they are intentionally published.
 
 WorkThreads must keep a separate privacy claim from WorkBaton. WorkBaton and
-WorkStash bodies are locally encrypted before upload. WorkThreads is a shared
-coordination layer and needs its own explicit security boundary before it is
+WorkStash bodies are saved in the local workspace through their local wrapper
+flow, while WorkThreads is a shared coordination layer. Any future sync or
+remote WorkThreads path needs its own explicit security boundary before it is
 marketed to users.
 
 ## Channel Design
@@ -128,19 +133,20 @@ Use the current local stdio package.
 - Package: PyPI `a2cr-mcp`
 - Transport: `stdio`
 - Manifest: `server.json`
-- Current status: `0.1.6` is published and active in the official MCP Registry.
+- Current status: `0.1.7` is published, active, and latest in the official MCP
+  Registry as of 2026-07-01.
 - Submission note: publish to PyPI before publishing registry metadata, because
   PyPI ownership verification uses the README `mcp-name` marker.
 
 This is the correct first public listing because it matches the current
-artifact and does not require changing the local encryption model.
+artifact and does not require a hosted relay or remote plaintext boundary.
 
 ### Claude
 
 Claude has two useful paths for A2CR:
 
 1. Claude Desktop Extension / MCPB for the local stdio wrapper.
-2. Remote MCP connector later, if the hosted-service privacy boundary is
+2. Remote MCP connector later, if the remote-service privacy boundary is
    intentionally changed or a client-side encryption design is added.
 
 The local path is first because it preserves the current A2CR security model.
@@ -227,7 +233,7 @@ note that answers only the technical boundary questions:
 
 - whether the remote MCP server ever receives plaintext WorkBaton or WorkStash
   bodies
-- where encryption and decryption happen before the hosted service receives data
+- where encryption and decryption happen before any remote service receives data
 - which tools read, mutate, or delete user-owned relay state
 - how restored context is treated as untrusted input
 

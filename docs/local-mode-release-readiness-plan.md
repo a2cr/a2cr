@@ -1,22 +1,23 @@
 # A2CR Local Mode Release Readiness Plan
 
-Status: 0.1.7 local-only release candidate plan
-Last checked: 2026-06-25
+Status: 0.1.7 local-only release published; post-release tracking
+Last checked: 2026-07-01
 Repository scope: `public-release/`
 
 This plan tracks the work needed to move A2CR from a passing local
 implementation to something users can install and use with a short, reliable
-flow. As of 2026-06-25, `0.1.7` is the local-only release candidate in this
-checkout; cloud/SaaS setup paths are being retired from the public setup story.
+flow. As of 2026-07-01, `0.1.7` is published to PyPI, GitHub Releases, and the
+official MCP Registry; cloud/SaaS setup paths are retired from the public setup
+story.
 
-The release-candidate scope and release-note draft are recorded in
+The release record and historical release-candidate scope are recorded in
 `docs/releases/v0.1.7-local-only-release-candidate.md`.
 
-## Release Candidate Decision
+## Published Release Decision
 
-`0.1.7` is the local-only public release candidate for A2CR.
+`0.1.7` is the local-only public release for A2CR.
 
-Candidate means:
+Published means:
 
 - the package metadata, local-only docs, and Claude MCPB compatibility version
   are aligned on `0.1.7`;
@@ -25,9 +26,7 @@ Candidate means:
 - the Claude Desktop MCPB is the manual extension-style install path until
   Anthropic Directory approval;
 - no hosted SaaS account, API key, hosted base URL, remote MCP connector, or
-  cloud sync path is required for normal public setup;
-- publish actions are still pending PR review/merge and one final post-merge
-  verification pass.
+  cloud sync path is required for normal public setup.
 
 ## Current State
 
@@ -45,7 +44,7 @@ Local mode implementation is present in the public package checkout:
 
 Latest verification in this checkout:
 
-- 2026-06-25 release-candidate gate:
+- 2026-06-25 release gate:
   - `python -m pytest tests/local_workspace tests/test_mcp_stdio.py
     tests/test_public_repository.py tests/test_spec_documents.py -q` passed
     with 82 tests.
@@ -78,9 +77,10 @@ Latest verification in this checkout:
   - `search_contexts`
   - `create_work_thread`
 
-The remaining gap is final release readiness. The working tree code is usable
-directly, but a user machine may still have an older installed package or only
-the compatibility `a2cr-mcp` command on `PATH` until a public release is cut.
+The remaining gap is post-release hygiene: keep downstream directory listings
+fresh, align public docs with the published release, decide whether the retired
+SaaS explanation surface should serve reviewer-friendly privacy URLs, and keep
+the next WorkThreads/dashboard track separate from the public release baseline.
 
 Current usability note:
 
@@ -311,8 +311,11 @@ Do not mark local mode release-ready until all of these are true:
 
 ## Immediate Next Actions
 
-1. Inspect the public diff for private-only content before any PR or release.
-2. Open the public-release PR rather than pushing directly to `main`.
-3. Re-run the final public test/build/package smoke after review and merge.
-4. Tag `v0.1.7`, publish PyPI, create the GitHub Release, attach the MCPB and
-   checksum, then update MCP Registry metadata if desired.
+1. Keep `docs/distribution-registration-inventory.md` current as the canonical
+   registration and downstream mirror tracker.
+2. Re-check downstream MCP directory text after post-release docs land; request
+   corrections where setup still requires `A2CR_API_KEY` or `A2CR_BASE_URL`.
+3. Decide whether `https://a2cr.app/privacy` and `/en/privacy` should return a
+   simple 200 privacy page for directory reviewers.
+4. Continue WorkThreads/dashboard design without moving the public setup story
+   back toward hosted SaaS.
