@@ -31,13 +31,13 @@ Use A2CR when you want to:
 [Japanese overview](README-ja.md) | [MCP setup](docs/mcp-setup.md) |
 [Usage guide](docs/usage.md) | [WorkBaton spec](docs/spec/README.md) |
 [Local mode spec](docs/local-mode-spec.md) |
-[0.1.7 release notes](docs/releases/v0.1.7-local-only-release-candidate.md)
+[0.1.8 release notes](docs/releases/v0.1.8-metadata-refresh.md)
 
 ## Directory Status
 
 A2CR is published in the
 [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.a2cr%2Fa2cr-mcp/versions/latest)
-as `io.github.a2cr/a2cr-mcp`. The local-only `0.1.7` public release is live on
+as `io.github.a2cr/a2cr-mcp`. The local-only `0.1.8` public release is live on
 PyPI, GitHub Releases, and the official MCP Registry. See the
 [distribution inventory](docs/distribution-registration-inventory.md) for the
 current registration and mirror status.
@@ -69,7 +69,7 @@ Choose the local MCP distribution path that matches your AI client:
 
 Keep the Python wrapper version and Node MCPB compatibility version aligned.
 For the current public release, both the Python wrapper and Node MCPB
-compatibility version are `0.1.7`.
+compatibility version are `0.1.8`.
 
 Python wrapper install:
 
@@ -239,7 +239,7 @@ schema, billing code, admin tooling, or deployment secrets.
 
 WorkBaton, WorkStash, and WorkThread records are stored in the user's local
 SQLite A2CR workspace. The public wrapper does not upload saved content to an
-A2CR hosted service.
+A2CR-operated remote endpoint.
 
 A2CR is not a secret manager. Do not store API keys, passwords,
 access tokens, Authorization headers, cookies, private database URLs, local

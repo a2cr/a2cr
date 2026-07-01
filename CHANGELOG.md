@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.8 - Public Metadata Refresh
+
+- Refresh PyPI package metadata from the Apache-2.0 local-only public repository
+  so downstream MCP directories stop inheriting older BUSL, Roo Code, hosted
+  service, and API-key wording from the `0.1.7` PyPI description.
+- Keep the official MCP Registry manifest, Python package, and Claude Desktop
+  MCPB compatibility version aligned on `0.1.8`.
+- Include the project-centered dashboard baseline and Dependabot dependency
+  updates that landed after the `0.1.7` local-only release.
+
 ## 0.1.7 - Local-Only Workspace And Claude MCPB
 
 - Publish `0.1.7` as the local-only public release, with release scope,

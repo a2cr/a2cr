@@ -55,7 +55,7 @@ Default local store paths:
 
 - The Claude extension may have its own package/build version, but A2CR MCP
   compatibility should stay aligned with the public Python `a2cr-mcp` version,
-  currently `0.1.7`.
+  currently `0.1.8`.
 - If the Python wrapper version changes, update the Node wrapper compatibility
   constant, MCPB manifest version, tests, and docs in the same public release.
 

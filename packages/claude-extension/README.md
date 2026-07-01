@@ -44,7 +44,7 @@ Packaging commands:
   `@anthropic-ai/mcpb@2.1.2`.
 - `npm run mcpb:pack` builds `dist/`, creates a clean staging directory with
   production dependencies only, validates the staged manifest, and writes
-  `build/mcpb/artifacts/a2cr-0.1.7.mcpb` plus
+  `build/mcpb/artifacts/a2cr-0.1.8.mcpb` plus
   `build/mcpb/artifacts/SHA256SUMS.txt`.
 
 The pack script intentionally excludes TypeScript sources, tests, and dev
@@ -60,7 +60,7 @@ Distribution decision:
 - Keep `SUBMISSION.md` current as the public-safe directory submission checklist
   for the MCPB package.
 
-For `0.1.7`, publish `a2cr-0.1.7.mcpb` and `SHA256SUMS.txt` to the public
+For `0.1.8`, publish `a2cr-0.1.8.mcpb` and `SHA256SUMS.txt` to the public
 GitHub Release before sending Anthropic the automated pickup details.
 
 ## Privacy Policy
@@ -122,7 +122,7 @@ or API key.
 
 Reviewer smoke path:
 
-1. Download `a2cr-0.1.7.mcpb` from the public GitHub Release.
+1. Download `a2cr-0.1.8.mcpb` from the public GitHub Release.
 2. Install it in Claude Desktop with `Settings > Extensions > Advanced settings
    > Install Extension`.
 3. Run the read-only, WorkBaton save/load, WorkStash store/get/list/delete, and

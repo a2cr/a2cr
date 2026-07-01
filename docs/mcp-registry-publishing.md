@@ -10,7 +10,7 @@ artifacts rather than hosting the package itself.
 ## Current Status
 
 A2CR is published in the official MCP Registry as
-`io.github.a2cr/a2cr-mcp`. Version `0.1.7` is published, active, and latest as
+`io.github.a2cr/a2cr-mcp`. Version `0.1.8` is the current metadata-refresh target as
 of 2026-07-01.
 
 ## Target Entry
@@ -21,7 +21,7 @@ of 2026-07-01.
 | Public repository | `https://github.com/a2cr/a2cr` |
 | Package registry | PyPI |
 | PyPI package | `a2cr-mcp` |
-| Current published version | `0.1.7` |
+| Current published version | `0.1.8` |
 | Transport | `stdio` |
 | Manifest | `server.json` |
 

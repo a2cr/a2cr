@@ -28,16 +28,16 @@ For each public release that includes the Claude Desktop Extension, attach:
 - `SHA256SUMS.txt` or equivalent checksum text
 - release notes that say this is a Claude Desktop MCPB package
 
-For `0.1.7`, the expected artifact name is:
+For `0.1.8`, the expected artifact name is:
 
 ```text
-a2cr-0.1.7.mcpb
+a2cr-0.1.8.mcpb
 ```
 
 The GitHub Release URL pattern is:
 
 ```text
-https://github.com/a2cr/a2cr/releases/tag/v0.1.7
+https://github.com/a2cr/a2cr/releases/tag/v0.1.8
 ```
 
 ## Anthropic Automated Pickup
@@ -46,7 +46,7 @@ After the GitHub Release is published with the MCPB asset and checksum, send
 Anthropic these details once so later releases can be picked up from GitHub:
 
 - `owner/repo`: `a2cr/a2cr`
-- tag pattern: `v*` (example: `v0.1.7`)
+- tag pattern: `v*` (example: `v0.1.8`)
 - asset filename: `a2cr-<version>.mcpb`
 - checksum filename: `SHA256SUMS.txt`
 - maintainer contact: fill in the human contact immediately before sending
@@ -69,7 +69,7 @@ npm run mcpb:pack
 Expected output:
 
 ```text
-build/mcpb/artifacts/a2cr-0.1.7.mcpb
+build/mcpb/artifacts/a2cr-0.1.8.mcpb
 build/mcpb/artifacts/SHA256SUMS.txt
 ```
 
@@ -77,13 +77,13 @@ The pack script writes `SHA256SUMS.txt` automatically. To verify it manually on
 Windows:
 
 ```powershell
-Get-FileHash .\build\mcpb\artifacts\a2cr-0.1.7.mcpb -Algorithm SHA256
+Get-FileHash .\build\mcpb\artifacts\a2cr-0.1.8.mcpb -Algorithm SHA256
 ```
 
 On macOS/Linux:
 
 ```bash
-shasum -a 256 build/mcpb/artifacts/a2cr-0.1.7.mcpb
+shasum -a 256 build/mcpb/artifacts/a2cr-0.1.8.mcpb
 ```
 
 ## Install In Claude Desktop
@@ -140,10 +140,10 @@ constant, package version, MCPB manifest version, tests, and docs in the same
 release. The two local MCP paths should report the same public compatibility
 version unless there is an explicit compatibility exception in the release notes.
 
-For `0.1.7`, both paths should report:
+For `0.1.8`, both paths should report:
 
 ```text
-X-A2CR-MCP-Version: 0.1.7
+X-A2CR-MCP-Version: 0.1.8
 ```
 
 ## Release Alignment Checklist

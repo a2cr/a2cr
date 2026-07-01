@@ -1,6 +1,6 @@
 {
   "name": "@a2cr/claude-extension",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "description": "Claude Desktop Extension / MCPB local wrapper for A2CR.",
   "type": "module",

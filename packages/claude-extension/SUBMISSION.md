@@ -8,9 +8,9 @@ dashboard logs.
 ## Submission Target
 
 - Connector type: Desktop extension / MCPB.
-- Artifact: `a2cr-0.1.7.mcpb`.
+- Artifact: `a2cr-0.1.8.mcpb`.
 - Public artifact URL:
-  `https://github.com/a2cr/a2cr/releases/tag/v0.1.7`.
+  `https://github.com/a2cr/a2cr/releases/tag/v0.1.8`.
 - Primary reason for MCPB: A2CR's WorkBaton and WorkStash privacy model depends
   on local validation, local encryption, and local storage. A remote MCP
   connector would change that boundary by receiving plaintext tool input on the
@@ -64,7 +64,7 @@ smoke test. WorkStash smoke data should also be disposable and clearly harmless.
 
 Reviewer smoke path:
 
-1. Download `a2cr-0.1.7.mcpb` from the GitHub Release.
+1. Download `a2cr-0.1.8.mcpb` from the GitHub Release.
 2. Install it in Claude Desktop through `Settings > Extensions > Advanced
    settings > Install Extension`.
 3. Run the read-only, WorkBaton save/load, WorkStash store/get/list/delete, and
@@ -119,11 +119,11 @@ harmless data and exercise every submitted tool.
 
 ## Anthropic Automated Pickup Details
 
-Send these details once after the `v0.1.7` GitHub Release has the MCPB asset and
+Send these details once after the `v0.1.8` GitHub Release has the MCPB asset and
 checksum attached:
 
 - `owner/repo`: `a2cr/a2cr`
-- tag pattern: `v*` (example: `v0.1.7`)
+- tag pattern: `v*` (example: `v0.1.8`)
 - asset filename: `a2cr-<version>.mcpb`
 - checksum filename: `SHA256SUMS.txt`
 - maintainer contact: fill in the human contact before sending to Anthropic

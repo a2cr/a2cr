@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "a2cr",
   "display_name": "A2CR",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "AI-agent handoff checkpoints and temporary WorkStash notes stored in a local workspace.",
   "long_description": "A2CR lets Claude Desktop save and load compact WorkBaton checkpoints and supporting WorkStash notes through a local MCP server. WorkBaton and WorkStash content is validated, encrypted, and stored on the user's machine; this MCPB does not upload saved content.",
   "author": {
