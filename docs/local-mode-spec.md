@@ -589,6 +589,12 @@ The next WorkThreads UI layer is specified in
 make room conversations visible to the user, generate join prompts for other AI
 windows, and keep WorkBaton as the resume artifact.
 
+The next dashboard organization layer should make the `Project` view concrete:
+one selected project should show its WorkBaton, WorkStash, WorkThreads, and
+recent events together. The first implementation can filter client-side from
+`GET /api/state` because the local state response already includes project
+counts and object rows with `project_key`.
+
 The UI should make WorkBaton the clean resume artifact. Search can reveal richer
 local history, but the first screen should not encourage raw transcript hoarding.
 

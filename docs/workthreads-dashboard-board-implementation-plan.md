@@ -1,7 +1,7 @@
 # WorkThreads Dashboard Board Implementation Plan
 
-Status: implementation plan draft
-Last checked: 2026-06-22
+Status: Phase 1 API complete; project-centered dashboard next-stage plan
+Last checked: 2026-07-01
 Repository scope: `public-release/`
 
 This plan implements the dashboard-centered WorkThreads board described in
@@ -17,17 +17,24 @@ Already implemented in local mode:
 - Search across WorkThread messages and metadata.
 - Dashboard WorkThreads tab with list, detail, participants, messages,
   references, close, and archive.
+- Board API Phase 1:
+  - join-prompt helper in `workthreads_board.py`
+  - `POST /api/workthreads`
+  - `POST /api/workthreads/<thread_key>/messages`
+  - `GET /api/workthreads/<thread_key>/join-prompt`
+  - endpoint tests in `tests/local_workspace/test_workthreads_board_api.py`
 - Local tests covering lifecycle, participants, references, search, truncation,
   close/archive, and cloud-unavailable behavior.
 
 Main gaps:
 
-- No dashboard create-room flow.
-- No dashboard join-prompt generator.
-- No dashboard message composer.
-- No board-style cards or readable post conventions.
+- No project-centered dashboard drilldown that shows WorkBaton, WorkStash, and
+  WorkThreads together for one project.
+- No dashboard create-room form wired into the WorkThreads view.
+- No copy-join-prompt control in the rendered UI.
+- No dashboard message composer in the rendered UI.
+- No board-style cards or readable post conventions in the rendered UI.
 - No automatic refresh or new-message highlighting.
-- No tests for dashboard WorkThread create/post/prompt endpoints.
 
 ## Phase 0 - Spec Alignment
 
@@ -46,6 +53,8 @@ Acceptance:
 - Docs preserve the WorkBaton / WorkStash / WorkThreads boundary.
 
 ## Phase 1 - Prompt Generator And UI API
+
+Status: complete in the current public checkout.
 
 Goal: make the dashboard able to create rooms and produce join prompts without
 changing the existing SQLite schema.
@@ -89,7 +98,46 @@ Suggested tests:
 - join-prompt endpoint returns not_found for missing rooms
 - endpoint access still rejects missing or wrong UI token
 
-## Phase 2 - Board View UI
+## Phase 2 - Project-Centered Dashboard Views
+
+Goal: make project the primary local dashboard organizing lens, so users can
+review WorkBaton, WorkStash, and WorkThreads together for one project.
+
+Files:
+
+- `a2cr_mcp/local_workspace/ui.py`
+- `tests/local_workspace/test_search_ui_p2.py` or a new UI test module
+
+Tasks:
+
+1. Add a project selector or project list interaction from the dashboard
+   project table.
+2. Track the selected project in browser state, URL hash, or local state so a
+   refresh preserves the selection.
+3. Add a project detail surface with:
+   - overview counts
+   - recent project events
+   - WorkBaton Slots filtered by `project_key`
+   - WorkStash entries filtered by `project_key`
+   - WorkThread rooms filtered by `project_key`
+4. Add an `All projects` option that restores the current global lists.
+5. Prefill WorkThread create-room project from the selected project.
+6. Add a project-scoped search shortcut that sends
+   `/api/search?project=<project_key>`.
+7. Keep this first phase client-filtered from `GET /api/state`; add a dedicated
+   project endpoint only if state payload size becomes a real problem.
+
+Acceptance:
+
+- A user can click/select a project and see that project's Baton/Stash/Threads
+  without changing MCP configuration.
+- A user can return to the global view.
+- Creating a WorkThread from a project context keeps the same project key.
+- Project-scoped search returns only matching project records.
+- WorkBaton remains visually framed as the resume artifact, not as another
+  thread post.
+
+## Phase 3 - Board View UI
 
 Goal: turn the current WorkThreads list/detail into a board-style work surface.
 
@@ -131,7 +179,7 @@ Acceptance:
 - A user can post a manual coordinator note.
 - Participants remain visible in the room detail.
 
-## Phase 3 - Refresh And New Message Detection
+## Phase 4 - Refresh And New Message Detection
 
 Goal: let the dashboard notice new posts without using database file size.
 
@@ -162,7 +210,7 @@ Future optimization:
   `GET /api/workthreads/changes?since=<timestamp>` endpoint if polling full
   state becomes heavy.
 
-## Phase 4 - Message Conventions And Search Polish
+## Phase 5 - Message Conventions And Search Polish
 
 Goal: make board posts understandable to users and easy to search.
 
@@ -190,7 +238,7 @@ Acceptance:
 - Long details are encouraged to move to WorkStash.
 - WorkThread search still opens the room detail.
 
-## Phase 5 - Validation And Release Readiness
+## Phase 6 - Validation And Release Readiness
 
 Goal: prove the board works as a practical local workflow.
 
@@ -234,16 +282,17 @@ Acceptance:
 
 Recommended order:
 
-1. Prompt helper and endpoint tests.
-2. Create-room and message endpoints.
-3. WorkThreads view create-room UI and copy prompt.
-4. Message composer and readable message cards.
-5. Polling and changed-room badges.
-6. Search/reference polish.
-7. Live dashboard smoke and package smoke.
+1. Keep Phase 1 prompt helper and endpoint tests green.
+2. Add project selector/detail filtering for Baton/Stash/Threads.
+3. Wire WorkThreads create-room UI and copy prompt.
+4. Add message composer and readable message cards.
+5. Add polling and changed-room badges.
+6. Polish project-scoped search and references.
+7. Run live dashboard smoke and package smoke.
 
-This order keeps the most important workflow testable before UI polish: create
-room, copy prompt, invited AI joins, user sees the result.
+This order keeps the dashboard useful immediately: first let a user understand
+one project's saved state, then deepen the WorkThreads board workflow inside
+that project context.
 
 ## Open Decisions
 

@@ -1,7 +1,7 @@
 # WorkThreads Dashboard Board Spec
 
-Status: product and implementation spec draft
-Last checked: 2026-06-22
+Status: Phase 1 API implemented; project-centered dashboard next-stage spec
+Last checked: 2026-07-01
 Repository scope: `public-release/`
 
 This spec defines the local WorkThreads dashboard experience. It turns
@@ -25,6 +25,45 @@ A2CR dashboard.
 The board is not a hidden AI-only chat log and not a full autonomous
 multi-agent orchestrator. It is a shared local work-state surface that makes
 coordination visible and easy to resume.
+
+## Current Implementation Snapshot
+
+As of 2026-07-01, the local UI has the first board API slice:
+
+- pure join-prompt helper in `a2cr_mcp/local_workspace/workthreads_board.py`
+- `POST /api/workthreads` for local room creation
+- `POST /api/workthreads/<thread_key>/messages` for coordinator notes
+- `GET /api/workthreads/<thread_key>/join-prompt` for copyable AI invite text
+- token-protected tests in `tests/local_workspace/test_workthreads_board_api.py`
+
+The remaining board work is now UI and workflow depth: create-room controls,
+board-style room display, message composer polish, refresh/new-message badges,
+and project-centered navigation.
+
+## Project-Centered Next Stage
+
+The next dashboard stage should make project the main organizing lens. A user
+should be able to pick one project and see its WorkBaton, WorkStash, and
+WorkThreads together instead of switching between global object lists.
+
+Required project view behavior:
+
+- project list or selector with `All projects` plus one row per `project_key`
+- project overview with counts for WorkBaton, WorkStash, WorkThreads, actors,
+  and recent events
+- project-scoped tabs or sections:
+  - WorkBaton Slots for that project
+  - WorkStash entries for that project
+  - WorkThread rooms for that project
+  - recent project timeline/events
+- create-room form prefilled with the selected project
+- search shortcut that runs `/api/search?project=<project_key>`
+- detail panels should preserve the selected project after refresh
+
+The first implementation can filter client-side from `GET /api/state`, because
+that response already contains project counts and object rows with
+`project_key`. Add a dedicated `GET /api/projects/<project_key>` endpoint only
+when state payload size or code clarity justifies it.
 
 ## Non-Goals
 
@@ -213,26 +252,26 @@ signals. They are not reliable enough to be the source of truth for a new post.
 
 ## Local API Requirements
 
-The current local UI already exposes:
+The current local UI exposes:
 
 - `GET /api/state`
 - `GET /api/workthreads/<thread_key>`
 - `POST /api/action` for close/archive
-
-The board release should add local-only dashboard endpoints:
-
 - `POST /api/workthreads`
-  - creates a room through `create_work_thread`
-  - body: `thread_key`, `title`, optional `project`, `initial_message`,
-    `participant_label`
 - `POST /api/workthreads/<thread_key>/messages`
-  - posts a coordinator/user note through `post_work_thread_message`
-  - body: `body`, optional `participant_label`
 - `GET /api/workthreads/<thread_key>/join-prompt`
-  - returns the generated prompt text
 
 These endpoints are protected by the existing loopback UI token and remain local
 to the user's machine.
+
+The project-centered view should initially reuse:
+
+- `GET /api/state` for project counts and global object lists
+- `GET /api/search?project=<project_key>` for project-scoped search
+- detail endpoints for WorkBaton, WorkStash, and WorkThreads
+
+Future API additions should be justified by state payload size, not by UI
+preference alone.
 
 ## MCP Requirements
 
@@ -274,10 +313,20 @@ into the result list.
 
 ## Acceptance Criteria
 
+Phase 1 API acceptance is met when:
+
 - A user can create a room from the dashboard.
 - The dashboard can copy a join prompt for that room.
 - A separate AI window can paste the prompt, read the room, and post a join
   message through `a2cr-local`.
+
+Next-stage dashboard acceptance is:
+
+- A user can choose a project and see only that project's WorkBaton, WorkStash,
+  WorkThreads, and recent events.
+- The project overview makes the relationship between the three object types
+  obvious without turning WorkThreads into the resume artifact.
+- The WorkThreads create-room flow defaults to the selected project.
 - The dashboard shows the new participant and post without needing to restart
   the UI.
 - The user can understand the conversation from the board without reading raw
