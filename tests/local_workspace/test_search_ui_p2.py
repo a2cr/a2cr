@@ -114,6 +114,10 @@ def test_ui_server_serves_html_api_details_actions_and_auth(tmp_path, monkeypatc
         html = urllib.request.urlopen(url, timeout=5).read().decode("utf-8")
         assert "<title>A2CR</title>" in html
         assert "/api/state" in html
+        assert "a2cr_timezone" in html
+        assert "Display time zone" in html
+        assert "Asia/Tokyo" in html
+        assert "Stored timestamps remain UTC" in html
 
         state = get_json(url, "/api/state")
         assert state["dashboard"]["counts"]["workbatons"] == 1
