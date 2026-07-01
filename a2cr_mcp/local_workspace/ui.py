@@ -536,12 +536,42 @@ pre {
   gap: 8px;
   margin: 0 0 12px;
 }
+.project-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.project-list {
+  padding: 10px;
+}
+.project-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 8px;
+}
+.project-list button.active {
+  border-color: var(--green);
+  background: #e8f5f0;
+  color: var(--green);
+}
+.project-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 3px;
+}
+.project-thread-form {
+  border-bottom: 1px solid var(--line);
+}
 @media (max-width: 980px) {
   .shell { grid-template-columns: 1fr; }
   .nav { position: sticky; top: 0; z-index: 2; }
   .nav button { width: auto; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .grid { grid-template-columns: 1fr; }
+  .project-layout { grid-template-columns: 1fr; }
   .filter-grid { grid-template-columns: 1fr 1fr; }
 }
 .lang-switcher {
@@ -772,6 +802,7 @@ details > summary {
   <aside class="nav">
     <div class="brand">A2CR</div>
     <button class="active" data-view="dashboard">Dashboard</button>
+    <button data-view="projects">Projects</button>
     <button data-view="search">Search</button>
     <button data-view="workbatons">WorkBaton</button>
     <button data-view="workstash">WorkStash</button>
@@ -806,12 +837,13 @@ let state = null;
 let currentView = "dashboard";
 let lang = "ja";
 let displayTimezone = "local";
+let selectedProject = "";
 
 const TITLES = {
-  ja: {dashboard:"ダッシュボード", search:"検索", workbatons:"WorkBaton",
+  ja: {dashboard:"ダッシュボード", projects:"Projects", search:"検索", workbatons:"WorkBaton",
        workstash:"WorkStash", workthreads:"WorkThreads", agents:"Agents",
        timeline:"Timeline", settings:"Settings", help:"使い方ガイド"},
-  en: {dashboard:"Dashboard", search:"Search", workbatons:"WorkBaton",
+  en: {dashboard:"Dashboard", projects:"Projects", search:"Search", workbatons:"WorkBaton",
        workstash:"WorkStash", workthreads:"WorkThreads", agents:"Agents",
        timeline:"Timeline", settings:"Settings", help:"User Guide"}
 };
@@ -920,6 +952,7 @@ function render() {
   if (!state) return;
   const content = document.getElementById("content");
   if (currentView === "dashboard") content.innerHTML = renderDashboard();
+  if (currentView === "projects") content.innerHTML = renderProjects();
   if (currentView === "search") content.innerHTML = renderSearch();
   if (currentView === "workbatons") content.innerHTML = renderWorkbatons();
   if (currentView === "workstash") content.innerHTML = renderWorkstash();
@@ -945,7 +978,7 @@ function renderDashboard() {
       <div class="panel"><h2>${ja?"プロジェクト":"Projects"}</h2>${table(
         [ja?"プロジェクト":"Project","WorkBaton","WorkStash","Threads",ja?"更新日時":"Updated"],
         state.dashboard.projects.map(p => [
-          esc(p.project_key), esc(p.workbaton_count), esc(p.workstash_count),
+          projectLink(p.project_key), esc(p.workbaton_count), esc(p.workstash_count),
           esc(p.workthread_count), fmt(p.updated_at)
         ])
       )}</div>
@@ -962,6 +995,199 @@ function table(headers, rows, attrs = "") {
   return `<table ${attrs}><thead><tr>${headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${
     rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")
   }</tbody></table>`;
+}
+
+function projectLink(projectKey) {
+  const key = String(projectKey || "");
+  if (!key) return "";
+  return `<button class="ghost" onclick="openProject('${encodeURIComponent(key)}')">${esc(key)}</button>`;
+}
+
+function projectKeys() {
+  const keys = new Set((state.dashboard.projects || []).map(p => p.project_key).filter(Boolean));
+  (state.workbatons.items || []).forEach(item => { if (item.project_key) keys.add(item.project_key); });
+  (state.workstash.entries || []).forEach(item => { if (item.project_key) keys.add(item.project_key); });
+  (state.workthreads.threads || []).forEach(item => { if (item.project_key) keys.add(item.project_key); });
+  (state.events.events || []).forEach(item => { if (item.project_key) keys.add(item.project_key); });
+  return Array.from(keys).sort((a, b) => a.localeCompare(b));
+}
+
+function projectSummary(projectKey) {
+  const existing = (state.dashboard.projects || []).find(p => p.project_key === projectKey);
+  if (existing) return existing;
+  const workbatons = byProject(state.workbatons.items, projectKey).length;
+  const workstash = byProject(state.workstash.entries, projectKey).length;
+  const workthreads = byProject(state.workthreads.threads, projectKey).length;
+  return {project_key: projectKey, workbaton_count: workbatons, workstash_count: workstash, workthread_count: workthreads, updated_at: ""};
+}
+
+function byProject(items, projectKey) {
+  return (items || []).filter(item => (item.project_key || "") === projectKey);
+}
+
+function openProject(encodedProject) {
+  selectedProject = decodeURIComponent(encodedProject || "");
+  if (selectedProject) {
+    localStorage.setItem("a2cr_selected_project", selectedProject);
+  } else {
+    localStorage.removeItem("a2cr_selected_project");
+  }
+  setView("projects");
+}
+
+function renderProjects() {
+  const keys = projectKeys();
+  if (selectedProject && !keys.includes(selectedProject)) {
+    selectedProject = "";
+    localStorage.removeItem("a2cr_selected_project");
+  }
+  const main = selectedProject
+    ? renderProjectDetail(selectedProject)
+    : renderProjectIndex(keys);
+  return `<div class="project-layout">${renderProjectPicker(keys)}<div>${main}</div></div>`;
+}
+
+function renderProjectPicker(keys) {
+  const rows = keys.map(key => {
+    const p = projectSummary(key);
+    const meta = `${p.workbaton_count || 0} Baton / ${p.workstash_count || 0} Stash / ${p.workthread_count || 0} Thread`;
+    return `<button class="ghost ${key === selectedProject ? "active" : ""}" onclick="openProject('${encodeURIComponent(key)}')">
+      <span>${esc(key)}<span class="project-meta">${esc(meta)}</span></span>
+    </button>`;
+  }).join("");
+  return `<div class="panel"><h2>Projects</h2><div class="project-list">
+    <button class="ghost ${selectedProject ? "" : "active"}" onclick="openProject('')">
+      <span>All projects<span class="project-meta">${keys.length} project${keys.length === 1 ? "" : "s"}</span></span>
+    </button>
+    ${rows || `<div class="empty">No projects</div>`}
+  </div></div>`;
+}
+
+function renderProjectIndex(keys) {
+  const rows = keys.map(key => {
+    const p = projectSummary(key);
+    return [
+      projectLink(key),
+      esc(p.workbaton_count || 0),
+      esc(p.workstash_count || 0),
+      esc(p.workthread_count || 0),
+      fmt(p.updated_at)
+    ];
+  });
+  return `<div class="panel"><h2>Projects</h2>${table(
+    ["Project", "WorkBaton", "WorkStash", "WorkThreads", "Updated"],
+    rows
+  )}</div>`;
+}
+
+function renderProjectDetail(projectKey) {
+  const summary = projectSummary(projectKey);
+  const batons = byProject(state.workbatons.items, projectKey);
+  const stash = byProject(state.workstash.entries, projectKey);
+  const threads = byProject(state.workthreads.threads, projectKey);
+  const events = byProject(state.events.events, projectKey).slice(0, 20);
+  return `
+    <div class="stats">
+      ${stat("WorkBaton", summary.workbaton_count || batons.length)}
+      ${stat("WorkStash", summary.workstash_count || stash.length)}
+      ${stat("WorkThreads", summary.workthread_count || threads.length)}
+      ${stat("Recent Events", events.length)}
+    </div>
+    <div class="actions">
+      <button onclick="searchProject('${encodeURIComponent(projectKey)}')">Search Project</button>
+    </div>
+    <div class="panel"><h2>${esc(projectKey)} WorkThreads</h2>
+      ${projectThreadForm(projectKey)}
+      ${table(
+        ["Thread", "State", "Messages", "Agents", "Updated"],
+        threads.map(item => [
+          linkFor("WorkThread", item.thread_key),
+          badge(item.state, item.state),
+          esc(item.message_count),
+          esc(item.participant_count),
+          fmt(item.updated_at)
+        ])
+      )}
+    </div>
+    <div class="grid">
+      <div>
+        <div class="panel"><h2>${esc(projectKey)} WorkBaton</h2>${table(
+          ["Slot", "State", "No.", "Updated"],
+          batons.map(item => [
+            linkFor("WorkBaton", item.slot_name),
+            [
+              item.pinned ? `<span class="badge pinned-b">pinned</span>` : "",
+              item.stale ? `<span class="badge stale">stale</span>` : "",
+              item.archived ? `<span class="badge archived-b">archived</span>` : ""
+            ].join(""),
+            esc(item.slot_number ?? ""),
+            fmt(item.updated_at)
+          ])
+        )}</div>
+        <div class="panel"><h2>${esc(projectKey)} WorkStash</h2>${table(
+          ["Key", "Tags", "Size", "Updated"],
+          stash.map(item => [
+            linkFor("WorkStash", item.entry_key),
+            (item.tags || []).map(t => badge(t)).join(""),
+            esc(fmtSize(item.size_bytes)),
+            fmt(item.updated_at)
+          ])
+        )}</div>
+      </div>
+      <div>
+        <div class="panel detail" id="detail"><h2>Detail</h2><div class="empty">Select an item</div></div>
+        <div class="panel"><h2>Recent Events</h2>${eventList(events)}</div>
+      </div>
+    </div>`;
+}
+
+function projectThreadForm(projectKey) {
+  return `<div class="filters project-thread-form">
+    <div class="filter-grid">
+      <div><label>Thread key</label><input id="project-thread-key" placeholder="${esc(projectKey)}-review"></div>
+      <div><label>Title</label><input id="project-thread-title" placeholder="Project coordination"></div>
+      <div><label>Agent</label><input id="project-thread-label" placeholder="planner"></div>
+    </div>
+    <div class="filter-keyword" style="margin-top:8px;margin-bottom:0">
+      <input id="project-thread-message" placeholder="Initial message">
+      <button class="primary" onclick="createProjectThread('${encodeURIComponent(projectKey)}')">Create WorkThread</button>
+    </div>
+  </div>`;
+}
+
+function searchProject(encodedProject) {
+  const project = decodeURIComponent(encodedProject || "");
+  currentView = "search";
+  document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === "search"));
+  document.getElementById("view-title").textContent = TITLES[lang].search;
+  render();
+  const input = document.getElementById("project");
+  if (input) input.value = project;
+  runSearch();
+}
+
+async function createProjectThread(encodedProject) {
+  const project = decodeURIComponent(encodedProject || "");
+  const threadKey = document.getElementById("project-thread-key").value.trim();
+  const title = document.getElementById("project-thread-title").value.trim();
+  if (!threadKey || !title) {
+    alert("thread_key and title are required");
+    return;
+  }
+  const result = await api("/api/workthreads", {method: "POST", body: JSON.stringify({
+    thread_key: threadKey,
+    title,
+    project,
+    participant_label: document.getElementById("project-thread-label").value.trim(),
+    initial_message: document.getElementById("project-thread-message").value.trim(),
+  })});
+  if (result.status !== "created") {
+    alert(JSON.stringify(result));
+    return;
+  }
+  selectedProject = project;
+  localStorage.setItem("a2cr_selected_project", selectedProject);
+  await loadState();
 }
 
 function renderSearch() {
@@ -1230,6 +1456,7 @@ function renderSettings() {
   const savedTimezone = displayTimezone || "local";
   const viewOptions = [
     {v:"dashboard",  ja:"Dashboard（デフォルト）", en:"Dashboard (default)"},
+    {v:"projects",   ja:"Projects",                en:"Projects"},
     {v:"workbatons", ja:"WorkBaton",               en:"WorkBaton"},
     {v:"workstash",  ja:"WorkStash",               en:"WorkStash"},
     {v:"workthreads",ja:"WorkThreads",             en:"WorkThreads"},
@@ -1407,6 +1634,7 @@ function detailHtml(type, detail) {
       </div>`;
     }).join("");
     return `<div class="actions">
+        <button onclick="copyJoinPrompt('${encodeURIComponent(detail.thread_key)}')">Copy join prompt</button>
         <button class="warn" onclick="runAction('WorkThread','${esc(detail.thread_key)}','close')">${ja?"クローズ":"Close"}</button>
         <button class="danger" onclick="runAction('WorkThread','${esc(detail.thread_key)}','archive')">${ja?"アーカイブ":"Archive"}</button>
       </div>
@@ -1452,6 +1680,22 @@ async function runAction(objectType, key, action) {
   await loadState();
 }
 
+async function copyJoinPrompt(encodedKey) {
+  const key = decodeURIComponent(encodedKey || "");
+  const result = await api("/api/workthreads/" + encodeURIComponent(key) + "/join-prompt");
+  if (result.status !== "ok") {
+    alert(JSON.stringify(result));
+    return;
+  }
+  const prompt = result.prompt || "";
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    await navigator.clipboard.writeText(prompt);
+    alert("Join prompt copied");
+    return;
+  }
+  window.prompt("Copy join prompt", prompt);
+}
+
 document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 document.getElementById("refresh").addEventListener("click", loadState);
 document.getElementById("backup").addEventListener("click", async () => {
@@ -1471,6 +1715,7 @@ document.getElementById("export").addEventListener("click", async () => {
 lang = localStorage.getItem("a2cr_lang") || "ja";
 currentView = localStorage.getItem("a2cr_default_view") || "dashboard";
 displayTimezone = localStorage.getItem("a2cr_timezone") || "local";
+selectedProject = localStorage.getItem("a2cr_selected_project") || "";
 document.querySelectorAll(".nav button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === currentView));
 document.getElementById("lang-ja").classList.toggle("active", lang === "ja");
 document.getElementById("lang-en").classList.toggle("active", lang === "en");
