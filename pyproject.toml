@@ -35,7 +35,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
-  "cryptography==49.0.0",
+  "cryptography==50.0.0",
   "fastmcp==3.4.2",
   "httpx==0.28.1",
   "tiktoken==0.13.0"
